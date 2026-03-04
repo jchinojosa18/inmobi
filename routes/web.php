@@ -1,5 +1,25 @@
 <?php
 
+use App\Http\Controllers\ContractSettlementPdfController;
+use App\Http\Controllers\PaymentReceiptPdfController;
+use App\Http\Controllers\Reports\CashFlowCsvExportController;
+use App\Livewire\Admin\SystemStatus as AdminSystemStatus;
+use App\Livewire\Cobranza\Index as CobranzaIndex;
+use App\Livewire\Contracts\Form as ContractForm;
+use App\Livewire\Contracts\Index as ContractsIndex;
+use App\Livewire\Contracts\Show as ContractShow;
+use App\Livewire\Dashboard\Index as DashboardIndex;
+use App\Livewire\Expenses\Index as ExpensesIndex;
+use App\Livewire\Houses\Create as HouseCreate;
+use App\Livewire\Houses\Show as HouseShow;
+use App\Livewire\MonthCloses\Index as MonthClosesIndex;
+use App\Livewire\Payments\Create as PaymentCreate;
+use App\Livewire\Payments\Show as PaymentShow;
+use App\Livewire\Properties\Index as PropertiesIndex;
+use App\Livewire\Reports\CashFlow as CashFlowReport;
+use App\Livewire\Settings\Index as SettingsIndex;
+use App\Livewire\Tenants\Index as TenantsIndex;
+use App\Livewire\Units\Index as UnitsIndex;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -39,7 +59,36 @@ Route::post('/logout', function (Request $request) {
     return redirect()->route('login');
 })->middleware('auth')->name('logout');
 
-Route::view('/dashboard', 'dashboard')->middleware('auth')->name('dashboard');
+Route::get('/dashboard', DashboardIndex::class)->middleware('auth')->name('dashboard');
+
+Route::middleware('auth')->group(function (): void {
+    Route::get('/properties', PropertiesIndex::class)->name('properties.index');
+    Route::get('/properties/{property}/units', UnitsIndex::class)->name('properties.units.index');
+    Route::get('/houses/create', HouseCreate::class)->name('houses.create');
+    Route::get('/houses/{property}', HouseShow::class)->name('houses.show');
+    Route::get('/tenants', TenantsIndex::class)->name('tenants.index');
+    Route::get('/expenses', ExpensesIndex::class)->name('expenses.index');
+    Route::get('/reports/flow', CashFlowReport::class)->name('reports.flow');
+    Route::get('/reports/flow/export.csv', CashFlowCsvExportController::class)->name('reports.flow.export.csv');
+    Route::get('/month-closes', MonthClosesIndex::class)->name('month-closes.index');
+    Route::get('/settings', SettingsIndex::class)->name('settings.index');
+
+    Route::get('/contracts', ContractsIndex::class)->name('contracts.index');
+    Route::get('/contracts/create', ContractForm::class)->name('contracts.create');
+    Route::get('/contracts/{contract}/edit', ContractForm::class)->name('contracts.edit');
+    Route::get('/contracts/{contract}', ContractShow::class)->name('contracts.show');
+    Route::get('/contracts/{contract}/settlements/{batch}/pdf', ContractSettlementPdfController::class)
+        ->name('contracts.settlements.pdf');
+
+    Route::get('/contracts/{contract}/payments/create', PaymentCreate::class)->name('contracts.payments.create');
+    Route::get('/payments/{payment}', PaymentShow::class)->name('payments.show');
+    Route::get('/payments/{paymentId}/receipt.pdf', PaymentReceiptPdfController::class)->name('payments.receipt.pdf');
+    Route::get('/cobranza', CobranzaIndex::class)->name('cobranza.index');
+});
+
+Route::get('/receipts/{paymentId}/shared.pdf', PaymentReceiptPdfController::class)
+    ->middleware('signed')
+    ->name('payments.receipt.share');
 
 Route::get('/admin/health', function () {
     return response()->json([
@@ -47,6 +96,10 @@ Route::get('/admin/health', function () {
         'scope' => 'admin',
     ]);
 })->middleware('role:Admin');
+
+Route::get('/admin/system', AdminSystemStatus::class)
+    ->middleware(['auth', 'role:Admin'])
+    ->name('admin.system');
 
 Route::view('/demo/document-upload', 'document-upload-demo');
 

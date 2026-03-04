@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Organization;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -15,12 +16,22 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        User::firstOrCreate([
+        $defaultOrganization = Organization::firstOrCreate([
+            'name' => 'Default',
+        ]);
+
+        $firstUser = User::firstOrCreate([
             'email' => 'test@example.com',
         ], [
+            'organization_id' => $defaultOrganization->id,
             'name' => 'Test User',
             'password' => 'password',
         ]);
+
+        if ($firstUser->organization_id === null) {
+            $firstUser->organization()->associate($defaultOrganization);
+            $firstUser->save();
+        }
 
         $this->call([
             RolesAndPermissionsSeeder::class,
