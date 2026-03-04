@@ -21,3 +21,15 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# Local test artifacts
+storage/framework/testing-*.sqlite
+
+
+# Local test artifacts
+storage/framework/testing-*.sqlite
+
+
+# Local test artifacts
+storage/framework/testing-*.sqlite
+
