@@ -3,6 +3,7 @@
 namespace App\Livewire\Documents;
 
 use App\Models\Document;
+use App\Support\AuditLogger;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
@@ -65,6 +66,17 @@ class Panel extends Component
 
             return;
         }
+
+        app(AuditLogger::class)->log(
+            action: 'document.uploaded',
+            auditable: $documentable,
+            summary: sprintf('Documento subido en %s #%d', class_basename($documentable), $documentable->getKey()),
+            meta: [
+                'documentable_type' => $this->documentableType,
+                'documentable_id' => $this->documentableId,
+                'mime' => $this->document->getMimeType(),
+            ],
+        );
 
         $this->reset('document');
         session()->flash('success', 'Documento subido correctamente.');

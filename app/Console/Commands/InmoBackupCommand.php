@@ -19,7 +19,7 @@ class InmoBackupCommand extends Command
     private const LOCK_TTL_SECONDS = 3600;
 
     protected $signature = 'inmo:backup
-        {--keep=14 : Cantidad de snapshots de backup a conservar}
+        {--keep= : Cantidad de snapshots de backup a conservar (opcional)}
         {--skip-db : Omitir backup de base de datos}
         {--skip-documents : Omitir backup de documentos}';
 
@@ -39,7 +39,8 @@ class InmoBackupCommand extends Command
         }
 
         try {
-            $keep = max((int) $this->option('keep'), 1);
+            $keepOption = trim((string) $this->option('keep'));
+            $keep = $keepOption === '' ? null : max((int) $keepOption, 1);
             $skipDb = (bool) $this->option('skip-db');
             $skipDocuments = (bool) $this->option('skip-documents');
 
@@ -70,7 +71,9 @@ class InmoBackupCommand extends Command
                 json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
             );
 
-            $this->rotateBackups($baseDirectory, $keep);
+            if ($keep !== null) {
+                $this->rotateBackups($baseDirectory, $keep);
+            }
 
             $dbStatus = (string) data_get($result, 'database.status', 'failed');
             $documentsStatus = (string) data_get($result, 'documents.status', 'failed');
@@ -87,7 +90,11 @@ class InmoBackupCommand extends Command
             $this->info("Backup ejecutado en: {$runDirectory}");
             $this->line('Database: '.data_get($result, 'database.status').' - '.data_get($result, 'database.message'));
             $this->line('Documents: '.data_get($result, 'documents.status').' - '.data_get($result, 'documents.message'));
-            $this->line("Rotación aplicada: conservar {$keep} snapshots");
+            if ($keep !== null) {
+                $this->line("Rotación aplicada: conservar {$keep} snapshots");
+            } else {
+                $this->line('Rotación simple omitida (usa inmo:backup:prune para política diaria/mensual).');
+            }
 
             return $overallStatus === 'ok' ? self::SUCCESS : self::FAILURE;
         } finally {

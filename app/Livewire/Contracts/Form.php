@@ -5,6 +5,7 @@ namespace App\Livewire\Contracts;
 use App\Models\Contract;
 use App\Models\Tenant;
 use App\Models\Unit;
+use App\Support\AuditLogger;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +14,8 @@ use Livewire\Component;
 
 class Form extends Component
 {
+    private const MAX_DAILY_RATE_DECIMAL = 0.5;
+
     public ?int $contractId = null;
 
     public ?int $unit_id = null;
@@ -27,7 +30,7 @@ class Form extends Component
 
     public string $grace_days = '5';
 
-    public string $penalty_rate_daily = '0.0000';
+    public string $penalty_rate_daily = '5.0000';
 
     public string $status = Contract::STATUS_ACTIVE;
 
@@ -39,7 +42,7 @@ class Form extends Component
 
     public function mount(?Contract $contract = null): void
     {
-        if ($contract === null) {
+        if (! ($contract instanceof Contract) || ! $contract->exists) {
             $this->starts_at = now()->toDateString();
 
             $requestedUnitId = request()->integer('unit_id');
@@ -63,7 +66,7 @@ class Form extends Component
         $this->deposit_amount = (string) $contract->deposit_amount;
         $this->due_day = (string) $contract->due_day;
         $this->grace_days = (string) $contract->grace_days;
-        $this->penalty_rate_daily = (string) $contract->penalty_rate_daily;
+        $this->penalty_rate_daily = $this->toDisplayPenaltyRate((float) $contract->penalty_rate_daily);
         $this->status = $contract->status;
         $this->starts_at = optional($contract->starts_at)->format('Y-m-d') ?: now()->toDateString();
         $this->ends_at = optional($contract->ends_at)->format('Y-m-d');
@@ -73,6 +76,23 @@ class Form extends Component
     public function save(): mixed
     {
         $validated = $this->validate($this->rules(), $this->messages());
+
+        $normalizedPenaltyRate = $this->normalizePenaltyRateDaily((float) $validated['penalty_rate_daily']);
+
+        if ($normalizedPenaltyRate <= 0 || $normalizedPenaltyRate > 1) {
+            $this->addError('penalty_rate_daily', 'La tasa diaria de multa normalizada debe ser mayor a 0% y menor o igual a 100%.');
+
+            return null;
+        }
+
+        if ($normalizedPenaltyRate > self::MAX_DAILY_RATE_DECIMAL) {
+            $this->addError('penalty_rate_daily', 'Por seguridad, la tasa diaria de multa no puede exceder 50%.');
+
+            return null;
+        }
+
+        $validated['penalty_rate_daily'] = $normalizedPenaltyRate;
+        $this->penalty_rate_daily = $this->toDisplayPenaltyRate($normalizedPenaltyRate);
 
         try {
             $contract = DB::transaction(function () use ($validated): Contract {
@@ -111,9 +131,28 @@ class Form extends Component
             throw $exception;
         }
 
-        $message = $this->contractId === null
-            ? 'Contrato creado correctamente.'
-            : 'Contrato actualizado correctamente.';
+        $isNew = $this->contractId === null;
+        $action = $isNew ? 'contract.created' : 'contract.updated';
+        $message = $isNew ? 'Contrato creado correctamente.' : 'Contrato actualizado correctamente.';
+
+        app(AuditLogger::class)->log(
+            action: $action,
+            auditable: $contract,
+            summary: sprintf(
+                'Contrato #%d %s para unidad #%d',
+                $contract->id,
+                $isNew ? 'creado' : 'actualizado',
+                $contract->unit_id,
+            ),
+            meta: [
+                'contract_id' => $contract->id,
+                'unit_id' => $contract->unit_id,
+                'tenant_id' => $contract->tenant_id,
+                'rent_amount' => (float) $contract->rent_amount,
+                'status' => $contract->status,
+                'starts_at' => $contract->starts_at?->toDateString(),
+            ],
+        );
 
         session()->flash('success', $message);
 
@@ -175,7 +214,7 @@ class Form extends Component
             'deposit_amount' => ['required', 'numeric', 'min:0'],
             'due_day' => ['required', 'integer', 'min:1', 'max:31'],
             'grace_days' => ['required', 'integer', 'min:0', 'max:31'],
-            'penalty_rate_daily' => ['required', 'numeric', 'min:0', 'max:100'],
+            'penalty_rate_daily' => ['required', 'numeric', 'min:0.0001', 'max:100'],
             'status' => ['required', Rule::in([Contract::STATUS_ACTIVE, Contract::STATUS_ENDED])],
             'starts_at' => ['required', 'date'],
             'ends_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
@@ -207,7 +246,7 @@ class Form extends Component
             'grace_days.max' => 'Los días de gracia no deben exceder 31.',
             'penalty_rate_daily.required' => 'La tasa diaria de multa es obligatoria.',
             'penalty_rate_daily.numeric' => 'La tasa diaria de multa debe ser numérica.',
-            'penalty_rate_daily.min' => 'La tasa diaria de multa no puede ser negativa.',
+            'penalty_rate_daily.min' => 'La tasa diaria de multa debe ser mayor a 0.',
             'penalty_rate_daily.max' => 'La tasa diaria de multa no debe exceder 100.',
             'status.required' => 'Selecciona el estado del contrato.',
             'status.in' => 'El estado seleccionado no es válido.',
@@ -217,5 +256,19 @@ class Form extends Component
             'ends_at.after_or_equal' => 'La fecha de fin debe ser igual o posterior al inicio.',
             'meta_notes.max' => 'Las notas no deben exceder 1000 caracteres.',
         ];
+    }
+
+    private function normalizePenaltyRateDaily(float $value): float
+    {
+        if ($value > 1) {
+            return round($value / 100, 6);
+        }
+
+        return round($value, 6);
+    }
+
+    private function toDisplayPenaltyRate(float $storedDecimalRate): string
+    {
+        return number_format($storedDecimalRate * 100, 4, '.', '');
     }
 }

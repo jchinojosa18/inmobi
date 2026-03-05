@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Actions\Penalties\RunDailyPenaltiesAction;
+use App\Support\AuditLogger;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
@@ -22,7 +23,8 @@ class RunPenaltiesCommand extends Command
     protected $description = 'Genera multas diarias con interés compuesto para contratos con saldo vencido';
 
     public function __construct(
-        private readonly RunDailyPenaltiesAction $action
+        private readonly RunDailyPenaltiesAction $action,
+        private readonly AuditLogger $auditLogger,
     ) {
         parent::__construct();
     }
@@ -65,6 +67,18 @@ class RunPenaltiesCommand extends Command
             }
 
             $result = $this->action->execute($targetDate, $fromDate);
+
+            $this->auditLogger->log(
+                action: 'penalties.run',
+                auditable: null,
+                summary: sprintf(
+                    'Multas ejecutadas para %s: %d creadas en %d contratos',
+                    $result['target_date'],
+                    $result['created'],
+                    $result['contracts_processed'],
+                ),
+                meta: $result,
+            );
 
             $this->info("Multas procesadas para {$result['target_date']}");
             if (is_string($result['from_date']) && $result['from_date'] !== '') {

@@ -40,3 +40,13 @@ Schedule::command(InmoBackupCommand::class)
     ->dailyAt('03:10')
     ->timezone('America/Tijuana')
     ->withoutOverlapping();
+
+Schedule::command('inmo:logs:prune')
+    ->monthlyOn(1, '03:15')
+    ->timezone('America/Tijuana')
+    ->withoutOverlapping();
+
+Schedule::command('inmo:backup:prune')
+    ->monthlyOn(1, '03:35')
+    ->timezone('America/Tijuana')
+    ->withoutOverlapping();

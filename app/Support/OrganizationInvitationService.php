@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Organization;
 use App\Models\OrganizationInvitation;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -69,6 +70,20 @@ class OrganizationInvitationService
             ]);
         });
 
+        app(AuditLogger::class)->log(
+            action: 'invitation.created',
+            auditable: $invitation,
+            summary: "Invitación creada para {$normalizedEmail} con rol {$role}",
+            meta: [
+                'email' => $normalizedEmail,
+                'role' => $role,
+                'organization_id' => $organizationId,
+                'expires_at' => $expiresAt->toDateTimeString(),
+            ],
+            organizationId: $organizationId,
+            actorUserId: $invitedByUserId,
+        );
+
         return [
             'invitation' => $invitation,
             'token' => $token,
@@ -106,6 +121,7 @@ class OrganizationInvitationService
         $targetOrganizationId = (int) $invitation->organization_id;
         $currentOrganizationId = is_numeric($user->organization_id) ? (int) $user->organization_id : null;
         $targetRole = trim((string) $invitation->role);
+        $previousRole = '';
 
         Role::findOrCreate($targetRole, 'web');
 
@@ -114,21 +130,22 @@ class OrganizationInvitationService
             $invitation,
             $targetOrganizationId,
             $currentOrganizationId,
-            $targetRole
+            $targetRole,
+            &$previousRole
         ): void {
             $isCurrentAdmin = $user->hasRole('Admin');
+            $currentOrganization = $currentOrganizationId !== null
+                ? Organization::query()->find($currentOrganizationId)
+                : null;
+            $isCurrentOwner = $currentOrganization !== null
+                && (int) $currentOrganization->owner_user_id === (int) $user->id;
 
             if ($currentOrganizationId !== null && $isCurrentAdmin) {
                 $movingToAnotherOrganization = $currentOrganizationId !== $targetOrganizationId;
                 $demotingInsideSameOrganization = $currentOrganizationId === $targetOrganizationId && $targetRole !== 'Admin';
 
                 if ($movingToAnotherOrganization || $demotingInsideSameOrganization) {
-                    $adminCount = User::query()
-                        ->where('organization_id', $currentOrganizationId)
-                        ->role('Admin')
-                        ->count();
-
-                    if ($adminCount <= 1) {
+                    if ($currentOrganization !== null && $currentOrganization->adminsCount() <= 1) {
                         throw ValidationException::withMessages([
                             'invite' => 'No puedes quitar al último Admin de la organización actual.',
                         ]);
@@ -136,6 +153,19 @@ class OrganizationInvitationService
                 }
             }
 
+            if ($isCurrentOwner && $currentOrganizationId !== $targetOrganizationId) {
+                throw ValidationException::withMessages([
+                    'invite' => 'Transfiere ownership antes de salir de tu organización actual.',
+                ]);
+            }
+
+            if ($isCurrentOwner && $targetRole !== 'Admin') {
+                throw ValidationException::withMessages([
+                    'invite' => 'El owner siempre debe conservar rol Admin.',
+                ]);
+            }
+
+            $previousRole = (string) ($user->roles()->pluck('name')->first() ?? '');
             $user->organization_id = $targetOrganizationId;
             $user->save();
             $user->syncRoles([$targetRole]);
@@ -144,5 +174,34 @@ class OrganizationInvitationService
             $invitation->accepted_by_user_id = $user->id;
             $invitation->save();
         });
+
+        app(AuditLogger::class)->log(
+            action: 'invitation.accepted',
+            auditable: $invitation,
+            summary: "Invitación aceptada por {$user->email} en organización #{$targetOrganizationId}",
+            meta: [
+                'email' => $user->email,
+                'role' => $targetRole,
+                'organization_id' => $targetOrganizationId,
+            ],
+            organizationId: $targetOrganizationId,
+            actorUserId: $user->id,
+        );
+
+        if ($previousRole !== $targetRole) {
+            app(AuditLogger::class)->log(
+                action: 'organization.admin_role_changed',
+                auditable: $user,
+                summary: "Rol actualizado para {$user->email}: {$previousRole} -> {$targetRole}",
+                meta: [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'previous_role' => $previousRole,
+                    'new_role' => $targetRole,
+                ],
+                organizationId: $targetOrganizationId,
+                actorUserId: $user->id,
+            );
+        }
     }
 }

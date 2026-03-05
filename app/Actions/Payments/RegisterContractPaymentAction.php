@@ -5,6 +5,7 @@ namespace App\Actions\Payments;
 use App\Models\Contract;
 use App\Models\Document;
 use App\Models\Payment;
+use App\Support\AuditLogger;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\UploadedFile;
@@ -16,6 +17,7 @@ class RegisterContractPaymentAction
     public function __construct(
         private readonly GenerateReceiptFolioAction $folioAction,
         private readonly ApplyPaymentAction $applyPaymentAction,
+        private readonly AuditLogger $auditLogger,
     ) {}
 
     /**
@@ -36,7 +38,22 @@ class RegisterContractPaymentAction
             $this->storeEvidence($payment, $evidence);
         }
 
-        return $payment->fresh(['allocations.charge', 'documents', 'contract.tenant', 'contract.unit.property']);
+        $fresh = $payment->fresh(['allocations.charge', 'documents', 'contract.tenant', 'contract.unit.property']);
+
+        $this->auditLogger->log(
+            action: 'payment.created',
+            auditable: $fresh,
+            summary: sprintf('Pago registrado %s $%s', $fresh->receipt_folio, number_format((float) $fresh->amount, 2)),
+            meta: [
+                'receipt_folio' => $fresh->receipt_folio,
+                'amount' => (float) $fresh->amount,
+                'method' => $fresh->method,
+                'contract_id' => $fresh->contract_id,
+                'paid_at' => $fresh->paid_at?->toDateString(),
+            ],
+        );
+
+        return $fresh;
     }
 
     /**

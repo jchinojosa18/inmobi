@@ -29,6 +29,12 @@
                 </div>
             @endif
 
+            @if (! empty($throttleMessage))
+                <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/35 dark:text-amber-200" role="alert">
+                    {{ $throttleMessage }}
+                </div>
+            @endif
+
             <form method="POST" action="{{ route('register.store') }}" class="space-y-5">
                 @csrf
                 @if ($isInvitationFlow)

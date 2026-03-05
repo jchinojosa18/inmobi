@@ -61,6 +61,7 @@ Self-signup (sin seed):
 - `GET /register`
 - Campos: `Empresa`, `Nombre`, `Email`, `Contraseña`, `Confirmar contraseña`
 - Al registrar: crea `Organization`, plaza default `Principal`, usuario owner con rol `Admin`, login automático y redirección a `/dashboard`.
+  - Gobernanza: `organizations.owner_user_id` se asigna al usuario recién creado.
 
 ## 3) Mapa mental del dominio
 ```text
@@ -101,8 +102,20 @@ Relaciones clave en modelos:
 - Base incluye saldo vencido total (incluye multas previas), menos allocations y menos saldo a favor.
 - Corte: `D-1 23:59:59` en `America/Tijuana`; se convierte a timezone de almacenamiento para comparar `payments.paid_at`.
 - Idempotencia: chequeo previo + captura de duplicate key.
+- Tasa (`penalty_rate_daily`) se guarda en decimal:
+  - `0.05` = `5%` diario.
+  - En UI de contratos el campo se muestra como porcentaje, pero al guardar se normaliza:
+    - input `5` -> `0.05`
+    - input `0.05` -> `0.05`
+  - Guardrail: se bloquean tasas normalizadas > `0.5` (50% diario).
 
 Ejemplo: si el 2026-03-04 hubo pago parcial al mediodía, impacta base para multa del 2026-03-05.
+
+Corrección manual mínima por contrato (tasa mal capturada):
+1. Corregir contrato en `/contracts/{id}/edit` con tasa en `%` (ej. `5` para `5%`).
+2. Reconstruir multas del rango afectado:
+   - `./vendor/bin/sail artisan inmo:penalties:rebuild --contract=ID --from=YYYY-MM-DD --to=YYYY-MM-DD`
+3. Verificar estado de cuenta y auditoría en `/settings/audit`.
 
 ### 4.2 Pagos y allocations
 - Acción: [`ApplyPaymentAction`](../app/Actions/Payments/ApplyPaymentAction.php)
@@ -175,6 +188,8 @@ Definición en [`routes/console.php`](../routes/console.php):
 - `inmo:penalties:run`: diario `00:05` America/Tijuana.
 - `inmo:generate-rent --month=YYYY-MM`: día 1 a `00:10` America/Tijuana.
 - `inmo:backup`: diario `03:10` America/Tijuana.
+- `inmo:logs:prune`: mensual día 1 a `03:15` America/Tijuana.
+- `inmo:backup:prune`: mensual día 1 a `03:35` America/Tijuana.
 - `inmo:plazas:backfill-default`: backfill/normalización idempotente de plaza default por organización.
 
 Locks/mutex (Redis/Cache lock, salida `0` cuando ya está tomado):
@@ -182,16 +197,33 @@ Locks/mutex (Redis/Cache lock, salida `0` cuando ya está tomado):
 - [`RunPenaltiesCommand`](../app/Console/Commands/RunPenaltiesCommand.php)
 - [`InmoDailyCommand`](../app/Console/Commands/InmoDailyCommand.php)
 - [`InmoBackupCommand`](../app/Console/Commands/InmoBackupCommand.php)
+- [`PruneLogsCommand`](../app/Console/Commands/PruneLogsCommand.php)
+- [`PruneBackupsCommand`](../app/Console/Commands/PruneBackupsCommand.php)
 
 Comandos manuales útiles:
 ```bash
 ./vendor/bin/sail artisan inmo:generate-rent --month=2026-03
 ./vendor/bin/sail artisan inmo:penalties:run --date=2026-03-10 --from-date=2026-03-05
+./vendor/bin/sail artisan inmo:penalties:rebuild --contract=123 --from=2026-03-01 --to=2026-03-10
 ./vendor/bin/sail artisan inmo:daily
-./vendor/bin/sail artisan inmo:backup --keep=14
+./vendor/bin/sail artisan inmo:backup
+./vendor/bin/sail artisan inmo:backup:prune --dry-run
+./vendor/bin/sail artisan inmo:backup:prune --force --yes
+./vendor/bin/sail artisan inmo:logs:prune --dry-run
+./vendor/bin/sail artisan inmo:logs:prune --auth-days=90 --audit-days=180
 ./vendor/bin/sail artisan inmo:smoke --date=2026-03-10
 ./vendor/bin/sail artisan inmo:plazas:backfill-default
 ```
+
+Retención recomendada de backups:
+- `keep_daily=14` (1 backup por día)
+- `keep_monthly=6` (1 backup por mes)
+- `min_age_hours=24`
+
+Retención por defecto de prune:
+- `auth_events`: 90 días
+- `audit_events`: 180 días
+- Configurable globalmente en [`config/audit.php`](../config/audit.php) o por ejecución con flags del comando.
 
 Regla de operación de plazas:
 - Toda organización debe tener una plaza default (`Principal`) creada automáticamente.
@@ -225,6 +257,7 @@ Definidas en [`routes/web.php`](../routes/web.php) (todas auth salvo donde se in
 - `/month-closes` -> [`MonthCloses\Index`](../app/Livewire/MonthCloses/Index.php)
 - `/settings` -> [`Settings\Index`](../app/Livewire/Settings/Index.php)
 - `/settings/invitations` (Admin) -> [`Settings\InvitationsIndex`](../app/Livewire/Settings/InvitationsIndex.php)
+  - Incluye panel de gobernanza Owner/Admin y transferencia de ownership (solo owner actual).
 - `/admin/system` (Admin) -> [`Admin\SystemStatus`](../app/Livewire/Admin/SystemStatus.php)
 - `/admin/health` (role:Admin) JSON health simple
 - `/receipts/{paymentId}/shared.pdf` firmado (sin auth, con `signed`)
@@ -265,6 +298,20 @@ Navegación principal está en [`resources/views/layouts/app.blade.php`](../reso
 - En tests se ejecuta `Vite::fake()` para no depender de `public/build/manifest.json`.
 - Implementado en [`tests/TestCase.php`](../tests/TestCase.php).
 
+### Límites de seguridad (auth)
+- Definidos en [`AppServiceProvider`](../app/Providers/AppServiceProvider.php) con `RateLimiter::for(...)`.
+- Login (`POST /login`):
+  - `5/min` por combinación `IP + email`
+  - `20/min` por `IP` global
+- Register (`POST /register`):
+  - `3/hora` por `IP`
+  - `10/día` por `IP`
+- Reenvío verificación (`POST /email/verification-notification`):
+  - `3/min` por `user + IP`
+- Cuando se excede límite:
+  - Respuesta `429` con mensaje amigable: `Demasiados intentos. Intenta de nuevo en X segundos.`
+  - En login, además se registra `auth_events.event=login_failed` con `meta.throttled=true`.
+
 ### DB en tests
 - `phpunit.xml` usa sqlite in-memory (`DB_CONNECTION=sqlite`, `DB_DATABASE=:memory:`).
 - Ojo: hay SQL condicional mysql/sqlite en listados Livewire (`Contracts\Index`, `Cobranza\Index`, `Dashboard\Index`).
@@ -297,10 +344,54 @@ System status/heartbeats:
   - rentas mensuales: no duplicar por contrato/mes.
   - multas: no duplicar por contrato/día (`penalty_date`).
 - Timezone/cutoff: multas usan America/Tijuana + comparación datetime completa (no simplificar a `whereDate` para `paid_at`).
+- Si hubo captura errónea de tasa (ej. `5` guardado como `5.0000`):
+  - aplicar normalización (migración de backfill para `penalty_rate_daily > 1`)
+  - para contratos afectados reconstruir multas con `inmo:penalties:rebuild`.
 - No mezclar depósito con ingreso operativo en reportes/snapshots.
 - Mes cerrado: no bypass de `MonthCloseGuard`; usa `ADJUSTMENT` con `meta.reason`.
+- No dejar organización sin admin:
+  - último Admin no puede perder rol `Admin`
+  - owner no puede perder `Admin`
+  - ownership solo se transfiere a usuarios de la misma organización.
 
-## 11) Roadmap sugerido (sin compromiso)
+## 11) Sistema de auditoría completo (auth + negocio)
+
+### Auth events (`auth_events`)
+- Tabla: `auth_events`
+- Modelo: [`app/Models/AuthEvent.php`](../app/Models/AuthEvent.php)
+- Listener: [`app/Listeners/RecordAuthEvent.php`](../app/Listeners/RecordAuthEvent.php)
+- Eventos capturados: `login_success`, `login_failed`, `logout`
+- Campos: `user_id`, `organization_id`, `email`, `event`, `occurred_at`, `ip`, `user_agent`, `plaza_id`, `meta`
+- Registro en: `AppServiceProvider::boot()` via `Event::listen(Login|Failed|Logout)`
+
+### Business audit events (`audit_events`)
+- Tabla: `audit_events`
+- Modelo: [`app/Models/AuditEvent.php`](../app/Models/AuditEvent.php)
+- Servicio central: [`app/Support/AuditLogger.php`](../app/Support/AuditLogger.php)
+- Acciones auditadas:
+  - `payment.created` → [`RegisterContractPaymentAction`](../app/Actions/Payments/RegisterContractPaymentAction.php)
+  - `expense.created` → [`Expenses\QuickRegisterModal`](../app/Livewire/Expenses/QuickRegisterModal.php)
+  - `contract.created` / `contract.updated` → [`Contracts\Form`](../app/Livewire/Contracts/Form.php)
+  - `month.closed` → [`CloseMonthAction`](../app/Actions/MonthCloses/CloseMonthAction.php)
+  - `month.reopened` → [`ReopenMonthAction`](../app/Actions/MonthCloses/ReopenMonthAction.php)
+  - `penalties.run` → [`RunPenaltiesCommand`](../app/Console/Commands/RunPenaltiesCommand.php)
+  - `deposit.hold` → [`RegisterDepositHoldAction`](../app/Actions/Contracts/RegisterDepositHoldAction.php)
+  - `organization.owner_transferred` / `organization.admin_role_changed` -> [`Settings\InvitationsIndex`](../app/Livewire/Settings/InvitationsIndex.php), [`OrganizationInvitationService`](../app/Support/OrganizationInvitationService.php)
+  - `settlement.completed` → [`ProcessContractSettlementAction`](../app/Actions/Contracts/ProcessContractSettlementAction.php)
+  - `document.uploaded` → [`Documents\Panel`](../app/Livewire/Documents/Panel.php)
+  - `invitation.created` / `invitation.accepted` → [`OrganizationInvitationService`](../app/Support/OrganizationInvitationService.php)
+  - `settings.updated` → [`Settings\Index`](../app/Livewire/Settings/Index.php)
+- Política de sanitización: claves con `password`, `token`, `secret`, `key`, `hash` se redactan.
+- Errores de logging nunca bloquean la operación de negocio (try/catch interno).
+
+### UI de consulta
+- Ruta: `/settings/audit` (Admin-only)
+- Componente: [`app/Livewire/Settings/AuditIndex.php`](../app/Livewire/Settings/AuditIndex.php)
+- Vista: [`resources/views/livewire/settings/audit-index.blade.php`](../resources/views/livewire/settings/audit-index.blade.php)
+- Filtros: rango fechas, usuario, acción, entidad, búsqueda libre en summary
+- Export CSV: `/settings/audit/export.csv` → [`AuditExportController`](../app/Http/Controllers/Settings/AuditExportController.php)
+
+## 12) Roadmap sugerido (sin compromiso)
 - Importador CSV para altas masivas de propiedades/unidades/contratos.
 - Portal de inquilino (estado de cuenta + pago + descarga de recibos).
 - Integración WhatsApp API (hoy MVP es deep link).
@@ -320,7 +411,7 @@ System status/heartbeats:
 - [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md): contiene partes históricas “antes de implementar código” y naming genérico que ya no representa al 100% la estructura real.
   - Sugerencia: separar “target architecture” vs “implemented architecture”.
 
-## 12) Quick register payment modal
+## 13) Quick register payment modal
 - Component: `App\Livewire\Payments\QuickRegisterModal`
 - Mounted globally in `layouts/app.blade.php`
 - Open via JS: `Livewire.dispatch('open-quick-payment')` or `Livewire.dispatch('open-quick-payment', { contractId: X })`
@@ -329,7 +420,7 @@ System status/heartbeats:
 - After save: dispatches `payment-registered` → Dashboard & Cobranza re-render
 - Existing `/contracts/{id}/payments/create` remains as fallback
 
-## 13) Onboarding checklist (Dashboard)
+## 14) Onboarding checklist (Dashboard)
 - Location: `App\Livewire\Dashboard\Index` + `resources/views/livewire/dashboard/index.blade.php`.
 - Purpose: evitar dashboard vacío en cuentas nuevas.
 - Critical steps (gatean visibilidad):

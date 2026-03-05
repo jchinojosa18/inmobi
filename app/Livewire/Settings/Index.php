@@ -4,6 +4,7 @@ namespace App\Livewire\Settings;
 
 use App\Models\ExpenseCategory;
 use App\Models\OrganizationSetting;
+use App\Support\AuditLogger;
 use App\Support\OrganizationSettingsService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\Rule;
@@ -73,6 +74,17 @@ class Index extends Component
                 'whatsapp_template' => trim((string) $validated['whatsAppTemplate']),
                 'email_template' => trim((string) $validated['emailTemplate']),
             ]
+        );
+
+        app(AuditLogger::class)->log(
+            action: 'settings.updated',
+            auditable: null,
+            summary: 'Configuración de organización actualizada',
+            meta: [
+                'receipt_folio_mode' => $validated['receiptFolioMode'],
+                'receipt_folio_prefix' => $validated['receiptFolioPrefix'] ?? null,
+                'receipt_folio_padding' => $validated['receiptFolioPadding'],
+            ],
         );
 
         session()->flash('success', 'Configuración actualizada correctamente.');

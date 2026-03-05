@@ -6,6 +6,7 @@ use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\Document;
 use App\Models\Expense;
+use App\Support\AuditLogger;
 use App\Support\DepositBalanceService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\UploadedFile;
@@ -16,6 +17,7 @@ class ProcessContractSettlementAction
 {
     public function __construct(
         private readonly DepositBalanceService $depositBalanceService,
+        private readonly AuditLogger $auditLogger,
     ) {}
 
     /**
@@ -179,7 +181,29 @@ class ProcessContractSettlementAction
             );
         }
 
-        return $transactionData['result'];
+        $result = $transactionData['result'];
+
+        $this->auditLogger->log(
+            action: 'settlement.completed',
+            auditable: $contract,
+            summary: sprintf(
+                'Finiquito completado en contrato #%d, moveout $%s, depósito aplicado $%s',
+                $contract->id,
+                number_format($result->moveoutTotal, 2),
+                number_format($result->depositApplied, 2),
+            ),
+            meta: [
+                'batch_id' => $batchId,
+                'contract_id' => $contract->id,
+                'moveout_total' => $result->moveoutTotal,
+                'deposit_applied' => $result->depositApplied,
+                'deposit_refund' => $result->depositRefund,
+                'balance_to_collect' => $result->balanceToCollect,
+            ],
+            actorUserId: $userId,
+        );
+
+        return $result;
     }
 
     private function storeMoveoutEvidence(Contract $contract, int $chargeId, string $batchId, UploadedFile $evidence): void

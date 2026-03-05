@@ -70,7 +70,7 @@
 
             <div>
                 <label class="mb-1 block text-sm font-medium text-slate-700">Tasa multa diaria (%) *</label>
-                <input type="number" step="0.0001" min="0" wire:model.blur="penalty_rate_daily" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                <input type="number" step="0.0001" min="0.01" max="100" wire:model.blur="penalty_rate_daily" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
                 @error('penalty_rate_daily') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
             </div>
 

@@ -28,9 +28,9 @@ class RunDailyPenaltiesAction
     ];
 
     /**
-     * @return array{target_date:string, from_date:?string, contracts_processed:int, days_evaluated:int, created:int, skipped_existing:int, skipped_not_applicable:int}
+     * @return array{target_date:string, from_date:?string, contract_id:?int, contracts_processed:int, days_evaluated:int, created:int, skipped_existing:int, skipped_not_applicable:int}
      */
-    public function execute(CarbonImmutable $targetDate, ?CarbonImmutable $fromDate = null): array
+    public function execute(CarbonImmutable $targetDate, ?CarbonImmutable $fromDate = null, ?int $contractId = null): array
     {
         $targetDate = $targetDate->setTimezone(self::TIMEZONE)->startOfDay();
         $fromDate = $fromDate?->setTimezone(self::TIMEZONE)->startOfDay();
@@ -38,6 +38,7 @@ class RunDailyPenaltiesAction
         $stats = [
             'target_date' => $targetDate->toDateString(),
             'from_date' => $fromDate?->toDateString(),
+            'contract_id' => $contractId,
             'contracts_processed' => 0,
             'days_evaluated' => 0,
             'created' => 0,
@@ -45,40 +46,45 @@ class RunDailyPenaltiesAction
             'skipped_not_applicable' => 0,
         ];
 
-        Contract::query()
+        $contractsQuery = Contract::query()
             ->withoutOrganizationScope()
             ->where('penalty_rate_daily', '>', 0)
-            ->orderBy('id')
-            ->chunkById(200, function ($contracts) use ($targetDate, $fromDate, &$stats): void {
-                foreach ($contracts as $contract) {
-                    $stats['contracts_processed']++;
+            ->orderBy('id');
 
-                    $startDate = $this->resolveStartDate($contract, $targetDate, $fromDate);
-                    if ($startDate === null || $startDate->gt($targetDate)) {
+        if ($contractId !== null) {
+            $contractsQuery->whereKey($contractId);
+        }
+
+        $contractsQuery->chunkById(200, function ($contracts) use ($targetDate, $fromDate, &$stats): void {
+            foreach ($contracts as $contract) {
+                $stats['contracts_processed']++;
+
+                $startDate = $this->resolveStartDate($contract, $targetDate, $fromDate);
+                if ($startDate === null || $startDate->gt($targetDate)) {
+                    continue;
+                }
+
+                for ($cursor = $startDate; $cursor->lte($targetDate); $cursor = $cursor->addDay()) {
+                    $stats['days_evaluated']++;
+
+                    $result = $this->runForContractDate($contract, $cursor);
+
+                    if ($result === 'created') {
+                        $stats['created']++;
+
                         continue;
                     }
 
-                    for ($cursor = $startDate; $cursor->lte($targetDate); $cursor = $cursor->addDay()) {
-                        $stats['days_evaluated']++;
+                    if ($result === 'existing') {
+                        $stats['skipped_existing']++;
 
-                        $result = $this->runForContractDate($contract, $cursor);
-
-                        if ($result === 'created') {
-                            $stats['created']++;
-
-                            continue;
-                        }
-
-                        if ($result === 'existing') {
-                            $stats['skipped_existing']++;
-
-                            continue;
-                        }
-
-                        $stats['skipped_not_applicable']++;
+                        continue;
                     }
+
+                    $stats['skipped_not_applicable']++;
                 }
-            });
+            }
+        });
 
         return $stats;
     }

@@ -85,6 +85,18 @@ Definir la arquitectura base del SaaS de administración inmobiliaria y alinear 
   - Asigna `Admin` al primer usuario del sistema.
 - Endpoint técnico actual: `/admin/health` protegido con `role:Admin`.
 
+### Gobernanza Organization: Owner vs Admin
+- Cada `Organization` tiene exactamente un `owner_user_id` cuando ya existen usuarios.
+- Puede haber múltiples usuarios con rol `Admin`.
+- Guardrails:
+  - No se puede quitar el rol `Admin` al último admin de la organización.
+  - El usuario `Owner` debe conservar rol `Admin`.
+  - No se puede remover al `Owner` de su organización sin antes transferir ownership.
+  - La transferencia de ownership solo puede hacerse hacia un usuario de la misma organización.
+- Auditoría:
+  - `organization.owner_transferred`
+  - `organization.admin_role_changed`
+
 ## Configuración por organización
 - Pantalla: `/settings` (auth).
 - Edición: solo rol `Admin` (usuarios sin `Admin` tienen vista de solo lectura).

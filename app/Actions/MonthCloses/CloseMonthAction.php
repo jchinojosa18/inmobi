@@ -3,6 +3,7 @@
 namespace App\Actions\MonthCloses;
 
 use App\Models\MonthClose;
+use App\Support\AuditLogger;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -11,6 +12,7 @@ class CloseMonthAction
 {
     public function __construct(
         private readonly BuildMonthCloseSnapshotAction $snapshotAction,
+        private readonly AuditLogger $auditLogger,
     ) {}
 
     public function execute(int $organizationId, int $userId, string $month, ?string $notes = null): MonthClose
@@ -35,7 +37,7 @@ class CloseMonthAction
 
             $snapshot = $this->snapshotAction->execute($organizationId, $month);
 
-            return MonthClose::query()
+            $monthClose = MonthClose::query()
                 ->withoutOrganizationScope()
                 ->create([
                     'organization_id' => $organizationId,
@@ -45,6 +47,21 @@ class CloseMonthAction
                     'snapshot' => $snapshot,
                     'notes' => $notes,
                 ]);
+
+            $this->auditLogger->log(
+                action: 'month.closed',
+                auditable: $monthClose,
+                summary: "Mes cerrado: {$month}",
+                meta: [
+                    'month' => $month,
+                    'organization_id' => $organizationId,
+                    'notes' => $notes,
+                ],
+                organizationId: $organizationId,
+                actorUserId: $userId,
+            );
+
+            return $monthClose;
         }, 3);
     }
 }

@@ -16,6 +16,12 @@
                 </div>
             @endif
 
+            @if (! empty($throttleMessage))
+                <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/35 dark:text-amber-200" role="alert">
+                    {{ $throttleMessage }}
+                </div>
+            @endif
+
             @if ($errors->any())
                 <div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200" role="alert">
                     <p class="font-medium">Revisa los datos e intenta nuevamente.</p>

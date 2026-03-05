@@ -3,13 +3,18 @@
 namespace App\Actions\MonthCloses;
 
 use App\Models\MonthClose;
+use App\Support\AuditLogger;
 use Illuminate\Support\Facades\DB;
 
 class ReopenMonthAction
 {
+    public function __construct(
+        private readonly AuditLogger $auditLogger,
+    ) {}
+
     public function execute(int $organizationId, string $month): bool
     {
-        return DB::transaction(function () use ($organizationId, $month): bool {
+        $result = DB::transaction(function () use ($organizationId, $month): bool {
             $monthClose = MonthClose::query()
                 ->withoutOrganizationScope()
                 ->where('organization_id', $organizationId)
@@ -25,5 +30,20 @@ class ReopenMonthAction
 
             return true;
         }, 3);
+
+        if ($result) {
+            $this->auditLogger->log(
+                action: 'month.reopened',
+                auditable: null,
+                summary: "Mes reabierto: {$month}",
+                meta: [
+                    'month' => $month,
+                    'organization_id' => $organizationId,
+                ],
+                organizationId: $organizationId,
+            );
+        }
+
+        return $result;
     }
 }

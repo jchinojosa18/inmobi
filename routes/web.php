@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\ContractSettlementPdfController;
 use App\Http\Controllers\PaymentReceiptPdfController;
 use App\Http\Controllers\Reports\CashFlowCsvExportController;
+use App\Http\Controllers\Settings\AuditExportController;
 use App\Http\Controllers\Tenant\UpdateCurrentPlazaController;
 use App\Livewire\Admin\SystemStatus as AdminSystemStatus;
 use App\Livewire\Cobranza\Index as CobranzaIndex;
@@ -20,12 +21,14 @@ use App\Livewire\Payments\Create as PaymentCreate;
 use App\Livewire\Payments\Show as PaymentShow;
 use App\Livewire\Properties\Index as PropertiesIndex;
 use App\Livewire\Reports\CashFlow as CashFlowReport;
+use App\Livewire\Settings\AuditIndex as SettingsAuditIndex;
 use App\Livewire\Settings\Index as SettingsIndex;
 use App\Livewire\Settings\InvitationsIndex as SettingsInvitationsIndex;
 use App\Livewire\Settings\PlazasIndex as SettingsPlazasIndex;
 use App\Livewire\Tenants\Index as TenantsIndex;
 use App\Livewire\Units\Index as UnitsIndex;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -53,9 +56,11 @@ Route::middleware('guest')->group(function (): void {
         $request->session()->regenerate();
 
         return redirect()->intended(route('dashboard'));
-    })->name('login.store');
+    })->middleware(['throttle:login-email', 'throttle:login-ip'])->name('login.store');
 
-    Route::post('/register', [RegisterController::class, 'store'])->name('register.store');
+    Route::post('/register', [RegisterController::class, 'store'])
+        ->middleware(['throttle:register-hourly', 'throttle:register-daily'])
+        ->name('register.store');
 });
 
 Route::post('/logout', function (Request $request) {
@@ -67,9 +72,33 @@ Route::post('/logout', function (Request $request) {
     return redirect()->route('login');
 })->middleware('auth')->name('logout');
 
-Route::get('/dashboard', DashboardIndex::class)->middleware('auth')->name('dashboard');
-
 Route::middleware('auth')->group(function (): void {
+    Route::get('/email/verify', function (Request $request) {
+        if ($request->user()?->hasVerifiedEmail()) {
+            return redirect()->route('dashboard');
+        }
+
+        return view('auth.verify-email');
+    })->name('verification.notice');
+
+    Route::post('/email/verification-notification', function (Request $request) {
+        if (! $request->user()?->hasVerifiedEmail()) {
+            $request->user()?->sendEmailVerificationNotification();
+        }
+
+        return back()->with('status', 'verification-link-sent');
+    })->middleware('throttle:verification-send')->name('verification.send');
+
+    Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+        $request->fulfill();
+
+        return redirect()->route('dashboard')->with('success', 'Correo verificado correctamente.');
+    })->middleware('signed')->name('verification.verify');
+});
+
+Route::get('/dashboard', DashboardIndex::class)->middleware(['auth', 'verified'])->name('dashboard');
+
+Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::post('/tenant/current-plaza', UpdateCurrentPlazaController::class)->name('tenant.current-plaza.update');
 
     Route::get('/properties', PropertiesIndex::class)->name('properties.index');
@@ -88,6 +117,12 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/settings/plazas', SettingsPlazasIndex::class)
         ->middleware('role:Admin')
         ->name('settings.plazas.index');
+    Route::get('/settings/audit', SettingsAuditIndex::class)
+        ->middleware('role:Admin')
+        ->name('settings.audit.index');
+    Route::get('/settings/audit/export.csv', AuditExportController::class)
+        ->middleware('role:Admin')
+        ->name('settings.audit.export');
 
     Route::get('/contracts', ContractsIndex::class)->name('contracts.index');
     Route::get('/contracts/create', ContractForm::class)->name('contracts.create');
@@ -113,10 +148,10 @@ Route::get('/admin/health', function () {
         'status' => 'ok',
         'scope' => 'admin',
     ]);
-})->middleware('role:Admin');
+})->middleware(['auth', 'verified', 'role:Admin']);
 
 Route::get('/admin/system', AdminSystemStatus::class)
-    ->middleware(['auth', 'role:Admin'])
+    ->middleware(['auth', 'verified', 'role:Admin'])
     ->name('admin.system');
 
 Route::view('/demo/document-upload', 'document-upload-demo');

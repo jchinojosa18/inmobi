@@ -82,7 +82,12 @@ Permisos comunes:
 
 11. Backups (cron diario sugerido):
 ```cron
-10 3 * * * /usr/bin/php /home/USUARIO_DOMINIO/public_html/artisan inmo:backup --keep=14 >> /home/USUARIO_DOMINIO/logs/inmo-backup.log 2>&1
+10 3 * * * /usr/bin/php /home/USUARIO_DOMINIO/public_html/artisan inmo:backup >> /home/USUARIO_DOMINIO/logs/inmo-backup.log 2>&1
+```
+
+12. Prune de backups (cron mensual sugerido):
+```cron
+35 3 1 * * /usr/bin/php /home/USUARIO_DOMINIO/public_html/artisan inmo:backup:prune --force --yes >> /home/USUARIO_DOMINIO/logs/inmo-backup-prune.log 2>&1
 ```
 
 12. Queue worker:
@@ -193,6 +198,95 @@ docker compose exec app php artisan inmo:backup --keep=14
 
 ---
 
+## Trusted Proxies (IP real detrás de proxy)
+
+Si el servidor está detrás de un reverse proxy (Nginx, Cloudflare, etc.) la IP de `request()->ip()` puede devolver la IP del proxy en lugar de la del cliente real.
+
+Laravel 11 incluye `TrustProxies` por defecto. Para configurarlo, agrega en `.env`:
+
+```env
+# Confiar en todos los proxies (apto si el servidor está completamente atrás de proxy/CDN)
+TRUST_PROXIES=*
+
+# O listar IPs/rangos específicos de tu proxy
+TRUST_PROXIES=103.21.244.0/22,103.22.200.0/22
+```
+
+Laravel 11 lee `TRUST_PROXIES` automáticamente vía `config/trustedproxy.php`. Si el archivo no existe en tu proyecto, publícalo:
+```bash
+php artisan vendor:publish --tag=laravel-trustedproxies
+```
+
+Encabezados forwarded habituales que se deben confiar:
+- `X-Forwarded-For` (IP real del cliente)
+- `X-Forwarded-Proto` (HTTP/HTTPS)
+- `X-Forwarded-Host`
+
+Verifica la IP real con:
+```bash
+php artisan tinker
+>>> request()->ip();  # Solo válido en request, no en tinker
+```
+
+O agrega un log temporal en un middleware para confirmar en producción.
+
+## Retención de logs de auditoría
+
+Las tablas `auth_events` y `audit_events` crecen con el tiempo. Se recomienda limpiarlas periódicamente.
+
+Comando dedicado:
+```bash
+php artisan inmo:logs:prune
+```
+
+Defaults globales (configurables en `config/audit.php`):
+- `auth_events`: 90 días
+- `audit_events`: 180 días
+
+Opciones útiles:
+```bash
+# Simulación (no borra)
+php artisan inmo:logs:prune --dry-run
+
+# Sobrescribir retenciones para esta ejecución
+php artisan inmo:logs:prune --auth-days=120 --audit-days=365
+
+# Borrar todo lo anterior a una fecha (ignora --*-days)
+php artisan inmo:logs:prune --before=2026-01-01
+```
+
+Cron recomendado mensual:
+```cron
+15 3 1 * * /usr/bin/php /home/USUARIO_DOMINIO/public_html/artisan inmo:logs:prune >> /home/USUARIO_DOMINIO/logs/inmo-prune.log 2>&1
+```
+
+## Retención de backups (backup prune)
+
+Comando dedicado:
+```bash
+php artisan inmo:backup:prune --dry-run
+php artisan inmo:backup:prune --force --yes
+```
+
+Política recomendada:
+- `keep_daily=14` (1 backup por día de los últimos 14 días)
+- `keep_monthly=6` (1 backup por mes de los últimos 6 meses)
+- `min_age_hours=24` (no borrar backups demasiado recientes)
+
+Opciones útiles:
+```bash
+# Simulación
+php artisan inmo:backup:prune --dry-run
+
+# Ruta personalizada
+php artisan inmo:backup:prune --path=storage/app/backups --dry-run
+
+# Ejecutar borrado real
+php artisan inmo:backup:prune --force --yes
+```
+
+---
+
 ## Comandos de referencia rapida
 
 Web Hosting (sin Docker):
@@ -205,7 +299,9 @@ php artisan storage:link
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
-php artisan inmo:backup --keep=14
+php artisan inmo:backup
+php artisan inmo:backup:prune --dry-run
+php artisan inmo:backup:prune --force --yes
 ```
 
 VPS (Docker):
@@ -218,5 +314,7 @@ docker compose exec app php artisan storage:link
 docker compose exec app php artisan config:cache
 docker compose exec app php artisan route:cache
 docker compose exec app php artisan view:cache
-docker compose exec app php artisan inmo:backup --keep=14
+docker compose exec app php artisan inmo:backup
+docker compose exec app php artisan inmo:backup:prune --dry-run
+docker compose exec app php artisan inmo:backup:prune --force --yes
 ```

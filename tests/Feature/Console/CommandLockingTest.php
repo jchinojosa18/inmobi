@@ -97,6 +97,38 @@ class CommandLockingTest extends TestCase
         }
     }
 
+    public function test_logs_prune_command_skips_when_lock_is_taken(): void
+    {
+        $lock = Cache::lock('commands:inmo:logs:prune', 3600);
+        $this->assertTrue($lock->get());
+
+        try {
+            $this->artisan('inmo:logs:prune', [
+                '--dry-run' => true,
+            ])
+                ->assertExitCode(0)
+                ->expectsOutputToContain('skipped (locked)');
+        } finally {
+            $lock->release();
+        }
+    }
+
+    public function test_backup_prune_command_skips_when_lock_is_taken(): void
+    {
+        $lock = Cache::lock('commands:inmo:backup:prune', 1800);
+        $this->assertTrue($lock->get());
+
+        try {
+            $this->artisan('inmo:backup:prune', [
+                '--dry-run' => true,
+            ])
+                ->assertExitCode(0)
+                ->expectsOutputToContain('skipped (locked)');
+        } finally {
+            $lock->release();
+        }
+    }
+
     /**
      * @return array{0: Contract, 1: Contract}
      */

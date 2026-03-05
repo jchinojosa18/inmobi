@@ -123,6 +123,10 @@ class RegisterController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
+        if (! $user->hasVerifiedEmail()) {
+            $user->sendEmailVerificationNotification();
+        }
+
         return redirect()->intended(route('dashboard'));
     }
 }

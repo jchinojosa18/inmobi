@@ -42,6 +42,27 @@ class RunPenaltiesCommandTest extends TestCase
         $this->assertSame(['10.00', '10.10', '10.20'], $penalties->pluck('amount')->all());
     }
 
+    public function test_rate_five_percent_generates_expected_penalties_without_exploding(): void
+    {
+        [$contract] = $this->createOverdueRentContract(0.05);
+
+        $this->artisan('inmo:penalties:run', [
+            '--date' => '2026-03-04',
+            '--from-date' => '2026-03-02',
+        ])->assertExitCode(0);
+
+        $penalties = Charge::query()
+            ->withoutOrganizationScope()
+            ->where('organization_id', $contract->organization_id)
+            ->where('contract_id', $contract->id)
+            ->where('type', Charge::TYPE_PENALTY)
+            ->orderBy('penalty_date')
+            ->pluck('amount')
+            ->all();
+
+        $this->assertSame(['50.00', '52.50', '55.13'], $penalties);
+    }
+
     public function test_partial_payment_reduces_penalty_base_starting_next_day(): void
     {
         [$contract, $rentCharge] = $this->createOverdueRentContract();
@@ -207,7 +228,7 @@ class RunPenaltiesCommandTest extends TestCase
     /**
      * @return array{0: Contract, 1: Charge}
      */
-    private function createOverdueRentContract(): array
+    private function createOverdueRentContract(float $penaltyRateDaily = 0.01): array
     {
         $organization = Organization::factory()->create();
 
@@ -228,7 +249,7 @@ class RunPenaltiesCommandTest extends TestCase
             'organization_id' => $organization->id,
             'unit_id' => $unit->id,
             'tenant_id' => $tenant->id,
-            'penalty_rate_daily' => 0.01,
+            'penalty_rate_daily' => $penaltyRateDaily,
         ]);
 
         $rentCharge = Charge::query()

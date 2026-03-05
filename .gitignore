@@ -24,12 +24,3 @@ yarn-error.log
 
 # Local test artifacts
 storage/framework/testing-*.sqlite
-
-
-# Local test artifacts
-storage/framework/testing-*.sqlite
-
-
-# Local test artifacts
-storage/framework/testing-*.sqlite
-

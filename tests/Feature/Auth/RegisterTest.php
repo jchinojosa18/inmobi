@@ -60,11 +60,17 @@ class RegisterTest extends TestCase
         $this->assertSame(1, $defaultPlazas);
     }
 
-    public function test_user_can_access_dashboard_after_register(): void
+    public function test_user_can_access_dashboard_after_register_once_verified(): void
     {
-        $this->post(route('register.store'), $this->validPayload())
+        $response = $this->post(route('register.store'), $this->validPayload());
+
+        $response
             ->assertRedirect(route('dashboard'));
 
+        $user = User::query()->where('email', 'owner@acme.test')->firstOrFail();
+        $user->markEmailAsVerified();
+
+        $this->actingAs($user->fresh());
         $this->get(route('dashboard'))
             ->assertOk()
             ->assertSeeText('Dashboard');

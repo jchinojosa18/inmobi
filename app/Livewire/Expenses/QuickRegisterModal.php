@@ -6,6 +6,7 @@ use App\Models\Document;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use App\Models\Unit;
+use App\Support\AuditLogger;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -171,6 +172,19 @@ class QuickRegisterModal extends Component
                 ],
             ]);
         }
+
+        app(AuditLogger::class)->log(
+            action: 'expense.created',
+            auditable: $expense,
+            summary: sprintf('Egreso registrado $%s - %s', number_format((float) $expense->amount, 2), $expense->category),
+            meta: [
+                'amount' => (float) $expense->amount,
+                'category' => $expense->category,
+                'spent_at' => $expense->spent_at,
+                'unit_id' => $expense->unit_id,
+                'vendor' => $expense->vendor,
+            ],
+        );
 
         $this->open = false;
         $this->resetForm();

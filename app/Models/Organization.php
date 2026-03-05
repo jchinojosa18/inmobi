@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Role;
 
 class Organization extends Model
 {
@@ -75,6 +76,29 @@ class Organization extends Model
     public function defaultPlaza(): HasOne
     {
         return $this->hasOne(Plaza::class)->where('is_default', true);
+    }
+
+    public function adminsCount(): int
+    {
+        $adminRole = Role::query()
+            ->where('name', 'Admin')
+            ->where('guard_name', 'web')
+            ->first();
+
+        if ($adminRole === null) {
+            return 0;
+        }
+
+        return $this->users()
+            ->whereHas('roles', static function ($query) use ($adminRole): void {
+                $query->where('roles.id', $adminRole->id);
+            })
+            ->count();
+    }
+
+    public function hasAtLeastOneAdmin(): bool
+    {
+        return $this->adminsCount() > 0;
     }
 
     public function ensureDefaultPlaza(?int $createdByUserId = null): Plaza

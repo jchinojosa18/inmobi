@@ -32,7 +32,7 @@ class ContractFactory extends Factory
             'deposit_amount' => fake()->randomFloat(2, 0, 30000),
             'due_day' => fake()->numberBetween(1, 28),
             'grace_days' => 5,
-            'penalty_rate_daily' => fake()->randomFloat(4, 0, 2),
+            'penalty_rate_daily' => fake()->randomFloat(4, 0.0001, 0.05),
             'status' => Contract::STATUS_ACTIVE,
             'active_lock' => 1,
             'starts_at' => fake()->dateTimeBetween('-6 months', 'now')->format('Y-m-d'),

@@ -4,12 +4,17 @@ namespace App\Actions\Contracts;
 
 use App\Models\Charge;
 use App\Models\Contract;
+use App\Support\AuditLogger;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class RegisterDepositHoldAction
 {
+    public function __construct(
+        private readonly AuditLogger $auditLogger,
+    ) {}
+
     public function execute(Contract $contract, float $amount, string $receivedAt, ?string $notes, ?int $userId): Charge
     {
         if ($amount <= 0) {
@@ -20,7 +25,7 @@ class RegisterDepositHoldAction
 
         $receivedDate = CarbonImmutable::parse($receivedAt, 'America/Tijuana')->startOfDay();
 
-        return DB::transaction(function () use ($contract, $amount, $receivedDate, $notes, $userId): Charge {
+        $charge = DB::transaction(function () use ($contract, $amount, $receivedDate, $notes, $userId): Charge {
             $lockedContract = Contract::query()
                 ->withoutOrganizationScope()
                 ->lockForUpdate()
@@ -57,5 +62,20 @@ class RegisterDepositHoldAction
                     ],
                 ]);
         }, 3);
+
+        $this->auditLogger->log(
+            action: 'deposit.hold',
+            auditable: $charge,
+            summary: sprintf('Depósito registrado $%s en contrato #%d', number_format($amount, 2), $contract->id),
+            meta: [
+                'amount' => $amount,
+                'contract_id' => $contract->id,
+                'received_at' => $receivedDate->toDateString(),
+                'notes' => $notes,
+            ],
+            actorUserId: $userId,
+        );
+
+        return $charge;
     }
 }

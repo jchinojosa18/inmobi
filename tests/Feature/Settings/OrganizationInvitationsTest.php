@@ -178,6 +178,72 @@ class OrganizationInvitationsTest extends TestCase
         $this->assertSame((int) $organization->id, (int) $admin->organization_id);
     }
 
+    public function test_owner_cannot_be_demoted_from_admin_role(): void
+    {
+        [$organization, $owner] = $this->createOrganizationAdminPair();
+
+        $secondAdmin = User::factory()->create([
+            'organization_id' => $organization->id,
+        ]);
+        $secondAdmin->assignRole('Admin');
+
+        Livewire::actingAs($owner)
+            ->test(InvitationsIndex::class)
+            ->set("userRoles.{$owner->id}", 'Lectura')
+            ->call('updateUserRole', $owner->id)
+            ->assertHasErrors("userRoles.{$owner->id}");
+
+        $owner->refresh();
+        $this->assertTrue($owner->hasRole('Admin'));
+    }
+
+    public function test_owner_can_transfer_ownership_and_audit_event_is_created(): void
+    {
+        [$organization, $owner] = $this->createOrganizationAdminPair();
+
+        $newOwner = User::factory()->create([
+            'organization_id' => $organization->id,
+            'email' => 'new-owner@test.dev',
+        ]);
+        $newOwner->assignRole('Capturista');
+
+        Livewire::actingAs($owner)
+            ->test(InvitationsIndex::class)
+            ->set('transferOwnerUserId', (string) $newOwner->id)
+            ->call('transferOwnership')
+            ->assertHasNoErrors();
+
+        $organization->refresh();
+        $newOwner->refresh();
+
+        $this->assertSame((int) $newOwner->id, (int) $organization->owner_user_id);
+        $this->assertTrue($newOwner->hasRole('Admin'));
+
+        $this->assertDatabaseHas('audit_events', [
+            'organization_id' => $organization->id,
+            'actor_user_id' => $owner->id,
+            'action' => 'organization.owner_transferred',
+        ]);
+    }
+
+    public function test_owner_transfer_blocks_user_from_other_organization(): void
+    {
+        [$organization, $owner] = $this->createOrganizationAdminPair();
+        $outsideUser = User::factory()->create([
+            'organization_id' => Organization::factory()->create()->id,
+        ]);
+        $outsideUser->assignRole('Admin');
+
+        Livewire::actingAs($owner)
+            ->test(InvitationsIndex::class)
+            ->set('transferOwnerUserId', (string) $outsideUser->id)
+            ->call('transferOwnership')
+            ->assertHasErrors('transferOwnerUserId');
+
+        $organization->refresh();
+        $this->assertSame((int) $owner->id, (int) $organization->owner_user_id);
+    }
+
     private function createOrganizationAdminPair(): array
     {
         Role::findOrCreate('Admin', 'web');
