@@ -12,13 +12,15 @@
             >
                 Volver a propiedades
             </a>
-            <button
-                type="button"
-                wire:click="startCreate"
-                class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-            >
-                Nueva unidad
-            </button>
+            @if ($canManageUnits)
+                <button
+                    type="button"
+                    wire:click="startCreate"
+                    class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+                >
+                    Nueva unidad
+                </button>
+            @endif
         </div>
     </div>
 
@@ -53,7 +55,7 @@
         </div>
     </div>
 
-    @if ($showForm)
+    @if ($showForm && $canManageUnits)
         <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 class="text-lg font-semibold text-slate-900">
                 {{ $editingId ? 'Editar unidad' : 'Crear unidad' }}
@@ -143,13 +145,15 @@
                             <td class="px-4 py-3 text-right font-medium text-slate-700">{{ $unit->active_contracts_count }}</td>
                             <td class="px-4 py-3">
                                 <div class="flex justify-end">
-                                    <button
-                                        type="button"
-                                        wire:click="startEdit({{ $unit->id }})"
-                                        class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                                    >
-                                        Editar
-                                    </button>
+                                    @if ($canManageUnits)
+                                        <button
+                                            type="button"
+                                            wire:click="startEdit({{ $unit->id }})"
+                                            class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                                        >
+                                            Editar
+                                        </button>
+                                    @endif
                                 </div>
                             </td>
                         </tr>

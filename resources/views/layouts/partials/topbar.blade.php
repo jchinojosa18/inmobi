@@ -83,16 +83,18 @@
         @endif
 
         {{-- Nuevo contrato (solo desktop) --}}
-        <a
-            href="{{ route('contracts.create') }}"
-            class="hidden items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2 lg:inline-flex"
-        >
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"
-                 stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
-            </svg>
-            Nuevo contrato
-        </a>
+        @can('contracts.manage')
+            <a
+                href="{{ route('contracts.create') }}"
+                class="hidden items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2 lg:inline-flex"
+            >
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                </svg>
+                Nuevo contrato
+            </a>
+        @endcan
 
         {{-- ─── Menú de usuario ─────────────────────────────────────────── --}}
         <div class="relative" id="user-menu-container">

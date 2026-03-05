@@ -47,6 +47,13 @@ class Index extends Component
         $this->resetPage();
     }
 
+    public function mount(): void
+    {
+        if (! (auth()->user()?->can('properties.view') ?? false)) {
+            abort(403);
+        }
+    }
+
     public function updatingStatusFilter(): void
     {
         $this->resetPage();
@@ -54,12 +61,20 @@ class Index extends Component
 
     public function startCreate(): void
     {
+        if (! (auth()->user()?->can('properties.manage') ?? false)) {
+            abort(403);
+        }
+
         $this->resetForm();
         $this->showForm = true;
     }
 
     public function startEdit(int $propertyId): void
     {
+        if (! (auth()->user()?->can('properties.manage') ?? false)) {
+            abort(403);
+        }
+
         $property = Property::query()->findOrFail($propertyId);
 
         $this->editingId = $property->id;
@@ -79,6 +94,10 @@ class Index extends Component
 
     public function save(): void
     {
+        if (! (auth()->user()?->can('properties.manage') ?? false)) {
+            abort(403);
+        }
+
         $validated = $this->validate($this->rules(), $this->messages());
 
         $payload = [
@@ -125,6 +144,7 @@ class Index extends Component
 
         return view('livewire.properties.index', [
             'properties' => $properties,
+            'canManageProperties' => auth()->user()?->can('properties.manage') ?? false,
         ])->layout('layouts.app', [
             'title' => 'Propiedades',
         ]);

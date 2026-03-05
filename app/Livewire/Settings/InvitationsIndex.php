@@ -38,12 +38,12 @@ class InvitationsIndex extends Component
 
     public function mount(): void
     {
-        $this->assertAdminCanEdit();
+        $this->assertCanManageInvitations();
     }
 
     public function createInvitation(OrganizationInvitationService $invitationService): void
     {
-        $this->assertAdminCanEdit();
+        $this->assertCanManageInvitations();
 
         $validated = $this->validate([
             'email' => ['required', 'email', 'max:255'],
@@ -87,7 +87,7 @@ class InvitationsIndex extends Component
 
     public function revokeInvitation(int $invitationId): void
     {
-        $this->assertAdminCanEdit();
+        $this->assertCanManageInvitations();
 
         $invitation = OrganizationInvitation::query()
             ->where('organization_id', (int) auth()->user()?->organization_id)
@@ -106,7 +106,7 @@ class InvitationsIndex extends Component
 
     public function updateUserRole(int $userId): void
     {
-        $this->assertAdminCanEdit();
+        $this->assertCanManageUsers();
 
         $organization = $this->currentOrganization();
         $targetRole = $this->userRoles[$userId] ?? '';
@@ -158,7 +158,7 @@ class InvitationsIndex extends Component
 
     public function removeUser(int $userId): void
     {
-        $this->assertAdminCanEdit();
+        $this->assertCanManageUsers();
 
         $organization = $this->currentOrganization();
         $organizationId = (int) $organization->id;
@@ -187,7 +187,7 @@ class InvitationsIndex extends Component
 
     public function transferOwnership(): void
     {
-        $this->assertAdminCanEdit();
+        $this->assertCanManageUsers();
 
         $organization = $this->currentOrganization();
         $actor = auth()->user();
@@ -295,9 +295,16 @@ class InvitationsIndex extends Component
         return Organization::query()->findOrFail((int) auth()->user()?->organization_id);
     }
 
-    private function assertAdminCanEdit(): void
+    private function assertCanManageInvitations(): void
     {
-        if (! (auth()->user()?->hasRole('Admin') ?? false)) {
+        if (! (auth()->user()?->can('invitations.manage') ?? false)) {
+            abort(403);
+        }
+    }
+
+    private function assertCanManageUsers(): void
+    {
+        if (! (auth()->user()?->can('users.manage') ?? false)) {
             abort(403);
         }
     }

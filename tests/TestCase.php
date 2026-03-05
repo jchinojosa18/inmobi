@@ -2,15 +2,24 @@
 
 namespace Tests;
 
+use App\Models\User;
+use Database\Seeders\SyncRolesAndPermissionsSeeder;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Foundation\Vite as ViteClass;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Vite;
+use Spatie\Permission\Models\Role;
 
 abstract class TestCase extends BaseTestCase
 {
     protected function setUp(): void
     {
         parent::setUp();
+
+        if (Schema::hasTable('permissions')) {
+            $this->seed(SyncRolesAndPermissionsSeeder::class);
+        }
 
         if (! ViteClass::hasMacro('fake')) {
             ViteClass::macro('fake', function (?string $devServerUrl = null) {
@@ -27,5 +36,24 @@ abstract class TestCase extends BaseTestCase
         }
 
         Vite::fake();
+    }
+
+    /**
+     * @param  Authenticatable  $user
+     */
+    public function actingAs($user, $guard = null)
+    {
+        if ($user instanceof User && ! $user->roles()->exists()) {
+            $adminRole = Role::query()
+                ->where('name', 'Admin')
+                ->where('guard_name', 'web')
+                ->first();
+
+            if ($adminRole !== null) {
+                $user->assignRole($adminRole);
+            }
+        }
+
+        return parent::actingAs($user, $guard);
     }
 }

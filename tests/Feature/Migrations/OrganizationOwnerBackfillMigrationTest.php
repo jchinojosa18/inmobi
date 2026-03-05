@@ -24,22 +24,25 @@ class OrganizationOwnerBackfillMigrationTest extends TestCase
             'organization_id' => $organizationWithAdmin->id,
             'created_at' => now()->subDays(5),
         ]);
+        $legacyUser->syncRoles([]);
 
         $adminUser = User::factory()->create([
             'organization_id' => $organizationWithAdmin->id,
             'created_at' => now()->subDays(2),
         ]);
-        $adminUser->assignRole('Admin');
+        $adminUser->syncRoles(['Admin']);
 
         $oldestUser = User::factory()->create([
             'organization_id' => $organizationWithoutAdmin->id,
             'created_at' => now()->subDays(10),
         ]);
+        $oldestUser->syncRoles([]);
 
-        User::factory()->create([
+        $newestUser = User::factory()->create([
             'organization_id' => $organizationWithoutAdmin->id,
             'created_at' => now()->subDay(),
         ]);
+        $newestUser->syncRoles([]);
 
         DB::table('organizations')->whereIn('id', [$organizationWithAdmin->id, $organizationWithoutAdmin->id])->update([
             'owner_user_id' => null,

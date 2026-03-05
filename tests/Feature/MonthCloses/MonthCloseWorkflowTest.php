@@ -16,6 +16,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -101,7 +102,11 @@ class MonthCloseWorkflowTest extends TestCase
 
     public function test_only_admin_can_reopen_closed_month(): void
     {
+        Permission::findOrCreate('month_close.view', 'web');
+        Role::findOrCreate('MonthViewer', 'web')->syncPermissions(['month_close.view']);
+
         [$user] = $this->createGraph();
+        $user->syncRoles(['MonthViewer']);
 
         MonthClose::query()->withoutOrganizationScope()->create([
             'organization_id' => $user->organization_id,

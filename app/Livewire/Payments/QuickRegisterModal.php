@@ -60,6 +60,10 @@ class QuickRegisterModal extends Component
     #[On('open-quick-payment')]
     public function open(?int $contractId = null): void
     {
+        if (! (auth()->user()?->can('payments.create') ?? false)) {
+            abort(403);
+        }
+
         $this->resetForm();
         $this->open = true;
 
@@ -129,6 +133,10 @@ class QuickRegisterModal extends Component
 
     public function save(RegisterContractPaymentAction $action, OrganizationSettingsService $settingsService): void
     {
+        if (! (auth()->user()?->can('payments.create') ?? false)) {
+            abort(403);
+        }
+
         $this->validate($this->rules(), $this->messages());
 
         /** @var Contract $contract */

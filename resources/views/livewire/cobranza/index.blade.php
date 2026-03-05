@@ -126,13 +126,15 @@
                             </td>
                             <td class="px-4 py-2 text-right">
                                 <div class="inline-flex flex-wrap justify-end gap-2">
-                                    <button
-                                        type="button"
-                                        onclick="Livewire.dispatch('open-quick-payment', { contractId: {{ $row->contract_id }} })"
-                                        class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                                    >
-                                        Registrar pago
-                                    </button>
+                                    @if ($canCreatePayments)
+                                        <button
+                                            type="button"
+                                            onclick="Livewire.dispatch('open-quick-payment', { contractId: {{ $row->contract_id }} })"
+                                            class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                                        >
+                                            Registrar pago
+                                        </button>
+                                    @endif
                                     <button
                                         type="button"
                                         class="rounded-md border border-emerald-300 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50"
@@ -172,4 +174,3 @@
         Mensaje copiado al portapapeles.
     </div>
 </section>
-

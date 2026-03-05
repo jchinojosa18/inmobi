@@ -25,6 +25,10 @@ class Panel extends Component
 
     public function mount(string $documentableType, int $documentableId, string $title = 'Documentos'): void
     {
+        if (! (auth()->user()?->can('documents.view') ?? false)) {
+            abort(403);
+        }
+
         $this->documentableType = $documentableType;
         $this->documentableId = $documentableId;
         $this->title = $title;
@@ -32,6 +36,10 @@ class Panel extends Component
 
     public function upload(): void
     {
+        if (! (auth()->user()?->can('documents.upload') ?? false)) {
+            abort(403);
+        }
+
         $this->validate([
             'document' => ['required', 'file', 'max:5120', 'mimes:jpg,jpeg,png,pdf'],
         ], [
@@ -104,6 +112,7 @@ class Panel extends Component
 
         return view('livewire.documents.panel', [
             'documents' => $documents,
+            'canUploadDocuments' => auth()->user()?->can('documents.upload') ?? false,
         ]);
     }
 

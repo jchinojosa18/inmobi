@@ -44,6 +44,10 @@ class Index extends Component
 
     public function mount(Property $property): void
     {
+        if (! (auth()->user()?->can('units.view') ?? false)) {
+            abort(403);
+        }
+
         $this->property = $property;
 
         if ($this->property->isStandaloneHouse()) {
@@ -63,12 +67,20 @@ class Index extends Component
 
     public function startCreate(): void
     {
+        if (! (auth()->user()?->can('units.manage') ?? false)) {
+            abort(403);
+        }
+
         $this->resetForm();
         $this->showForm = true;
     }
 
     public function startEdit(int $unitId): void
     {
+        if (! (auth()->user()?->can('units.manage') ?? false)) {
+            abort(403);
+        }
+
         $unit = Unit::query()
             ->where('property_id', $this->property->id)
             ->findOrFail($unitId);
@@ -89,6 +101,10 @@ class Index extends Component
 
     public function save(): void
     {
+        if (! (auth()->user()?->can('units.manage') ?? false)) {
+            abort(403);
+        }
+
         $validated = $this->validate($this->rules(), $this->messages());
 
         $payload = [
@@ -147,6 +163,7 @@ class Index extends Component
 
         return view('livewire.units.index', [
             'units' => $units,
+            'canManageUnits' => auth()->user()?->can('units.manage') ?? false,
         ])->layout('layouts.app', [
             'title' => 'Unidades',
         ]);

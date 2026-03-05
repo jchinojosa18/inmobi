@@ -131,7 +131,7 @@ class AuditIndex extends Component
 
     private function assertAdmin(): void
     {
-        if (! (auth()->user()?->hasRole('Admin') ?? false)) {
+        if (! (auth()->user()?->can('audit.view') ?? false)) {
             abort(403);
         }
     }

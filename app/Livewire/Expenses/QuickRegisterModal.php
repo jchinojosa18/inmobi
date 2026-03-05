@@ -45,6 +45,10 @@ class QuickRegisterModal extends Component
     #[On('open-quick-expense')]
     public function open(?int $unitId = null): void
     {
+        if (! (auth()->user()?->can('expenses.create') ?? false)) {
+            abort(403);
+        }
+
         $this->resetForm();
         $this->open = true;
 
@@ -133,6 +137,10 @@ class QuickRegisterModal extends Component
 
     public function save(): void
     {
+        if (! (auth()->user()?->can('expenses.create') ?? false)) {
+            abort(403);
+        }
+
         $this->validate($this->rules(), $this->messages());
 
         try {

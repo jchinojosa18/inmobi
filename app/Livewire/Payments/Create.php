@@ -29,12 +29,20 @@ class Create extends Component
 
     public function mount(Contract $contract): void
     {
+        if (! (auth()->user()?->can('payments.create') ?? false)) {
+            abort(403);
+        }
+
         $this->contract = $contract;
         $this->paid_at = now()->format('Y-m-d\TH:i');
     }
 
     public function save(RegisterContractPaymentAction $action): mixed
     {
+        if (! (auth()->user()?->can('payments.create') ?? false)) {
+            abort(403);
+        }
+
         $validated = $this->validate($this->rules(), $this->messages());
 
         try {

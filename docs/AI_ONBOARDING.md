@@ -9,6 +9,7 @@
 - Hay depósitos/finiquito (`DEPOSIT_HOLD`, `MOVEOUT`, `DEPOSIT_APPLY`) con PDF de finiquito.
 - Hay cierre mensual con snapshot y bloqueo de movimientos en meses cerrados.
 - Hay configuración por organización (`/settings`) para folios, plantillas y categorías de egreso.
+- RBAC granular con Spatie por permisos (`SyncRolesAndPermissionsSeeder`), sin panel cliente para editar permisos.
 - Hay panel operativo (`/dashboard`, `/cobranza`) y panel técnico admin (`/admin/system`).
 - Hay smoke test E2E (`inmo:smoke`) y CI con tests + Pint.
 
@@ -62,6 +63,11 @@ Self-signup (sin seed):
 - Campos: `Empresa`, `Nombre`, `Email`, `Contraseña`, `Confirmar contraseña`
 - Al registrar: crea `Organization`, plaza default `Principal`, usuario owner con rol `Admin`, login automático y redirección a `/dashboard`.
   - Gobernanza: `organizations.owner_user_id` se asigna al usuario recién creado.
+
+Sincronizar matriz de permisos/roles:
+```bash
+./vendor/bin/sail artisan db:seed --class=SyncRolesAndPermissionsSeeder
+```
 
 ## 3) Mapa mental del dominio
 ```text
@@ -148,6 +154,44 @@ Corrección manual mínima por contrato (tasa mal capturada):
 - Bloquea create/update/delete en mes cerrado para `Payment`, `Expense`, `Charge`, `Document` (según fecha asociada).
 - Excepción permitida: `ADJUSTMENT` con `meta.reason` obligatorio.
 - Snapshot al cerrar: [`BuildMonthCloseSnapshotAction`](../app/Actions/MonthCloses/BuildMonthCloseSnapshotAction.php).
+
+### 4.6 RBAC (permisos granulares)
+- Seeder fuente de verdad: [`database/seeders/SyncRolesAndPermissionsSeeder.php`](../database/seeders/SyncRolesAndPermissionsSeeder.php)
+- Mapa UI (agrupación por módulos amigables): [`config/permissions_ui.php`](../config/permissions_ui.php)
+- Roles: `Admin`, `Capturista`, `Lectura`.
+- Owner (`organizations.owner_user_id`) debe conservar rol `Admin`.
+- No hay UI para editar permisos por cliente; todo se sincroniza por código.
+- Vista de solo lectura para Admin: `/settings/roles` -> [`Settings\RolePreview`](../app/Livewire/Settings/RolePreview.php).
+
+Permisos definidos (strings exactos):
+- `dashboard.view`, `cobranza.view`
+- `properties.view`, `properties.manage`
+- `units.view`, `units.manage`
+- `plazas.manage`
+- `tenants.view`, `tenants.manage`
+- `contracts.view`, `contracts.manage`, `contracts.settle`
+- `charges.view`, `charges.manage`
+- `rents.generate`, `penalties.run`
+- `payments.view`, `payments.create`
+- `receipts.send`
+- `expenses.view`, `expenses.create`, `expenses.manage`
+- `expense_categories.manage`
+- `reports.view`, `reports.export`
+- `month_close.view`, `month_close.close`, `month_close.reopen`
+- `documents.view`, `documents.upload`, `documents.delete`
+- `audit.view`, `audit.export`
+- `users.manage`, `invitations.manage`
+- `settings.manage`, `system.view`
+
+Matriz por rol:
+- `Admin`: todos los permisos.
+- `Capturista`: operación diaria (view de catálogos/contratos/cobranza + `payments.create`, `expenses.create`, `documents.upload`, `reports.export`).
+- `Lectura`: solo consulta (`view`) + `reports.export`; sin create/manage/upload.
+
+Dónde se valida:
+- Rutas: middleware `permission:*` en [`routes/web.php`](../routes/web.php).
+- Livewire/actions sensibles: checks `can('...')` + `abort(403)` en componentes (`Payments`, `Expenses`, `MonthCloses`, `Settings`, etc.).
+- UI: `@can(...)` y flags de permisos en sidebar/topbar/botones.
 
 ## 5) Dónde vive la lógica (guía de navegación)
 ### `app/Actions`
@@ -240,7 +284,7 @@ Definidas en [`routes/web.php`](../routes/web.php) (todas auth salvo donde se in
 - `/login` (guest) -> vista [`auth/login.blade.php`](../resources/views/auth/login.blade.php)
 - `/register` (guest) -> vista [`auth/register.blade.php`](../resources/views/auth/register.blade.php), backend [`RegisterController`](../app/Http/Controllers/Auth/RegisterController.php)
 - `/invite/{token}` (guest/auth) -> acepta invitación existente de organización sin crear nueva empresa ([`AcceptOrganizationInvitationController`](../app/Http/Controllers/Auth/AcceptOrganizationInvitationController.php))
-- `/dashboard` -> [`App\Livewire\Dashboard\Index`](../app/Livewire/Dashboard/Index.php)
+- `/dashboard` (`permission:dashboard.view`) -> [`App\Livewire\Dashboard\Index`](../app/Livewire/Dashboard/Index.php)
 - `/properties` -> [`Properties\Index`](../app/Livewire/Properties/Index.php)
 - `/properties/{property}/units` -> [`Units\Index`](../app/Livewire/Units/Index.php) (redirige a casa si standalone)
 - `/houses/create` -> [`Houses\Create`](../app/Livewire/Houses/Create.php)
@@ -255,11 +299,12 @@ Definidas en [`routes/web.php`](../routes/web.php) (todas auth salvo donde se in
 - `/expenses` -> [`Expenses\Index`](../app/Livewire/Expenses/Index.php)
 - `/reports/flow` -> [`Reports\CashFlow`](../app/Livewire/Reports/CashFlow.php)
 - `/month-closes` -> [`MonthCloses\Index`](../app/Livewire/MonthCloses/Index.php)
-- `/settings` -> [`Settings\Index`](../app/Livewire/Settings/Index.php)
-- `/settings/invitations` (Admin) -> [`Settings\InvitationsIndex`](../app/Livewire/Settings/InvitationsIndex.php)
+- `/settings` (`permission:settings.manage`) -> [`Settings\Index`](../app/Livewire/Settings/Index.php)
+- `/settings/roles` (`permission:settings.manage`) -> [`Settings\RolePreview`](../app/Livewire/Settings/RolePreview.php) (preview read-only)
+- `/settings/invitations` (`permission:invitations.manage`) -> [`Settings\InvitationsIndex`](../app/Livewire/Settings/InvitationsIndex.php)
   - Incluye panel de gobernanza Owner/Admin y transferencia de ownership (solo owner actual).
-- `/admin/system` (Admin) -> [`Admin\SystemStatus`](../app/Livewire/Admin/SystemStatus.php)
-- `/admin/health` (role:Admin) JSON health simple
+- `/admin/system` (`permission:system.view`) -> [`Admin\SystemStatus`](../app/Livewire/Admin/SystemStatus.php)
+- `/admin/health` (`permission:system.view`) JSON health simple
 - `/receipts/{paymentId}/shared.pdf` firmado (sin auth, con `signed`)
 
 Navegación principal está en [`resources/views/layouts/app.blade.php`](../resources/views/layouts/app.blade.php).
@@ -276,7 +321,8 @@ Navegación principal está en [`resources/views/layouts/app.blade.php`](../reso
   - `Ir a Cobranza` -> `/cobranza`
   - `Ir a Contratos` -> `/contracts`
   - `Reporte de flujo` -> `/reports/flow`
-  - `Generar rentas del mes` (solo Admin, con confirmación en palette)
+- `Generar rentas del mes` (solo Admin, con confirmación en palette)
+- Visibilidad y ejecución de acciones está condicionada por permisos (`required_permission`).
 - Cómo agregar nuevas acciones:
   - registrar entrada en `buildActions()` (`id`, `label`, `keywords`, `icon`, `kind`, `payload`)
   - si requiere seguridad, usar flags (`requires_admin`) y validar en `executeAction()`

@@ -17,7 +17,9 @@ class OrganizationSettingsTest extends TestCase
 
     public function test_authenticated_user_can_view_settings_page(): void
     {
+        Role::findOrCreate('Admin', 'web');
         $user = User::factory()->create();
+        $user->syncRoles(['Admin']);
 
         $response = $this->actingAs($user)->get(route('settings.index'));
 
@@ -25,20 +27,15 @@ class OrganizationSettingsTest extends TestCase
         $response->assertSeeText('Configuración');
     }
 
-    public function test_non_admin_cannot_edit_settings(): void
+    public function test_user_without_settings_permission_cannot_access_settings(): void
     {
+        Role::findOrCreate('Lectura', 'web');
         $user = User::factory()->create();
+        $user->syncRoles(['Lectura']);
 
         $this->actingAs($user);
 
-        Livewire::test(SettingsIndex::class)
-            ->call('saveSettings')
-            ->assertForbidden();
-
-        Livewire::test(SettingsIndex::class)
-            ->set('newExpenseCategory', 'Mantenimiento')
-            ->call('createExpenseCategory')
-            ->assertForbidden();
+        $this->get(route('settings.index'))->assertForbidden();
     }
 
     public function test_admin_can_update_settings_and_expense_categories_scoped_by_organization(): void

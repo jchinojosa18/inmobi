@@ -6,11 +6,30 @@
         </div>
     </div>
 
-    @unless ($isAdmin)
+    @unless ($canManageSettings)
         <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Solo usuarios con rol Admin pueden editar esta sección.
+            No tienes permisos para editar esta sección.
         </div>
     @endunless
+
+    <div class="grid gap-3 md:grid-cols-3">
+        <a href="{{ route('settings.roles') }}" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow">
+            <p class="text-sm font-semibold text-slate-900">Roles y permisos</p>
+            <p class="mt-1 text-xs text-slate-600">Vista de solo lectura por rol (Admin, Capturista y Lectura).</p>
+        </a>
+        @can('invitations.manage')
+            <a href="{{ route('settings.invitations.index') }}" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow">
+                <p class="text-sm font-semibold text-slate-900">Invitaciones</p>
+                <p class="mt-1 text-xs text-slate-600">Administra invitaciones para sumar usuarios a tu organización.</p>
+            </a>
+        @endcan
+        @can('plazas.manage')
+            <a href="{{ route('settings.plazas.index') }}" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow">
+                <p class="text-sm font-semibold text-slate-900">Plazas</p>
+                <p class="mt-1 text-xs text-slate-600">Gestiona plazas y configuración multi-ciudad.</p>
+            </a>
+        @endcan
+    </div>
 
     <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 class="text-lg font-semibold text-slate-900">Folios de recibo</h2>
@@ -19,7 +38,7 @@
         <form wire:submit="saveSettings" class="mt-4 grid gap-4 md:grid-cols-3">
             <div>
                 <label class="mb-1 block text-sm font-medium text-slate-700">Modo</label>
-                <select wire:model="receiptFolioMode" @disabled(! $isAdmin) class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100">
+                <select wire:model="receiptFolioMode" @disabled(! $canManageSettings) class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100">
                     <option value="annual">Anual (reinicia por año)</option>
                     <option value="continuous">Continuo</option>
                 </select>
@@ -28,25 +47,25 @@
 
             <div>
                 <label class="mb-1 block text-sm font-medium text-slate-700">Prefijo (opcional)</label>
-                <input type="text" wire:model.blur="receiptFolioPrefix" @disabled(! $isAdmin) placeholder="REC" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100">
+                <input type="text" wire:model.blur="receiptFolioPrefix" @disabled(! $canManageSettings) placeholder="REC" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100">
                 @error('receiptFolioPrefix') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
             </div>
 
             <div>
                 <label class="mb-1 block text-sm font-medium text-slate-700">Padding</label>
-                <input type="number" min="3" max="10" wire:model.blur="receiptFolioPadding" @disabled(! $isAdmin) class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100">
+                <input type="number" min="3" max="10" wire:model.blur="receiptFolioPadding" @disabled(! $canManageSettings) class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100">
                 @error('receiptFolioPadding') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
             </div>
 
             <div class="md:col-span-3">
                 <label class="mb-1 block text-sm font-medium text-slate-700">Plantilla WhatsApp</label>
-                <textarea wire:model.blur="whatsAppTemplate" rows="4" @disabled(! $isAdmin) class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100"></textarea>
+                <textarea wire:model.blur="whatsAppTemplate" rows="4" @disabled(! $canManageSettings) class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100"></textarea>
                 @error('whatsAppTemplate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
             </div>
 
             <div class="md:col-span-3">
                 <label class="mb-1 block text-sm font-medium text-slate-700">Plantilla email</label>
-                <textarea wire:model.blur="emailTemplate" rows="6" @disabled(! $isAdmin) class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100"></textarea>
+                <textarea wire:model.blur="emailTemplate" rows="6" @disabled(! $canManageSettings) class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100"></textarea>
                 @error('emailTemplate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
             </div>
 
@@ -55,7 +74,7 @@
                 {{ collect($templateVariables)->map(fn ($var) => '{'.$var.'}')->join(', ') }}
             </div>
 
-            @if ($isAdmin)
+            @if ($canManageSettings)
                 <div class="md:col-span-3 flex justify-end">
                     <button type="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
                         Guardar configuración
@@ -84,7 +103,7 @@
     <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-3">
             <h2 class="text-lg font-semibold text-slate-900">Categorías de egresos</h2>
-            @if ($isAdmin)
+            @if ($canManageExpenseCategories)
                 <form wire:submit="createExpenseCategory" class="flex flex-wrap items-center gap-2">
                     <input
                         type="text"
@@ -120,7 +139,7 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-right">
-                                @if ($isAdmin)
+                                @if ($canManageExpenseCategories)
                                     <div class="inline-flex items-center gap-2">
                                         @if ($editingExpenseCategoryId === $category->id)
                                             <button type="button" wire:click="updateExpenseCategory" class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">

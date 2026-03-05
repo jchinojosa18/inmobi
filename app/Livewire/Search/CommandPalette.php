@@ -205,10 +205,21 @@ class CommandPalette extends Component
         $term = '%'.$q.'%';
         $results = [];
 
-        $this->searchContracts($term, $q, $results);
-        $this->searchTenants($term, $results);
-        $this->searchUnits($term, $results);
-        $this->searchProperties($term, $results);
+        if (auth()->user()?->can('contracts.view') ?? false) {
+            $this->searchContracts($term, $q, $results);
+        }
+
+        if (auth()->user()?->can('tenants.view') ?? false) {
+            $this->searchTenants($term, $results);
+        }
+
+        if (auth()->user()?->can('units.view') ?? false) {
+            $this->searchUnits($term, $results);
+        }
+
+        if (auth()->user()?->can('properties.view') ?? false) {
+            $this->searchProperties($term, $results);
+        }
 
         return $results;
     }
@@ -226,6 +237,7 @@ class CommandPalette extends Component
                 'icon' => 'currency-dollar',
                 'kind' => 'modal',
                 'payload' => ['event' => 'open-quick-payment'],
+                'required_permission' => 'payments.create',
                 'featured' => true,
                 'priority' => 10,
                 'requires_confirmation' => false,
@@ -238,6 +250,7 @@ class CommandPalette extends Component
                 'icon' => 'receipt-percent',
                 'kind' => 'modal',
                 'payload' => ['event' => 'open-quick-expense'],
+                'required_permission' => 'expenses.create',
                 'featured' => true,
                 'priority' => 20,
                 'requires_confirmation' => false,
@@ -250,6 +263,7 @@ class CommandPalette extends Component
                 'icon' => 'document-plus',
                 'kind' => 'route',
                 'payload' => ['href' => route('contracts.create')],
+                'required_permission' => 'contracts.manage',
                 'featured' => true,
                 'priority' => 30,
                 'requires_confirmation' => false,
@@ -262,6 +276,7 @@ class CommandPalette extends Component
                 'icon' => 'home',
                 'kind' => 'route',
                 'payload' => ['href' => route('houses.create')],
+                'required_permission' => 'properties.manage',
                 'featured' => true,
                 'priority' => 40,
                 'requires_confirmation' => false,
@@ -274,6 +289,7 @@ class CommandPalette extends Component
                 'icon' => 'banknotes',
                 'kind' => 'route',
                 'payload' => ['href' => route('cobranza.index')],
+                'required_permission' => 'cobranza.view',
                 'featured' => true,
                 'priority' => 50,
                 'requires_confirmation' => false,
@@ -286,6 +302,7 @@ class CommandPalette extends Component
                 'icon' => 'document-text',
                 'kind' => 'route',
                 'payload' => ['href' => route('contracts.index')],
+                'required_permission' => 'contracts.view',
                 'featured' => false,
                 'priority' => 60,
                 'requires_confirmation' => false,
@@ -298,6 +315,7 @@ class CommandPalette extends Component
                 'icon' => 'chart-bar',
                 'kind' => 'route',
                 'payload' => ['href' => route('reports.flow')],
+                'required_permission' => 'reports.view',
                 'featured' => false,
                 'priority' => 70,
                 'requires_confirmation' => false,
@@ -310,9 +328,9 @@ class CommandPalette extends Component
                 'icon' => 'calendar-days',
                 'kind' => 'command',
                 'payload' => [],
+                'required_permission' => 'rents.generate',
                 'featured' => false,
                 'priority' => 80,
-                'requires_admin' => true,
                 'requires_confirmation' => true,
             ],
         ];
@@ -320,11 +338,12 @@ class CommandPalette extends Component
 
     private function isActionVisible(array $action): bool
     {
-        if (! ($action['requires_admin'] ?? false)) {
-            return true;
+        $requiredPermission = $action['required_permission'] ?? null;
+        if (is_string($requiredPermission) && $requiredPermission !== '') {
+            return (bool) auth()->user()?->can($requiredPermission);
         }
 
-        return (bool) auth()->user()?->hasRole('Admin');
+        return true;
     }
 
     private function findAction(string $actionId): ?array
@@ -336,6 +355,10 @@ class CommandPalette extends Component
 
     private function runGenerateCurrentMonthRent(GenerateMonthlyRentChargesAction $action): void
     {
+        if (! (auth()->user()?->can('rents.generate') ?? false)) {
+            abort(403);
+        }
+
         $organizationId = (int) auth()->user()?->organization_id;
         if ($organizationId <= 0) {
             return;

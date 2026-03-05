@@ -5,15 +5,21 @@
             <p class="mt-1 text-sm text-slate-600">Centro de control operativo para administración diaria.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-            <button type="button" onclick="Livewire.dispatch('open-quick-payment')" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
-                Registrar pago
-            </button>
-            <button type="button" onclick="Livewire.dispatch('open-quick-expense')" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                Registrar egreso
-            </button>
-            <a href="{{ route('contracts.create') }}" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                Nuevo contrato
-            </a>
+            @if ($canCreatePayments)
+                <button type="button" onclick="Livewire.dispatch('open-quick-payment')" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
+                    Registrar pago
+                </button>
+            @endif
+            @if ($canCreateExpenses)
+                <button type="button" onclick="Livewire.dispatch('open-quick-expense')" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                    Registrar egreso
+                </button>
+            @endif
+            @if ($canManageContracts)
+                <a href="{{ route('contracts.create') }}" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                    Nuevo contrato
+                </a>
+            @endif
         </div>
     </div>
 
@@ -224,9 +230,11 @@
                                 <td class="px-4 py-2 text-right font-medium text-amber-700">{{ (int) $row->overdue_days }}</td>
                                 <td class="px-4 py-2 text-right font-medium text-slate-900">${{ number_format((float) $row->pending_balance, 2) }}</td>
                                 <td class="px-4 py-2 text-right">
-                                    <button type="button" onclick="Livewire.dispatch('open-quick-payment', { contractId: {{ $row->contract_id }} })" class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
-                                        Registrar pago
-                                    </button>
+                                    @if ($canCreatePayments)
+                                        <button type="button" onclick="Livewire.dispatch('open-quick-payment', { contractId: {{ $row->contract_id }} })" class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
+                                            Registrar pago
+                                        </button>
+                                    @endif
                                 </td>
                             </tr>
                         @empty
@@ -265,9 +273,11 @@
                                 </td>
                                 <td class="px-4 py-2 text-right font-medium text-slate-900">${{ number_format((float) $row->pending_balance, 2) }}</td>
                                 <td class="px-4 py-2 text-right">
-                                    <button type="button" onclick="Livewire.dispatch('open-quick-payment', { contractId: {{ $row->contract_id }} })" class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
-                                        Registrar pago
-                                    </button>
+                                    @if ($canCreatePayments)
+                                        <button type="button" onclick="Livewire.dispatch('open-quick-payment', { contractId: {{ $row->contract_id }} })" class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
+                                            Registrar pago
+                                        </button>
+                                    @endif
                                 </td>
                             </tr>
                         @empty

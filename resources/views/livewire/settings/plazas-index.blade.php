@@ -4,7 +4,7 @@
             <h1 class="text-2xl font-semibold tracking-tight">Plazas</h1>
             <p class="mt-1 text-sm text-slate-600">Administración de plazas por organización (multi-ciudad).</p>
         </div>
-        @if ($isAdmin)
+        @if ($canManagePlazas)
             <button
                 type="button"
                 wire:click="startCreate"
@@ -27,7 +27,7 @@
         </div>
     @enderror
 
-    @if ($showForm && $isAdmin)
+    @if ($showForm && $canManagePlazas)
         <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 class="text-lg font-semibold text-slate-900">
                 {{ $editingId ? 'Editar plaza' : 'Nueva plaza' }}
@@ -98,7 +98,7 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-right">
-                                @if ($isAdmin)
+                                @if ($canManagePlazas)
                                     <div class="inline-flex items-center gap-2">
                                         @if (! $plaza->is_default)
                                             <button type="button" wire:click="markAsDefault({{ $plaza->id }})" class="rounded-md border border-emerald-300 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50">
@@ -127,4 +127,3 @@
         </div>
     </div>
 </section>
-

@@ -14,7 +14,7 @@ class SystemStatus extends Component
 {
     public function mount(): void
     {
-        if (! auth()->user()?->hasRole('Admin')) {
+        if (! (auth()->user()?->can('system.view') ?? false)) {
             abort(403);
         }
     }

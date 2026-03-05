@@ -27,6 +27,10 @@ class DepositHoldForm extends Component
 
     public function registerDeposit(RegisterDepositHoldAction $action): void
     {
+        if (! (auth()->user()?->can('charges.manage') ?? false)) {
+            abort(403);
+        }
+
         $validated = $this->validate([
             'deposit_received_at' => ['required', 'date'],
             'deposit_amount' => ['required', 'numeric', 'min:0.01'],

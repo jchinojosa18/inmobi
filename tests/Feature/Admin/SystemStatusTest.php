@@ -29,8 +29,10 @@ class SystemStatusTest extends TestCase
     public function test_non_admin_cannot_access_system_status_page(): void
     {
         Role::findOrCreate('Admin', 'web');
+        Role::findOrCreate('Lectura', 'web');
 
         $user = User::factory()->create();
+        $user->syncRoles(['Lectura']);
 
         $response = $this->actingAs($user)->get(route('admin.system'));
 

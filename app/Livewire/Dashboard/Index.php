@@ -33,6 +33,13 @@ class Index extends Component
     #[On('expense-created')]
     public function onExpenseCreated(): void {}
 
+    public function mount(): void
+    {
+        if (! (auth()->user()?->can('dashboard.view') ?? false)) {
+            abort(403);
+        }
+    }
+
     public function dismissOnboarding(OrganizationSettingsService $settingsService): void
     {
         $organizationId = (int) auth()->user()?->organization_id;
@@ -51,6 +58,10 @@ class Index extends Component
 
     public function generateCurrentMonthRent(GenerateMonthlyRentChargesAction $action): void
     {
+        if (! (auth()->user()?->can('rents.generate') ?? false)) {
+            abort(403);
+        }
+
         $organizationId = (int) auth()->user()?->organization_id;
 
         if ($organizationId <= 0) {
@@ -157,6 +168,10 @@ class Index extends Component
             'graceContracts' => $graceContracts,
             'recentPayments' => $recentPayments,
             'onboardingChecklist' => $onboardingChecklist,
+            'canCreatePayments' => auth()->user()?->can('payments.create') ?? false,
+            'canCreateExpenses' => auth()->user()?->can('expenses.create') ?? false,
+            'canManageContracts' => auth()->user()?->can('contracts.manage') ?? false,
+            'canGenerateRents' => auth()->user()?->can('rents.generate') ?? false,
         ])->layout('layouts.app', [
             'title' => 'Dashboard operativo',
         ]);
@@ -275,6 +290,50 @@ class Index extends Component
                 ],
             ],
         ];
+
+        $can = fn (string $permission): bool => auth()->user()?->can($permission) ?? false;
+
+        $criticalSteps = collect($criticalSteps)
+            ->map(function (array $step) use ($can): array {
+                $step['ctas'] = collect($step['ctas'])
+                    ->filter(function (array $cta) use ($can): bool {
+                        return match ((string) ($cta['type'] ?? '')) {
+                            'route' => match ((string) ($cta['route'] ?? '')) {
+                                'properties.index' => $can('properties.view'),
+                                'houses.create' => $can('properties.manage'),
+                                'tenants.index' => $can('tenants.view'),
+                                'contracts.create' => $can('contracts.manage'),
+                                default => true,
+                            },
+                            'action_generate_rent' => $can('rents.generate'),
+                            default => true,
+                        };
+                    })
+                    ->values()
+                    ->all();
+
+                return $step;
+            })
+            ->values()
+            ->all();
+
+        $recommendedSteps = collect($recommendedSteps)
+            ->map(function (array $step) use ($can): array {
+                $step['ctas'] = collect($step['ctas'])
+                    ->filter(function (array $cta) use ($can): bool {
+                        return match ((string) ($cta['type'] ?? '')) {
+                            'action_open_quick_payment' => $can('payments.create'),
+                            'action_open_quick_expense' => $can('expenses.create'),
+                            default => true,
+                        };
+                    })
+                    ->values()
+                    ->all();
+
+                return $step;
+            })
+            ->values()
+            ->all();
 
         $criticalCompleted = collect($criticalSteps)
             ->filter(fn (array $step): bool => (bool) $step['complete'])

@@ -24,3 +24,4 @@ yarn-error.log
 
 # Local test artifacts
 storage/framework/testing-*.sqlite
+storage/framework/testing-backup-prune-*/

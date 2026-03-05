@@ -17,11 +17,19 @@ class Index extends Component
 
     public function mount(): void
     {
+        if (! (auth()->user()?->can('month_close.view') ?? false)) {
+            abort(403);
+        }
+
         $this->monthToClose = now('America/Tijuana')->format('Y-m');
     }
 
     public function closeMonth(CloseMonthAction $action, ?string $month = null): void
     {
+        if (! (auth()->user()?->can('month_close.close') ?? false)) {
+            abort(403);
+        }
+
         $selectedMonth = $month ?? $this->monthToClose;
 
         $this->validate([
@@ -51,7 +59,7 @@ class Index extends Component
 
     public function reopenMonth(ReopenMonthAction $action, string $month): void
     {
-        if (! auth()->user()?->hasRole('Admin')) {
+        if (! (auth()->user()?->can('month_close.reopen') ?? false)) {
             abort(403);
         }
 
@@ -107,7 +115,8 @@ class Index extends Component
 
         return view('livewire.month-closes.index', [
             'rows' => $rows,
-            'isAdmin' => auth()->user()?->hasRole('Admin') ?? false,
+            'canCloseMonth' => auth()->user()?->can('month_close.close') ?? false,
+            'canReopenMonth' => auth()->user()?->can('month_close.reopen') ?? false,
         ])->layout('layouts.app', ['title' => 'Cierres mensuales']);
     }
 }

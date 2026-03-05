@@ -12,7 +12,7 @@ class AuditExportController extends Controller
 {
     public function __invoke(Request $request): StreamedResponse
     {
-        abort_unless(auth()->user()?->hasRole('Admin') ?? false, 403);
+        abort_unless($request->user()?->can('audit.export') ?? false, 403);
 
         $organizationId = (int) auth()->user()?->organization_id;
 

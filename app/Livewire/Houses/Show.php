@@ -15,6 +15,10 @@ class Show extends Component
 
     public function mount(Property $property): void
     {
+        if (! (auth()->user()?->can('properties.view') ?? false)) {
+            abort(403);
+        }
+
         $property->loadMissing('units');
 
         if (! $property->isStandaloneHouse()) {
@@ -36,6 +40,7 @@ class Show extends Component
         return view('livewire.houses.show', [
             'property' => $this->property,
             'unit' => $this->unit,
+            'canManageContracts' => auth()->user()?->can('contracts.manage') ?? false,
         ])->layout('layouts.app', [
             'title' => 'Detalle de casa',
         ]);

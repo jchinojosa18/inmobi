@@ -42,6 +42,10 @@ class Form extends Component
 
     public function mount(?Contract $contract = null): void
     {
+        if (! (auth()->user()?->can('contracts.manage') ?? false)) {
+            abort(403);
+        }
+
         if (! ($contract instanceof Contract) || ! $contract->exists) {
             $this->starts_at = now()->toDateString();
 
@@ -75,6 +79,10 @@ class Form extends Component
 
     public function save(): mixed
     {
+        if (! (auth()->user()?->can('contracts.manage') ?? false)) {
+            abort(403);
+        }
+
         $validated = $this->validate($this->rules(), $this->messages());
 
         $normalizedPenaltyRate = $this->normalizePenaltyRateDaily((float) $validated['penalty_rate_daily']);

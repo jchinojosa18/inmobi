@@ -46,27 +46,33 @@
             <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-700">Subir documento</h3>
             <p class="mt-1 text-xs text-slate-500">Permitidos: JPG, PNG, PDF. Maximo 5 MB.</p>
 
-            <form wire:submit="upload" class="mt-3 space-y-3" enctype="multipart/form-data">
-                <input
-                    type="file"
-                    wire:model="document"
-                    accept=".jpg,.jpeg,.png,.pdf"
-                    class="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
-                >
-                @error('document')
-                    <p class="text-sm text-red-600">{{ $message }}</p>
-                @enderror
+            @if ($canUploadDocuments)
+                <form wire:submit="upload" class="mt-3 space-y-3" enctype="multipart/form-data">
+                    <input
+                        type="file"
+                        wire:model="document"
+                        accept=".jpg,.jpeg,.png,.pdf"
+                        class="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
+                    >
+                    @error('document')
+                        <p class="text-sm text-red-600">{{ $message }}</p>
+                    @enderror
 
-                <button
-                    type="submit"
-                    wire:loading.attr="disabled"
-                    class="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
-                >
-                    Subir documento
-                </button>
+                    <button
+                        type="submit"
+                        wire:loading.attr="disabled"
+                        class="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
+                    >
+                        Subir documento
+                    </button>
 
-                <p wire:loading wire:target="document,upload" class="text-xs text-slate-500">Subiendo archivo...</p>
-            </form>
+                    <p wire:loading wire:target="document,upload" class="text-xs text-slate-500">Subiendo archivo...</p>
+                </form>
+            @else
+                <p class="mt-3 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">
+                    No tienes permiso para subir documentos.
+                </p>
+            @endif
         </div>
     </div>
 </div>

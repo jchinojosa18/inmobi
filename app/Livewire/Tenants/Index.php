@@ -43,6 +43,13 @@ class Index extends Component
         $this->resetPage();
     }
 
+    public function mount(): void
+    {
+        if (! (auth()->user()?->can('tenants.view') ?? false)) {
+            abort(403);
+        }
+    }
+
     public function updatingStatusFilter(): void
     {
         $this->resetPage();
@@ -50,12 +57,20 @@ class Index extends Component
 
     public function startCreate(): void
     {
+        if (! (auth()->user()?->can('tenants.manage') ?? false)) {
+            abort(403);
+        }
+
         $this->resetForm();
         $this->showForm = true;
     }
 
     public function startEdit(int $tenantId): void
     {
+        if (! (auth()->user()?->can('tenants.manage') ?? false)) {
+            abort(403);
+        }
+
         $tenant = Tenant::query()->findOrFail($tenantId);
 
         $this->editingId = $tenant->id;
@@ -74,6 +89,10 @@ class Index extends Component
 
     public function save(): void
     {
+        if (! (auth()->user()?->can('tenants.manage') ?? false)) {
+            abort(403);
+        }
+
         $validated = $this->validate($this->rules(), $this->messages());
 
         $payload = [
@@ -116,6 +135,7 @@ class Index extends Component
 
         return view('livewire.tenants.index', [
             'tenants' => $tenants,
+            'canManageTenants' => auth()->user()?->can('tenants.manage') ?? false,
         ])->layout('layouts.app', [
             'title' => 'Inquilinos',
         ]);

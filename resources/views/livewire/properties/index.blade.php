@@ -4,21 +4,23 @@
             <h1 class="text-2xl font-semibold tracking-tight">Propiedades</h1>
             <p class="mt-1 text-sm text-slate-600">Catálogo base de inmuebles por organización.</p>
         </div>
-        <div class="flex flex-wrap gap-2">
-            <button
-                type="button"
-                wire:click="startCreate"
-                class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-            >
-                Nuevo edificio/propiedad
-            </button>
-            <a
-                href="{{ route('houses.create') }}"
-                class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
-                Nueva casa
-            </a>
-        </div>
+        @if ($canManageProperties)
+            <div class="flex flex-wrap gap-2">
+                <button
+                    type="button"
+                    wire:click="startCreate"
+                    class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+                >
+                    Nuevo edificio/propiedad
+                </button>
+                <a
+                    href="{{ route('houses.create') }}"
+                    class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                    Nueva casa
+                </a>
+            </div>
+        @endif
     </div>
 
     <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -52,7 +54,7 @@
         </div>
     </div>
 
-    @if ($showForm)
+    @if ($showForm && $canManageProperties)
         <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 class="text-lg font-semibold text-slate-900">
                 {{ $editingId ? 'Editar propiedad' : 'Crear propiedad' }}
@@ -160,13 +162,15 @@
                                             Unidades
                                         </a>
                                     @endif
-                                    <button
-                                        type="button"
-                                        wire:click="startEdit({{ $property->id }})"
-                                        class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                                    >
-                                        Editar
-                                    </button>
+                                    @if ($canManageProperties)
+                                        <button
+                                            type="button"
+                                            wire:click="startEdit({{ $property->id }})"
+                                            class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                                        >
+                                            Editar
+                                        </button>
+                                    @endif
                                 </div>
                             </td>
                         </tr>

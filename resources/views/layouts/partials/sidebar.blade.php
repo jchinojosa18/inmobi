@@ -38,6 +38,7 @@
         </p>
         <ul class="space-y-0.5">
             <li>
+                @can('dashboard.view')
                 <a href="{{ route('dashboard') }}" class="{{ $lc('dashboard') }}">
                     <svg class="{{ $ic('dashboard') }}" viewBox="0 0 24 24" fill="none"
                          stroke="currentColor" stroke-width="1.8" aria-hidden="true">
@@ -49,8 +50,10 @@
                     </svg>
                     Dashboard
                 </a>
+                @endcan
             </li>
             <li>
+                @can('cobranza.view')
                 <a href="{{ route('cobranza.index') }}" class="{{ $lc('cobranza.index') }}">
                     <svg class="{{ $ic('cobranza.index') }}" viewBox="0 0 24 24" fill="none"
                          stroke="currentColor" stroke-width="1.8" aria-hidden="true">
@@ -62,8 +65,10 @@
                     </svg>
                     Cobranza
                 </a>
+                @endcan
             </li>
             <li>
+                @can('contracts.view')
                 <a href="{{ route('contracts.index') }}" class="{{ $lc('contracts.*') }}">
                     <svg class="{{ $ic('contracts.*') }}" viewBox="0 0 24 24" fill="none"
                          stroke="currentColor" stroke-width="1.8" aria-hidden="true">
@@ -76,6 +81,7 @@
                     </svg>
                     Contratos
                 </a>
+                @endcan
             </li>
         </ul>
     </div>
@@ -87,6 +93,7 @@
         </p>
         <ul class="space-y-0.5">
             <li>
+                @can('properties.view')
                 <a href="{{ route('properties.index') }}"
                    class="{{ $lc('properties.*', 'houses.*') }}">
                     <svg class="{{ $ic('properties.*', 'houses.*') }}" viewBox="0 0 24 24"
@@ -99,8 +106,10 @@
                     </svg>
                     Propiedades
                 </a>
+                @endcan
             </li>
             <li>
+                @can('tenants.view')
                 <a href="{{ route('tenants.index') }}" class="{{ $lc('tenants.index') }}">
                     <svg class="{{ $ic('tenants.index') }}" viewBox="0 0 24 24" fill="none"
                          stroke="currentColor" stroke-width="1.8" aria-hidden="true">
@@ -115,6 +124,7 @@
                     </svg>
                     Inquilinos
                 </a>
+                @endcan
             </li>
         </ul>
     </div>
@@ -126,6 +136,7 @@
         </p>
         <ul class="space-y-0.5">
             <li>
+                @can('expenses.view')
                 <a href="{{ route('expenses.index') }}" class="{{ $lc('expenses.index') }}">
                     <svg class="{{ $ic('expenses.index') }}" viewBox="0 0 24 24" fill="none"
                          stroke="currentColor" stroke-width="1.8" aria-hidden="true">
@@ -134,8 +145,10 @@
                     </svg>
                     Egresos
                 </a>
+                @endcan
             </li>
             <li>
+                @can('reports.view')
                 <a href="{{ route('reports.flow') }}" class="{{ $lc('reports.*') }}">
                     <svg class="{{ $ic('reports.*') }}" viewBox="0 0 24 24" fill="none"
                          stroke="currentColor" stroke-width="1.8" aria-hidden="true">
@@ -152,8 +165,10 @@
                     </svg>
                     Reporte flujo
                 </a>
+                @endcan
             </li>
             <li>
+                @can('month_close.view')
                 <a href="{{ route('month-closes.index') }}" class="{{ $lc('month-closes.index') }}">
                     <svg class="{{ $ic('month-closes.index') }}" viewBox="0 0 24 24" fill="none"
                          stroke="currentColor" stroke-width="1.8" aria-hidden="true">
@@ -172,6 +187,7 @@
                     </svg>
                     Cierres
                 </a>
+                @endcan
             </li>
         </ul>
     </div>
@@ -183,6 +199,7 @@
         </p>
         <ul class="space-y-0.5">
             <li>
+                @can('settings.manage')
                 <a href="{{ route('settings.index') }}" class="{{ $lc('settings.index') }}">
                     <svg class="{{ $ic('settings.index') }}" viewBox="0 0 24 24" fill="none"
                          stroke="currentColor" stroke-width="1.8" aria-hidden="true">
@@ -212,8 +229,26 @@
                     </svg>
                     Configuración
                 </a>
+                @endcan
             </li>
-            @if (auth()->user()?->hasRole('Admin'))
+            @can('settings.manage')
+                <li>
+                    <a href="{{ route('settings.roles') }}" class="{{ $lc('settings.roles') }}">
+                        <svg class="{{ $ic('settings.roles') }}" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  d="M18 18.72a9.094 9.094 0 003.742-.479 4.5 4.5 0 00-7.742-2.993M18
+                                     18.72v.966c0 .34-.173.655-.456.84A11.95 11.95 0 0112 21c-2.331 0-4.512
+                                     -.664-6.358-1.813a1 1 0 01-.456-.84v-.966m12.814.966a9.108 9.108 0
+                                     01-5.814 2.684 9.108 9.108 0 01-5.814-2.684M15 9.75a3 3 0 11-6 0 3 3 0
+                                     016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25
+                                     0 11-4.5 0 2.25 2.25 0 014.5 0z"/>
+                        </svg>
+                        Roles y permisos
+                    </a>
+                </li>
+            @endcan
+            @can('invitations.manage')
                 <li>
                     <a href="{{ route('settings.invitations.index') }}" class="{{ $lc('settings.invitations.*') }}">
                         <svg class="{{ $ic('settings.invitations.*') }}" viewBox="0 0 24 24" fill="none"
@@ -227,6 +262,8 @@
                         Invitaciones
                     </a>
                 </li>
+            @endcan
+            @can('plazas.manage')
                 <li>
                     <a href="{{ route('settings.plazas.index') }}" class="{{ $lc('settings.plazas.*') }}">
                         <svg class="{{ $ic('settings.plazas.*') }}" viewBox="0 0 24 24" fill="none"
@@ -240,6 +277,8 @@
                         Plazas
                     </a>
                 </li>
+            @endcan
+            @can('audit.view')
                 <li>
                     <a href="{{ route('settings.audit.index') }}" class="{{ $lc('settings.audit.*') }}">
                         <svg class="{{ $ic('settings.audit.*') }}" viewBox="0 0 24 24" fill="none"
@@ -260,6 +299,8 @@
                         Auditoría
                     </a>
                 </li>
+            @endcan
+            @can('system.view')
                 <li>
                     <a href="{{ route('admin.system') }}" class="{{ $lc('admin.system') }}">
                         <svg class="{{ $ic('admin.system') }}" viewBox="0 0 24 24" fill="none"
@@ -273,20 +314,22 @@
                         Admin System
                     </a>
                 </li>
-            @endif
+            @endcan
         </ul>
     </div>
 
 </nav>
 
 {{-- ─── CTA Nuevo contrato ──────────────────────────────────────────────── --}}
-<div class="shrink-0 border-t border-slate-200 p-3">
-    <a href="{{ route('contracts.create') }}"
-       class="flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2">
-        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
-        </svg>
-        Nuevo contrato
-    </a>
-</div>
+@can('contracts.manage')
+    <div class="shrink-0 border-t border-slate-200 p-3">
+        <a href="{{ route('contracts.create') }}"
+           class="flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+            </svg>
+            Nuevo contrato
+        </a>
+    </div>
+@endcan

@@ -61,6 +61,10 @@ class SettlementWizard extends Component
 
     public function process(ProcessContractSettlementAction $action): void
     {
+        if (! (auth()->user()?->can('contracts.settle') ?? false)) {
+            abort(403);
+        }
+
         $this->validate([
             'move_out_date' => ['required', 'date'],
             'concepts' => ['required', 'array', 'min:1'],

@@ -29,12 +29,20 @@ class Show extends Component
 
     public function mount(Contract $contract): void
     {
+        if (! (auth()->user()?->can('contracts.view') ?? false)) {
+            abort(403);
+        }
+
         $this->contract = $contract;
         $this->adjustment_charge_date = now('America/Tijuana')->toDateString();
     }
 
     public function createAdjustment(): void
     {
+        if (! (auth()->user()?->can('charges.manage') ?? false)) {
+            abort(403);
+        }
+
         $validated = $this->validate([
             'adjustment_amount' => ['required', 'numeric', 'not_in:0'],
             'adjustment_charge_date' => ['required', 'date'],
@@ -137,6 +145,11 @@ class Show extends Component
             'pendingBalance' => $pendingBalance,
             'ledgerGroups' => $groupedLedger,
             'payments' => $payments,
+            'canManageContracts' => auth()->user()?->can('contracts.manage') ?? false,
+            'canCreatePayments' => auth()->user()?->can('payments.create') ?? false,
+            'canManageCharges' => auth()->user()?->can('charges.manage') ?? false,
+            'canViewPayments' => auth()->user()?->can('payments.view') ?? false,
+            'canSettleContracts' => auth()->user()?->can('contracts.settle') ?? false,
         ])->layout('layouts.app', [
             'title' => 'Detalle de contrato',
         ]);

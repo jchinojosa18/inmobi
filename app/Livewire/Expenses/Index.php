@@ -57,6 +57,10 @@ class Index extends Component
 
     public function mount(): void
     {
+        if (! (auth()->user()?->can('expenses.view') ?? false)) {
+            abort(403);
+        }
+
         $this->spent_at = now()->toDateString();
     }
 
@@ -82,6 +86,10 @@ class Index extends Component
 
     public function startCreate(): void
     {
+        if (! (auth()->user()?->can('expenses.create') ?? false)) {
+            abort(403);
+        }
+
         $this->resetForm();
         $this->showForm = true;
     }
@@ -93,6 +101,10 @@ class Index extends Component
 
     public function save(): void
     {
+        if (! (auth()->user()?->can('expenses.create') ?? false)) {
+            abort(403);
+        }
+
         $validated = $this->validate($this->rules(), $this->messages());
 
         try {
@@ -175,6 +187,7 @@ class Index extends Component
             'expenses' => $expenses,
             'units' => $units,
             'categories' => $categories,
+            'canCreateExpenses' => auth()->user()?->can('expenses.create') ?? false,
         ])->layout('layouts.app', ['title' => 'Egresos']);
     }
 

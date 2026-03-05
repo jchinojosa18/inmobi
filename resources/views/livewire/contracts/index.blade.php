@@ -4,12 +4,14 @@
             <h1 class="text-2xl font-semibold tracking-tight">Contratos</h1>
             <p class="mt-1 text-sm text-slate-600">Listado operativo con foco en urgencia de cobranza.</p>
         </div>
-        <a
-            href="{{ route('contracts.create') }}"
-            class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-        >
-            Nuevo contrato
-        </a>
+        @if ($canManageContracts)
+            <a
+                href="{{ route('contracts.create') }}"
+                class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+            >
+                Nuevo contrato
+            </a>
+        @endif
     </div>
 
     <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -200,12 +202,14 @@
                                     >
                                         Ver
                                     </a>
-                                    <a
-                                        href="{{ route('contracts.payments.create', $contract) }}"
-                                        class="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-500"
-                                    >
-                                        Registrar pago
-                                    </a>
+                                    @if ($canCreatePayments)
+                                        <a
+                                            href="{{ route('contracts.payments.create', $contract) }}"
+                                            class="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-500"
+                                        >
+                                            Registrar pago
+                                        </a>
+                                    @endif
                                 </div>
                             </td>
                         </tr>

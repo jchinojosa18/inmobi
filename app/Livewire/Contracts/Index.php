@@ -48,6 +48,13 @@ class Index extends Component
         'dir' => ['except' => 'asc'],
     ];
 
+    public function mount(): void
+    {
+        if (! (auth()->user()?->can('contracts.view') ?? false)) {
+            abort(403);
+        }
+    }
+
     public function updatingQ(): void
     {
         $this->resetPage();
@@ -121,6 +128,8 @@ class Index extends Component
             'contracts' => $contracts,
             'properties' => $properties,
             'units' => $units,
+            'canManageContracts' => auth()->user()?->can('contracts.manage') ?? false,
+            'canCreatePayments' => auth()->user()?->can('payments.create') ?? false,
         ])->layout('layouts.app', [
             'title' => 'Contratos',
         ]);

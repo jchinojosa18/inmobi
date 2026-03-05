@@ -14,7 +14,8 @@
                 <input
                     type="month"
                     wire:model="monthToClose"
-                    class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                    @disabled(! $canCloseMonth)
+                    class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100"
                 >
                 @error('monthToClose') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
             </div>
@@ -24,17 +25,22 @@
                     type="text"
                     wire:model.blur="notes"
                     maxlength="500"
+                    @disabled(! $canCloseMonth)
                     placeholder="Comentario del cierre"
-                    class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                    class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100"
                 >
             </div>
             <div class="flex items-end justify-end">
-                <button
-                    type="submit"
-                    class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-                >
-                    Cerrar mes
-                </button>
+                @if ($canCloseMonth)
+                    <button
+                        type="submit"
+                        class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+                    >
+                        Cerrar mes
+                    </button>
+                @else
+                    <span class="text-xs text-slate-500">Sin permiso para cerrar</span>
+                @endif
             </div>
         </form>
     </div>
@@ -74,7 +80,7 @@
                                         >
                                             Cerrar mes
                                         </button>
-                                    @elseif ($isAdmin)
+                                    @elseif ($canReopenMonth)
                                         <button
                                             type="button"
                                             wire:click="reopenMonth('{{ $row['month'] }}')"
@@ -83,7 +89,7 @@
                                             Reabrir mes
                                         </button>
                                     @else
-                                        <span class="text-xs text-slate-500">Solo Admin</span>
+                                        <span class="text-xs text-slate-500">Sin permiso para reabrir</span>
                                     @endif
                                 </div>
                             </td>

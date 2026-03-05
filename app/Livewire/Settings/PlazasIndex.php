@@ -24,6 +24,10 @@ class PlazasIndex extends Component
 
     public function mount(): void
     {
+        if (! (auth()->user()?->can('plazas.manage') ?? false)) {
+            abort(403);
+        }
+
         $this->timezone = (string) config('app.timezone', 'America/Tijuana');
     }
 
@@ -162,7 +166,7 @@ class PlazasIndex extends Component
 
         return view('livewire.settings.plazas-index', [
             'plazas' => $plazas,
-            'isAdmin' => $this->isAdmin(),
+            'canManagePlazas' => $this->canManagePlazas(),
             'singlePlaza' => $plazas->count() === 1,
         ])->layout('layouts.app', [
             'title' => 'Plazas',
@@ -230,14 +234,14 @@ class PlazasIndex extends Component
 
     private function assertAdminCanEdit(): void
     {
-        if (! $this->isAdmin()) {
+        if (! $this->canManagePlazas()) {
             abort(403);
         }
     }
 
-    private function isAdmin(): bool
+    private function canManagePlazas(): bool
     {
-        return auth()->user()?->hasRole('Admin') ?? false;
+        return auth()->user()?->can('plazas.manage') ?? false;
     }
 
     private function nullableTrimmed(?string $value): ?string

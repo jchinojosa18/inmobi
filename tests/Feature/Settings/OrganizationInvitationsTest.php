@@ -37,10 +37,12 @@ class OrganizationInvitationsTest extends TestCase
 
     public function test_non_admin_cannot_access_invitations_screen(): void
     {
+        Role::findOrCreate('Lectura', 'web');
         [$organization] = $this->createOrganizationAdminPair();
         $user = User::factory()->create([
             'organization_id' => $organization->id,
         ]);
+        $user->syncRoles(['Lectura']);
 
         $this->actingAs($user)
             ->get(route('settings.invitations.index'))

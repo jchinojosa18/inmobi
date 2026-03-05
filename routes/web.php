@@ -25,6 +25,7 @@ use App\Livewire\Settings\AuditIndex as SettingsAuditIndex;
 use App\Livewire\Settings\Index as SettingsIndex;
 use App\Livewire\Settings\InvitationsIndex as SettingsInvitationsIndex;
 use App\Livewire\Settings\PlazasIndex as SettingsPlazasIndex;
+use App\Livewire\Settings\RolePreview as SettingsRolePreview;
 use App\Livewire\Tenants\Index as TenantsIndex;
 use App\Livewire\Units\Index as UnitsIndex;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -96,45 +97,87 @@ Route::middleware('auth')->group(function (): void {
     })->middleware('signed')->name('verification.verify');
 });
 
-Route::get('/dashboard', DashboardIndex::class)->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', DashboardIndex::class)
+    ->middleware(['auth', 'verified', 'permission:dashboard.view'])
+    ->name('dashboard');
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::post('/tenant/current-plaza', UpdateCurrentPlazaController::class)->name('tenant.current-plaza.update');
 
-    Route::get('/properties', PropertiesIndex::class)->name('properties.index');
-    Route::get('/properties/{property}/units', UnitsIndex::class)->name('properties.units.index');
-    Route::get('/houses/create', HouseCreate::class)->name('houses.create');
-    Route::get('/houses/{property}', HouseShow::class)->name('houses.show');
-    Route::get('/tenants', TenantsIndex::class)->name('tenants.index');
-    Route::get('/expenses', ExpensesIndex::class)->name('expenses.index');
-    Route::get('/reports/flow', CashFlowReport::class)->name('reports.flow');
-    Route::get('/reports/flow/export.csv', CashFlowCsvExportController::class)->name('reports.flow.export.csv');
-    Route::get('/month-closes', MonthClosesIndex::class)->name('month-closes.index');
-    Route::get('/settings', SettingsIndex::class)->name('settings.index');
+    Route::get('/properties', PropertiesIndex::class)
+        ->middleware('permission:properties.view')
+        ->name('properties.index');
+    Route::get('/properties/{property}/units', UnitsIndex::class)
+        ->middleware('permission:units.view')
+        ->name('properties.units.index');
+    Route::get('/houses/create', HouseCreate::class)
+        ->middleware('permission:properties.manage')
+        ->name('houses.create');
+    Route::get('/houses/{property}', HouseShow::class)
+        ->middleware('permission:properties.view')
+        ->name('houses.show');
+    Route::get('/tenants', TenantsIndex::class)
+        ->middleware('permission:tenants.view')
+        ->name('tenants.index');
+    Route::get('/expenses', ExpensesIndex::class)
+        ->middleware('permission:expenses.view')
+        ->name('expenses.index');
+    Route::get('/reports/flow', CashFlowReport::class)
+        ->middleware('permission:reports.view')
+        ->name('reports.flow');
+    Route::get('/reports/flow/export.csv', CashFlowCsvExportController::class)
+        ->middleware('permission:reports.export')
+        ->name('reports.flow.export.csv');
+    Route::get('/month-closes', MonthClosesIndex::class)
+        ->middleware('permission:month_close.view')
+        ->name('month-closes.index');
+    Route::get('/settings', SettingsIndex::class)
+        ->middleware('permission:settings.manage')
+        ->name('settings.index');
+    Route::get('/settings/roles', SettingsRolePreview::class)
+        ->middleware('permission:settings.manage')
+        ->name('settings.roles');
     Route::get('/settings/invitations', SettingsInvitationsIndex::class)
-        ->middleware('role:Admin')
+        ->middleware(['permission:settings.manage', 'permission:invitations.manage'])
         ->name('settings.invitations.index');
     Route::get('/settings/plazas', SettingsPlazasIndex::class)
-        ->middleware('role:Admin')
+        ->middleware(['permission:settings.manage', 'permission:plazas.manage'])
         ->name('settings.plazas.index');
     Route::get('/settings/audit', SettingsAuditIndex::class)
-        ->middleware('role:Admin')
+        ->middleware(['permission:settings.manage', 'permission:audit.view'])
         ->name('settings.audit.index');
     Route::get('/settings/audit/export.csv', AuditExportController::class)
-        ->middleware('role:Admin')
+        ->middleware(['permission:settings.manage', 'permission:audit.export'])
         ->name('settings.audit.export');
 
-    Route::get('/contracts', ContractsIndex::class)->name('contracts.index');
-    Route::get('/contracts/create', ContractForm::class)->name('contracts.create');
-    Route::get('/contracts/{contract}/edit', ContractForm::class)->name('contracts.edit');
-    Route::get('/contracts/{contract}', ContractShow::class)->name('contracts.show');
+    Route::get('/contracts', ContractsIndex::class)
+        ->middleware('permission:contracts.view')
+        ->name('contracts.index');
+    Route::get('/contracts/create', ContractForm::class)
+        ->middleware('permission:contracts.manage')
+        ->name('contracts.create');
+    Route::get('/contracts/{contract}/edit', ContractForm::class)
+        ->middleware('permission:contracts.manage')
+        ->name('contracts.edit');
+    Route::get('/contracts/{contract}', ContractShow::class)
+        ->middleware('permission:contracts.view')
+        ->name('contracts.show');
     Route::get('/contracts/{contract}/settlements/{batch}/pdf', ContractSettlementPdfController::class)
+        ->middleware('permission:contracts.settle')
         ->name('contracts.settlements.pdf');
 
-    Route::get('/contracts/{contract}/payments/create', PaymentCreate::class)->name('contracts.payments.create');
-    Route::get('/payments/{payment}', PaymentShow::class)->name('payments.show');
-    Route::get('/payments/{paymentId}/receipt.pdf', PaymentReceiptPdfController::class)->name('payments.receipt.pdf');
-    Route::get('/cobranza', CobranzaIndex::class)->name('cobranza.index');
+    Route::get('/contracts/{contract}/payments/create', PaymentCreate::class)
+        ->middleware('permission:payments.create')
+        ->name('contracts.payments.create');
+    Route::get('/payments/{payment}', PaymentShow::class)
+        ->middleware('permission:payments.view')
+        ->name('payments.show');
+    Route::get('/payments/{paymentId}/receipt.pdf', PaymentReceiptPdfController::class)
+        ->middleware('permission:payments.view')
+        ->name('payments.receipt.pdf');
+    Route::get('/cobranza', CobranzaIndex::class)
+        ->middleware('permission:cobranza.view')
+        ->name('cobranza.index');
 });
 
 Route::get('/invite/{token}', AcceptOrganizationInvitationController::class)->name('invitations.accept');
@@ -148,10 +191,10 @@ Route::get('/admin/health', function () {
         'status' => 'ok',
         'scope' => 'admin',
     ]);
-})->middleware(['auth', 'verified', 'role:Admin']);
+})->middleware(['auth', 'verified', 'permission:system.view']);
 
 Route::get('/admin/system', AdminSystemStatus::class)
-    ->middleware(['auth', 'verified', 'role:Admin'])
+    ->middleware(['auth', 'verified', 'permission:system.view'])
     ->name('admin.system');
 
 Route::view('/demo/document-upload', 'document-upload-demo');
@@ -168,4 +211,4 @@ Route::get('/pdf/sample-receipt', function () {
     return Pdf::loadView('pdf.sample-receipt', ['receipt' => $receipt])
         ->setPaper('letter', 'portrait')
         ->stream('sample-receipt.pdf');
-})->middleware('role:Admin');
+})->middleware(['auth', 'verified', 'permission:system.view']);

@@ -49,7 +49,10 @@ class PlazasManagementTest extends TestCase
 
     public function test_non_admin_cannot_access_plazas_settings(): void
     {
+        Role::findOrCreate('Lectura', 'web');
+
         $user = User::factory()->create();
+        $user->syncRoles(['Lectura']);
 
         $this->actingAs($user)
             ->get(route('settings.plazas.index'))

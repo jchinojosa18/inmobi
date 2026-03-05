@@ -12,12 +12,14 @@
             >
                 Volver a propiedades
             </a>
-            <a
-                href="{{ route('contracts.create', ['unit_id' => $unit->id]) }}"
-                class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-            >
-                Nuevo contrato
-            </a>
+            @if ($canManageContracts)
+                <a
+                    href="{{ route('contracts.create', ['unit_id' => $unit->id]) }}"
+                    class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+                >
+                    Nuevo contrato
+                </a>
+            @endif
         </div>
     </div>
 

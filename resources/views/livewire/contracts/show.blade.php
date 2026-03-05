@@ -7,18 +7,22 @@
             </p>
         </div>
         <div class="flex flex-wrap gap-2">
-            <a
-                href="{{ route('contracts.payments.create', $contract) }}"
-                class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
-            >
-                Registrar pago
-            </a>
-            <a
-                href="{{ route('contracts.edit', $contract) }}"
-                class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-            >
-                Editar contrato
-            </a>
+            @if ($canCreatePayments)
+                <a
+                    href="{{ route('contracts.payments.create', $contract) }}"
+                    class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
+                >
+                    Registrar pago
+                </a>
+            @endif
+            @if ($canManageContracts)
+                <a
+                    href="{{ route('contracts.edit', $contract) }}"
+                    class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+                >
+                    Editar contrato
+                </a>
+            @endif
         </div>
     </div>
 
@@ -41,66 +45,72 @@
         </article>
     </div>
 
-    <livewire:contracts.deposit-hold-form
-        :contract="$contract"
-        :key="'deposit-hold-'.$contract->id"
-    />
+    @if ($canManageCharges)
+        <livewire:contracts.deposit-hold-form
+            :contract="$contract"
+            :key="'deposit-hold-'.$contract->id"
+        />
+    @endif
 
-    <livewire:contracts.settlement-wizard
-        :contract="$contract"
-        :key="'settlement-wizard-'.$contract->id"
-    />
+    @if ($canSettleContracts)
+        <livewire:contracts.settlement-wizard
+            :contract="$contract"
+            :key="'settlement-wizard-'.$contract->id"
+        />
+    @endif
 
-    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 class="text-lg font-semibold text-slate-900">Crear ajuste</h2>
-        <p class="mt-1 text-sm text-slate-600">
-            Para periodos cerrados no se editan movimientos previos. Registra un cargo tipo ADJUSTMENT con razón obligatoria.
-        </p>
+    @if ($canManageCharges)
+        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 class="text-lg font-semibold text-slate-900">Crear ajuste</h2>
+            <p class="mt-1 text-sm text-slate-600">
+                Para periodos cerrados no se editan movimientos previos. Registra un cargo tipo ADJUSTMENT con razón obligatoria.
+            </p>
 
-        <form wire:submit="createAdjustment" class="mt-4 grid gap-4 md:grid-cols-2">
-            @error('adjustment_month_close')
-                <div class="md:col-span-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                    {{ $message }}
+            <form wire:submit="createAdjustment" class="mt-4 grid gap-4 md:grid-cols-2">
+                @error('adjustment_month_close')
+                    <div class="md:col-span-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                        {{ $message }}
+                    </div>
+                @enderror
+
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Monto (+/-) *</label>
+                    <input type="number" step="0.01" wire:model.blur="adjustment_amount" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    @error('adjustment_amount') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
-            @enderror
 
-            <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700">Monto (+/-) *</label>
-                <input type="number" step="0.01" wire:model.blur="adjustment_amount" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                @error('adjustment_amount') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-            </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Fecha *</label>
+                    <input type="date" wire:model.blur="adjustment_charge_date" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    @error('adjustment_charge_date') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                </div>
 
-            <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700">Fecha *</label>
-                <input type="date" wire:model.blur="adjustment_charge_date" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                @error('adjustment_charge_date') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-            </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Razón *</label>
+                    <input type="text" wire:model.blur="adjustment_reason" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    @error('adjustment_reason') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                </div>
 
-            <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700">Razón *</label>
-                <input type="text" wire:model.blur="adjustment_reason" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                @error('adjustment_reason') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-            </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Referencia vinculada (opcional)</label>
+                    <input type="text" wire:model.blur="adjustment_linked_to" placeholder="payment:15 | charge:20 | expense:9" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    @error('adjustment_linked_to') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                </div>
 
-            <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700">Referencia vinculada (opcional)</label>
-                <input type="text" wire:model.blur="adjustment_linked_to" placeholder="payment:15 | charge:20 | expense:9" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                @error('adjustment_linked_to') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-            </div>
+                <div class="md:col-span-2">
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Comentario</label>
+                    <textarea wire:model.blur="adjustment_comment" rows="2" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"></textarea>
+                    @error('adjustment_comment') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                </div>
 
-            <div class="md:col-span-2">
-                <label class="mb-1 block text-sm font-medium text-slate-700">Comentario</label>
-                <textarea wire:model.blur="adjustment_comment" rows="2" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"></textarea>
-                @error('adjustment_comment') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-            </div>
-
-            <div class="md:col-span-2 flex justify-end">
-                <button type="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
-                    Registrar ajuste
-                </button>
-            </div>
-        </form>
-    </div>
+                <div class="md:col-span-2 flex justify-end">
+                    <button type="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
+                        Registrar ajuste
+                    </button>
+                </div>
+            </form>
+        </div>
+    @endif
 
     <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-3">
@@ -195,20 +205,22 @@
                             <td class="px-4 py-3 text-right">${{ number_format($payment['allocated_amount'], 2) }}</td>
                             <td class="px-4 py-3">
                                 <div class="flex justify-end gap-2">
-                                    <a
-                                        href="{{ $payment['show_url'] }}"
-                                        class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                                    >
-                                        Ver pago
-                                    </a>
-                                    <a
-                                        href="{{ $payment['receipt_url'] }}"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                                    >
-                                        Ver recibo PDF
-                                    </a>
+                                    @if ($canViewPayments)
+                                        <a
+                                            href="{{ $payment['show_url'] }}"
+                                            class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                                        >
+                                            Ver pago
+                                        </a>
+                                        <a
+                                            href="{{ $payment['receipt_url'] }}"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                                        >
+                                            Ver recibo PDF
+                                        </a>
+                                    @endif
                                     <a
                                         href="{{ $payment['share_url'] }}"
                                         target="_blank"

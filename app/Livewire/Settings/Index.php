@@ -30,6 +30,10 @@ class Index extends Component
 
     public function mount(OrganizationSettingsService $settingsService): void
     {
+        if (! (auth()->user()?->can('settings.manage') ?? false)) {
+            abort(403);
+        }
+
         $settings = $settingsService->current();
 
         $this->receiptFolioMode = (string) $settings['receipt_folio_mode'];
@@ -41,7 +45,7 @@ class Index extends Component
 
     public function saveSettings(): void
     {
-        $this->assertAdminCanEdit();
+        $this->assertCanManageSettings();
 
         $validated = $this->validate([
             'receiptFolioMode' => ['required', Rule::in(OrganizationSetting::RECEIPT_MODES)],
@@ -92,7 +96,7 @@ class Index extends Component
 
     public function createExpenseCategory(): void
     {
-        $this->assertAdminCanEdit();
+        $this->assertCanManageExpenseCategories();
 
         $organizationId = (int) auth()->user()?->organization_id;
 
@@ -132,7 +136,7 @@ class Index extends Component
 
     public function updateExpenseCategory(): void
     {
-        $this->assertAdminCanEdit();
+        $this->assertCanManageExpenseCategories();
 
         if (! is_int($this->editingExpenseCategoryId)) {
             return;
@@ -169,7 +173,7 @@ class Index extends Component
 
     public function deleteExpenseCategory(int $categoryId): void
     {
-        $this->assertAdminCanEdit();
+        $this->assertCanManageExpenseCategories();
 
         $category = ExpenseCategory::query()->findOrFail($categoryId);
         $category->delete();
@@ -197,7 +201,8 @@ class Index extends Component
 
         return view('livewire.settings.index', [
             'categories' => $categories,
-            'isAdmin' => $this->isAdmin(),
+            'canManageSettings' => $this->canManageSettings(),
+            'canManageExpenseCategories' => $this->canManageExpenseCategories(),
             'templateVariables' => $settingsService->templateVariables(),
             'penaltyRoundingScale' => OrganizationSettingsService::DEFAULT_PENALTY_ROUNDING_SCALE,
             'penaltyPolicy' => OrganizationSettingsService::DEFAULT_PENALTY_CALCULATION_POLICY,
@@ -206,16 +211,28 @@ class Index extends Component
         ]);
     }
 
-    private function assertAdminCanEdit(): void
+    private function assertCanManageSettings(): void
     {
-        if (! $this->isAdmin()) {
+        if (! $this->canManageSettings()) {
             abort(403);
         }
     }
 
-    private function isAdmin(): bool
+    private function assertCanManageExpenseCategories(): void
     {
-        return auth()->user()?->hasRole('Admin') ?? false;
+        if (! $this->canManageExpenseCategories()) {
+            abort(403);
+        }
+    }
+
+    private function canManageSettings(): bool
+    {
+        return auth()->user()?->can('settings.manage') ?? false;
+    }
+
+    private function canManageExpenseCategories(): bool
+    {
+        return auth()->user()?->can('expense_categories.manage') ?? false;
     }
 
     private function nullableTrimmed(?string $value): ?string

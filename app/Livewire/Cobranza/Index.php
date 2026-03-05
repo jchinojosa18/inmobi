@@ -52,6 +52,13 @@ class Index extends Component
         'days_max' => ['except' => ''],
     ];
 
+    public function mount(): void
+    {
+        if (! (auth()->user()?->can('cobranza.view') ?? false)) {
+            abort(403);
+        }
+    }
+
     public function updatingTab(): void
     {
         $this->resetPage();
@@ -151,6 +158,7 @@ class Index extends Component
             'contracts' => $contracts,
             'properties' => $properties,
             'units' => $units,
+            'canCreatePayments' => auth()->user()?->can('payments.create') ?? false,
         ])->layout('layouts.app', [
             'title' => 'Cobranza',
         ]);

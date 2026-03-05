@@ -17,7 +17,6 @@ use App\Models\Unit;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 class DemoDataSeeder extends Seeder
@@ -33,10 +32,7 @@ class DemoDataSeeder extends Seeder
     public function run(): void
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
-
-        foreach (['Admin', 'Capturista', 'Lectura'] as $role) {
-            Role::findOrCreate($role, 'web');
-        }
+        $this->call(SyncRolesAndPermissionsSeeder::class);
 
         $organization = Organization::query()->firstOrCreate([
             'name' => self::ORGANIZATION_NAME,

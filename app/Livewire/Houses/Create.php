@@ -23,6 +23,10 @@ class Create extends Component
 
     public function save(): mixed
     {
+        if (! (auth()->user()?->can('properties.manage') ?? false)) {
+            abort(403);
+        }
+
         $validated = $this->validate($this->rules(), $this->messages());
 
         DB::transaction(function () use ($validated): void {
@@ -59,6 +63,10 @@ class Create extends Component
 
     public function render(): View
     {
+        if (! (auth()->user()?->can('properties.manage') ?? false)) {
+            abort(403);
+        }
+
         return view('livewire.houses.create')->layout('layouts.app', [
             'title' => 'Nueva casa',
         ]);

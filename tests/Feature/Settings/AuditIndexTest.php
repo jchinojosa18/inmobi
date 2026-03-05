@@ -32,7 +32,7 @@ class AuditIndexTest extends TestCase
         $org = Organization::factory()->create();
         Role::findOrCreate('Viewer', 'web');
         $user = User::factory()->create(['organization_id' => $org->id]);
-        $user->assignRole('Viewer');
+        $user->syncRoles(['Viewer']);
 
         $this->actingAs($user)
             ->get(route('settings.audit.index'))
@@ -92,7 +92,7 @@ class AuditIndexTest extends TestCase
         $org = Organization::factory()->create();
         Role::findOrCreate('Viewer', 'web');
         $user = User::factory()->create(['organization_id' => $org->id]);
-        $user->assignRole('Viewer');
+        $user->syncRoles(['Viewer']);
 
         $this->actingAs($user)
             ->get(route('settings.audit.export'))
