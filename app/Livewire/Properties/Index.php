@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Properties;
 
+use App\Models\Organization;
+use App\Models\Plaza;
 use App\Models\Property;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\Rule;
@@ -29,6 +31,8 @@ class Index extends Component
     public ?string $address = null;
 
     public ?string $notes = null;
+
+    public ?int $plazaId = null;
 
     /**
      * @var array<string, array<string, string>>
@@ -64,6 +68,7 @@ class Index extends Component
         $this->formStatus = $property->status;
         $this->address = $property->address;
         $this->notes = $property->notes;
+        $this->plazaId = $property->plaza_id;
         $this->showForm = true;
     }
 
@@ -78,6 +83,7 @@ class Index extends Component
 
         $payload = [
             'organization_id' => auth()->user()?->organization_id,
+            'plaza_id' => $this->resolvePlazaIdForSave($validated['plazaId'] ?? null),
             'name' => $validated['name'],
             'code' => $validated['code'] ?: null,
             'status' => $validated['formStatus'],
@@ -145,6 +151,13 @@ class Index extends Component
             'formStatus' => ['required', Rule::in(['active', 'inactive'])],
             'address' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'plazaId' => [
+                'nullable',
+                'integer',
+                Rule::exists('plazas', 'id')->where(
+                    fn ($query) => $query->where('organization_id', auth()->user()?->organization_id)
+                ),
+            ],
         ];
     }
 
@@ -164,6 +177,27 @@ class Index extends Component
         ];
     }
 
+    private function resolvePlazaIdForSave(?int $requestedPlazaId): int
+    {
+        $organizationId = (int) (auth()->user()?->organization_id ?? 0);
+        $organization = Organization::query()->findOrFail($organizationId);
+
+        if ($requestedPlazaId !== null) {
+            $exists = Plaza::query()
+                ->where('id', $requestedPlazaId)
+                ->where('organization_id', $organizationId)
+                ->exists();
+
+            if ($exists) {
+                return $requestedPlazaId;
+            }
+        }
+
+        return (int) $organization->ensureDefaultPlaza(
+            auth()->id() !== null ? (int) auth()->id() : null
+        )->id;
+    }
+
     private function resetForm(): void
     {
         $this->reset([
@@ -172,6 +206,7 @@ class Index extends Component
             'code',
             'address',
             'notes',
+            'plazaId',
         ]);
 
         $this->formStatus = 'active';

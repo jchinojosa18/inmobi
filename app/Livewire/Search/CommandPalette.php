@@ -2,11 +2,16 @@
 
 namespace App\Livewire\Search;
 
+use App\Actions\Charges\GenerateMonthlyRentChargesAction;
 use App\Models\Contract;
 use App\Models\Property;
 use App\Models\Tenant;
 use App\Models\Unit;
+use App\Support\MonthCloseGuard;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Str;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -19,12 +24,23 @@ class CommandPalette extends Component
     /** @var list<array<string, mixed>> */
     public array $results = [];
 
+    /** @var list<array<string, mixed>> */
+    public array $actions = [];
+
+    public ?string $confirmingActionId = null;
+
+    public function mount(): void
+    {
+        $this->actions = $this->buildActions();
+    }
+
     #[On('open-command-palette')]
     public function open(): void
     {
         $this->open = true;
         $this->q = '';
         $this->results = [];
+        $this->confirmingActionId = null;
         $this->dispatch('cp-opened');
     }
 
@@ -34,10 +50,24 @@ class CommandPalette extends Component
         $this->open = false;
         $this->q = '';
         $this->results = [];
+        $this->confirmingActionId = null;
+    }
+
+    public function handleEscape(): void
+    {
+        if ($this->confirmingActionId !== null) {
+            $this->confirmingActionId = null;
+
+            return;
+        }
+
+        $this->close();
     }
 
     public function updatedQ(): void
     {
+        $this->confirmingActionId = null;
+
         $q = trim($this->q);
 
         if (mb_strlen($q) < 2) {
@@ -47,6 +77,124 @@ class CommandPalette extends Component
         }
 
         $this->results = $this->runSearch($q);
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    #[Computed]
+    public function filteredActions(): array
+    {
+        $q = Str::of(trim($this->q))->lower()->value();
+
+        $actions = collect($this->actions)
+            ->filter(fn (array $action): bool => $this->isActionVisible($action))
+            ->sortBy('priority')
+            ->values();
+
+        if ($q === '') {
+            return $actions
+                ->filter(fn (array $action): bool => (bool) ($action['featured'] ?? false))
+                ->take(5)
+                ->values()
+                ->all();
+        }
+
+        return $actions
+            ->filter(function (array $action) use ($q): bool {
+                $keywords = collect($action['keywords'] ?? [])
+                    ->map(fn ($keyword): string => Str::of((string) $keyword)->lower()->value())
+                    ->join(' ');
+
+                $haystack = Str::of((string) ($action['label'] ?? ''))
+                    ->append(' ')
+                    ->append($keywords)
+                    ->lower()
+                    ->value();
+
+                return Str::contains($haystack, $q);
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    #[Computed]
+    public function navigableItems(): array
+    {
+        return array_values(array_merge(
+            array_map(
+                fn (array $action): array => ['kind' => 'action'] + $action,
+                $this->filteredActions
+            ),
+            array_map(
+                fn (array $result): array => ['kind' => 'result'] + $result,
+                $this->results
+            ),
+        ));
+    }
+
+    #[Computed]
+    public function confirmingActionLabel(): ?string
+    {
+        if ($this->confirmingActionId === null) {
+            return null;
+        }
+
+        $action = $this->findAction($this->confirmingActionId);
+
+        return $action['label'] ?? null;
+    }
+
+    public function executeAction(string $actionId): void
+    {
+        $action = $this->findAction($actionId);
+
+        if ($action === null) {
+            return;
+        }
+
+        $requiresConfirmation = (bool) ($action['requires_confirmation'] ?? false);
+        if ($requiresConfirmation && $this->confirmingActionId !== $actionId) {
+            $this->confirmingActionId = $actionId;
+
+            return;
+        }
+
+        $this->confirmingActionId = null;
+
+        $kind = (string) ($action['kind'] ?? '');
+
+        if ($kind === 'modal') {
+            $event = (string) data_get($action, 'payload.event', '');
+            if ($event !== '') {
+                $this->dispatch($event);
+            }
+
+            $this->close();
+            $this->dispatch('cp-notify', message: (string) ($action['success_message'] ?? 'Acción ejecutada.'));
+
+            return;
+        }
+
+        if ($kind === 'route') {
+            $href = (string) data_get($action, 'payload.href', '');
+            if ($href === '') {
+                return;
+            }
+
+            $this->close();
+            session()->flash('success', (string) ($action['success_message'] ?? 'Navegando...'));
+            $this->redirect($href, navigate: true);
+
+            return;
+        }
+
+        if ($kind === 'command' && $actionId === 'generate_current_month_rent') {
+            $this->runGenerateCurrentMonthRent(app(GenerateMonthlyRentChargesAction::class));
+        }
     }
 
     /**
@@ -63,6 +211,152 @@ class CommandPalette extends Component
         $this->searchProperties($term, $results);
 
         return $results;
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function buildActions(): array
+    {
+        return [
+            [
+                'id' => 'register_payment',
+                'label' => 'Registrar pago',
+                'keywords' => ['pago', 'abono', 'cobranza', 'recibo'],
+                'icon' => 'currency-dollar',
+                'kind' => 'modal',
+                'payload' => ['event' => 'open-quick-payment'],
+                'featured' => true,
+                'priority' => 10,
+                'requires_confirmation' => false,
+                'success_message' => 'Abriendo registro de pago...',
+            ],
+            [
+                'id' => 'register_expense',
+                'label' => 'Registrar egreso',
+                'keywords' => ['egreso', 'gasto', 'salida'],
+                'icon' => 'receipt-percent',
+                'kind' => 'modal',
+                'payload' => ['event' => 'open-quick-expense'],
+                'featured' => true,
+                'priority' => 20,
+                'requires_confirmation' => false,
+                'success_message' => 'Abriendo registro de egreso...',
+            ],
+            [
+                'id' => 'new_contract',
+                'label' => 'Nuevo contrato',
+                'keywords' => ['contrato', 'alta', 'nuevo'],
+                'icon' => 'document-plus',
+                'kind' => 'route',
+                'payload' => ['href' => route('contracts.create')],
+                'featured' => true,
+                'priority' => 30,
+                'requires_confirmation' => false,
+                'success_message' => 'Navegando a Nuevo contrato...',
+            ],
+            [
+                'id' => 'new_house',
+                'label' => 'Nueva casa',
+                'keywords' => ['casa', 'standalone', 'propiedad'],
+                'icon' => 'home',
+                'kind' => 'route',
+                'payload' => ['href' => route('houses.create')],
+                'featured' => true,
+                'priority' => 40,
+                'requires_confirmation' => false,
+                'success_message' => 'Navegando a Nueva casa...',
+            ],
+            [
+                'id' => 'go_cobranza',
+                'label' => 'Ir a Cobranza',
+                'keywords' => ['cobranza', 'vencidos', 'gracia', 'atraso'],
+                'icon' => 'banknotes',
+                'kind' => 'route',
+                'payload' => ['href' => route('cobranza.index')],
+                'featured' => true,
+                'priority' => 50,
+                'requires_confirmation' => false,
+                'success_message' => 'Navegando a Cobranza...',
+            ],
+            [
+                'id' => 'go_contracts',
+                'label' => 'Ir a Contratos',
+                'keywords' => ['contratos', 'contrato', 'lista'],
+                'icon' => 'document-text',
+                'kind' => 'route',
+                'payload' => ['href' => route('contracts.index')],
+                'featured' => false,
+                'priority' => 60,
+                'requires_confirmation' => false,
+                'success_message' => 'Navegando a Contratos...',
+            ],
+            [
+                'id' => 'go_flow_report',
+                'label' => 'Reporte de flujo',
+                'keywords' => ['reporte', 'flujo', 'ingresos', 'egresos'],
+                'icon' => 'chart-bar',
+                'kind' => 'route',
+                'payload' => ['href' => route('reports.flow')],
+                'featured' => false,
+                'priority' => 70,
+                'requires_confirmation' => false,
+                'success_message' => 'Navegando a Reporte de flujo...',
+            ],
+            [
+                'id' => 'generate_current_month_rent',
+                'label' => 'Generar rentas del mes',
+                'keywords' => ['rentas', 'generar', 'cargo', 'mes'],
+                'icon' => 'calendar-days',
+                'kind' => 'command',
+                'payload' => [],
+                'featured' => false,
+                'priority' => 80,
+                'requires_admin' => true,
+                'requires_confirmation' => true,
+            ],
+        ];
+    }
+
+    private function isActionVisible(array $action): bool
+    {
+        if (! ($action['requires_admin'] ?? false)) {
+            return true;
+        }
+
+        return (bool) auth()->user()?->hasRole('Admin');
+    }
+
+    private function findAction(string $actionId): ?array
+    {
+        return collect($this->actions)
+            ->filter(fn (array $action): bool => $this->isActionVisible($action))
+            ->first(fn (array $action): bool => ($action['id'] ?? null) === $actionId);
+    }
+
+    private function runGenerateCurrentMonthRent(GenerateMonthlyRentChargesAction $action): void
+    {
+        $organizationId = (int) auth()->user()?->organization_id;
+        if ($organizationId <= 0) {
+            return;
+        }
+
+        $currentMonth = CarbonImmutable::now('America/Tijuana')->format('Y-m');
+
+        if (MonthCloseGuard::isMonthClosed($organizationId, $currentMonth)) {
+            $message = "El mes {$currentMonth} está cerrado. No se pueden generar rentas.";
+            session()->flash('error', $message);
+            $this->dispatch('cp-notify', message: $message);
+            $this->close();
+
+            return;
+        }
+
+        $result = $action->executeForOrganization($currentMonth, $organizationId);
+        $message = "Rentas generadas: creadas {$result['created']}, omitidas {$result['skipped']}.";
+        session()->flash('success', $message);
+        $this->dispatch('cp-notify', message: $message);
+        $this->close();
     }
 
     /**

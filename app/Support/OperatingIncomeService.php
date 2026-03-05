@@ -48,8 +48,12 @@ class OperatingIncomeService
      *     allocated_amount:float
      * }>
      */
-    public function allocationsForRange(int $organizationId, CarbonImmutable $dateFrom, CarbonImmutable $dateTo): Collection
-    {
+    public function allocationsForRange(
+        int $organizationId,
+        CarbonImmutable $dateFrom,
+        CarbonImmutable $dateTo,
+        ?int $plazaId = null
+    ): Collection {
         $rows = PaymentAllocation::query()
             ->withoutOrganizationScope()
             ->join('payments', 'payments.id', '=', 'payment_allocations.payment_id')
@@ -68,6 +72,9 @@ class OperatingIncomeService
                 $dateFrom->toDateTimeString(),
                 $dateTo->toDateTimeString(),
             ])
+            ->when($plazaId !== null, function ($query) use ($plazaId): void {
+                $query->where('properties.plaza_id', $plazaId);
+            })
             ->whereIn('charges.type', $this->operatingChargeTypes())
             ->select([
                 'payment_allocations.id as allocation_id',
@@ -114,14 +121,21 @@ class OperatingIncomeService
     /**
      * @return array<string, float>
      */
-    public function totalsByTypeForRange(int $organizationId, CarbonImmutable $dateFrom, CarbonImmutable $dateTo): array
-    {
+    public function totalsByTypeForRange(
+        int $organizationId,
+        CarbonImmutable $dateFrom,
+        CarbonImmutable $dateTo,
+        ?int $plazaId = null
+    ): array {
         $totals = array_fill_keys($this->operatingChargeTypes(), 0.0);
 
         $byTypeRows = PaymentAllocation::query()
             ->withoutOrganizationScope()
             ->join('payments', 'payments.id', '=', 'payment_allocations.payment_id')
             ->join('charges', 'charges.id', '=', 'payment_allocations.charge_id')
+            ->join('contracts', 'contracts.id', '=', 'payments.contract_id')
+            ->join('units', 'units.id', '=', 'contracts.unit_id')
+            ->join('properties', 'properties.id', '=', 'units.property_id')
             ->where('payment_allocations.organization_id', $organizationId)
             ->where('payments.organization_id', $organizationId)
             ->where('charges.organization_id', $organizationId)
@@ -132,6 +146,9 @@ class OperatingIncomeService
                 $dateFrom->toDateTimeString(),
                 $dateTo->toDateTimeString(),
             ])
+            ->when($plazaId !== null, function ($query) use ($plazaId): void {
+                $query->where('properties.plaza_id', $plazaId);
+            })
             ->whereIn('charges.type', $this->operatingChargeTypes())
             ->selectRaw('charges.type as charge_type, SUM(payment_allocations.amount) as total_amount')
             ->groupBy('charges.type')
@@ -144,10 +161,14 @@ class OperatingIncomeService
         return $totals;
     }
 
-    public function sumForRange(int $organizationId, CarbonImmutable $dateFrom, CarbonImmutable $dateTo): float
-    {
+    public function sumForRange(
+        int $organizationId,
+        CarbonImmutable $dateFrom,
+        CarbonImmutable $dateTo,
+        ?int $plazaId = null
+    ): float {
         return round((float) array_sum(
-            $this->totalsByTypeForRange($organizationId, $dateFrom, $dateTo)
+            $this->totalsByTypeForRange($organizationId, $dateFrom, $dateTo, $plazaId)
         ), 2);
     }
 }

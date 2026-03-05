@@ -23,6 +23,7 @@ class Property extends OrganizationScopedModel
      */
     protected $fillable = [
         'organization_id',
+        'plaza_id',
         'name',
         'code',
         'status',
@@ -31,12 +32,43 @@ class Property extends OrganizationScopedModel
         'notes',
     ];
 
+    protected static function booted(): void
+    {
+        static::creating(function (self $property): void {
+            if ($property->plaza_id !== null) {
+                return;
+            }
+
+            $organizationId = (int) ($property->organization_id ?? 0);
+            if ($organizationId <= 0) {
+                return;
+            }
+
+            $organization = Organization::query()->find($organizationId);
+            if ($organization === null) {
+                return;
+            }
+
+            $property->plaza_id = $organization->ensureDefaultPlaza(
+                auth()->id() !== null ? (int) auth()->id() : null
+            )->id;
+        });
+    }
+
     /**
      * @return BelongsTo<Organization, $this>
      */
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    /**
+     * @return BelongsTo<Plaza, $this>
+     */
+    public function plaza(): BelongsTo
+    {
+        return $this->belongsTo(Plaza::class);
     }
 
     /**
@@ -66,6 +98,7 @@ class Property extends OrganizationScopedModel
     protected function auditableAttributes(): array
     {
         return [
+            'plaza_id',
             'name',
             'code',
             'status',

@@ -9,11 +9,13 @@ use App\Models\PaymentAllocation;
 use App\Models\Property;
 use App\Models\Unit;
 use App\Support\OrganizationSettingsService;
+use App\Support\TenantContext;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
+use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -22,6 +24,9 @@ class Index extends Component
     use WithPagination;
 
     private ?string $databaseDriver = null;
+
+    #[On('payment-registered')]
+    public function onPaymentRegistered(): void {}
 
     public string $tab = 'overdue';
 
@@ -84,16 +89,25 @@ class Index extends Component
             $this->tab = 'overdue';
         }
 
-        $properties = Property::query()
+        $propertiesQuery = Property::query()
             ->orderBy('name')
-            ->get(['id', 'name']);
+            ->select(['id', 'name']);
+
+        TenantContext::applyCurrentPlazaFilter($propertiesQuery, 'properties.plaza_id');
+
+        $properties = $propertiesQuery->get();
 
         $units = collect();
         if ($this->property_id !== '') {
-            $units = Unit::query()
-                ->where('property_id', (int) $this->property_id)
-                ->orderBy('name')
-                ->get(['id', 'name', 'code']);
+            $unitsQuery = Unit::query()
+                ->join('properties', 'properties.id', '=', 'units.property_id')
+                ->where('units.property_id', (int) $this->property_id)
+                ->orderBy('units.name')
+                ->select(['units.id', 'units.name', 'units.code']);
+
+            TenantContext::applyCurrentPlazaFilter($unitsQuery, 'properties.plaza_id');
+
+            $units = $unitsQuery->get();
         }
 
         $contracts = $this->buildQuery()->paginate(12);
@@ -190,6 +204,8 @@ class Index extends Component
             ->whereColumn('units.organization_id', 'contracts.organization_id')
             ->whereColumn('properties.organization_id', 'contracts.organization_id')
             ->whereColumn('tenants.organization_id', 'contracts.organization_id');
+
+        TenantContext::applyCurrentPlazaFilter($query, 'properties.plaza_id');
 
         $this->applyFilters($query, $overdueStatusSql, $overdueDaysSql);
         $this->applySorting($query, $overdueDaysSql);

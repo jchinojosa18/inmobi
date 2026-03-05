@@ -13,13 +13,21 @@ class GenerateMonthlyRentChargesAction
      */
     public function execute(string $month): array
     {
+        return $this->executeForOrganization($month, null);
+    }
+
+    /**
+     * @return array{created:int, skipped:int, month:string}
+     */
+    public function executeForOrganization(string $month, ?int $organizationId): array
+    {
         $periodStart = CarbonImmutable::createFromFormat('Y-m', $month)->startOfMonth();
         $periodEnd = $periodStart->endOfMonth();
 
         $created = 0;
         $skipped = 0;
 
-        Contract::query()
+        $contractsQuery = Contract::query()
             ->withoutOrganizationScope()
             ->where('status', Contract::STATUS_ACTIVE)
             ->whereDate('starts_at', '<=', $periodEnd->toDateString())
@@ -27,8 +35,13 @@ class GenerateMonthlyRentChargesAction
                 $query
                     ->whereNull('ends_at')
                     ->orWhereDate('ends_at', '>=', $periodStart->toDateString());
-            })
-            ->orderBy('id')
+            });
+
+        if (is_int($organizationId) && $organizationId > 0) {
+            $contractsQuery->where('organization_id', $organizationId);
+        }
+
+        $contractsQuery->orderBy('id')
             ->chunkById(200, function ($contracts) use (&$created, &$skipped, $periodStart): void {
                 foreach ($contracts as $contract) {
                     $charge = $this->createRentChargeForContractPeriod($contract, $periodStart);

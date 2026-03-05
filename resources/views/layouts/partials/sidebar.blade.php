@@ -215,6 +215,32 @@
             </li>
             @if (auth()->user()?->hasRole('Admin'))
                 <li>
+                    <a href="{{ route('settings.invitations.index') }}" class="{{ $lc('settings.invitations.*') }}">
+                        <svg class="{{ $ic('settings.invitations.*') }}" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  d="M18 7.5v-1.5A2.25 2.25 0 0015.75 3.75h-7.5A2.25 2.25 0 006 6v1.5m12 0
+                                     h1.5A1.5 1.5 0 0121 9v10.5a1.5 1.5 0 01-1.5 1.5H4.5A1.5 1.5 0 013
+                                     19.5V9a1.5 1.5 0 011.5-1.5H6m12 0h-3m-6 0H6m3 0h6m-3 0v6m0 0l2.25-2.25
+                                     M12 13.5l-2.25-2.25"/>
+                        </svg>
+                        Invitaciones
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('settings.plazas.index') }}" class="{{ $lc('settings.plazas.*') }}">
+                        <svg class="{{ $ic('settings.plazas.*') }}" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  d="M3.75 7.5h16.5M3.75 12h16.5m-16.5 4.5h16.5M7.5 7.5
+                                     a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm12 4.5a1.5 1.5 0
+                                     11-3 0 1.5 1.5 0 013 0zm-7.5 4.5a1.5 1.5 0 11-3 0 1.5
+                                     1.5 0 013 0z"/>
+                        </svg>
+                        Plazas
+                    </a>
+                </li>
+                <li>
                     <a href="{{ route('admin.system') }}" class="{{ $lc('admin.system') }}">
                         <svg class="{{ $ic('admin.system') }}" viewBox="0 0 24 24" fill="none"
                              stroke="currentColor" stroke-width="1.8" aria-hidden="true">

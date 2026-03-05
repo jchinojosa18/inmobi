@@ -35,6 +35,7 @@ class OrganizationSetting extends OrganizationScopedModel
         'penalty_calculation_policy',
         'whatsapp_template',
         'email_template',
+        'onboarding_dismissed_until',
     ];
 
     /**
@@ -45,6 +46,7 @@ class OrganizationSetting extends OrganizationScopedModel
         return [
             'receipt_folio_padding' => 'integer',
             'penalty_rounding_scale' => 'integer',
+            'onboarding_dismissed_until' => 'datetime',
         ];
     }
 
@@ -69,6 +71,7 @@ class OrganizationSetting extends OrganizationScopedModel
             'penalty_calculation_policy',
             'whatsapp_template',
             'email_template',
+            'onboarding_dismissed_until',
         ];
     }
 }

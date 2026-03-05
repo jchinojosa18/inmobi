@@ -130,6 +130,18 @@
                     <span id="login-submit-label">Entrar</span>
                 </button>
             </form>
+
+            @if (Route::has('register'))
+                <p class="mt-4 text-center text-sm text-slate-600 dark:text-slate-200">
+                    ¿No tienes cuenta?
+                    <a
+                        href="{{ route('register') }}"
+                        class="font-medium underline-offset-4 hover:text-slate-900 hover:underline dark:hover:text-white"
+                    >
+                        Crear cuenta
+                    </a>
+                </p>
+            @endif
         </div>
     </div>
 

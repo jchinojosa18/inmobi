@@ -109,7 +109,7 @@ class CobranzaIndexTest extends TestCase
         $response->assertOk();
         $response->assertSeeText('Carlos Vencido');
         $response->assertSeeText('$750.00');
-        $response->assertSee(route('contracts.payments.create', $contract->id), false);
+        $response->assertSeeHtml('open-quick-payment');
         $response->assertSeeText('Copiar mensaje WhatsApp');
     }
 

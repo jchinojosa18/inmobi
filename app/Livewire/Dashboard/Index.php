@@ -2,34 +2,96 @@
 
 namespace App\Livewire\Dashboard;
 
+use App\Actions\Charges\GenerateMonthlyRentChargesAction;
 use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\Expense;
 use App\Models\Payment;
 use App\Models\PaymentAllocation;
+use App\Models\Property;
+use App\Models\Tenant;
 use App\Models\Unit;
+use App\Support\MonthCloseGuard;
 use App\Support\OperatingIncomeService;
+use App\Support\OrganizationSettingsService;
+use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class Index extends Component
 {
     private ?string $databaseDriver = null;
 
-    public function render(OperatingIncomeService $operatingIncomeService): View
+    #[On('payment-registered')]
+    public function onPaymentRegistered(): void {}
+
+    #[On('expense-created')]
+    public function onExpenseCreated(): void {}
+
+    public function dismissOnboarding(OrganizationSettingsService $settingsService): void
     {
+        $organizationId = (int) auth()->user()?->organization_id;
+
+        if ($organizationId <= 0) {
+            return;
+        }
+
+        $dismissedUntil = $settingsService->dismissOnboardingForDays($organizationId, 7);
+
+        session()->flash(
+            'success',
+            'Checklist oculto hasta '.$dismissedUntil->timezone('America/Tijuana')->format('Y-m-d').'.'
+        );
+    }
+
+    public function generateCurrentMonthRent(GenerateMonthlyRentChargesAction $action): void
+    {
+        $organizationId = (int) auth()->user()?->organization_id;
+
+        if ($organizationId <= 0) {
+            return;
+        }
+
+        $currentMonth = CarbonImmutable::now('America/Tijuana')->format('Y-m');
+
+        if (MonthCloseGuard::isMonthClosed($organizationId, $currentMonth)) {
+            session()->flash('error', "El mes {$currentMonth} está cerrado. No se pueden generar rentas.");
+
+            return;
+        }
+
+        $result = $action->executeForOrganization($currentMonth, $organizationId);
+
+        session()->flash(
+            'success',
+            "Rentas del {$currentMonth}: creadas={$result['created']} omitidas={$result['skipped']}."
+        );
+    }
+
+    public function render(
+        OperatingIncomeService $operatingIncomeService,
+        OrganizationSettingsService $settingsService
+    ): View {
         $now = CarbonImmutable::now('America/Tijuana');
         $todayDate = $now->toDateString();
         $monthStart = $now->startOfMonth()->startOfDay();
         $monthEnd = $now->endOfDay();
 
         $organizationId = (int) auth()->user()?->organization_id;
-        $incomeMonth = $operatingIncomeService->sumForRange($organizationId, $monthStart, $monthEnd);
+        $currentPlazaId = TenantContext::currentPlazaId();
+
+        $incomeMonth = $operatingIncomeService->sumForRange($organizationId, $monthStart, $monthEnd, $currentPlazaId);
         $expenseMonth = (float) Expense::query()
+            ->when($currentPlazaId !== null, function (Builder $query) use ($currentPlazaId): void {
+                $query->whereHas('unit.property', function (Builder $propertyQuery) use ($currentPlazaId): void {
+                    $propertyQuery->where('plaza_id', $currentPlazaId);
+                });
+            })
             ->whereBetween('spent_at', [$monthStart->toDateString(), $monthEnd->toDateString()])
             ->sum('amount');
 
@@ -38,23 +100,50 @@ class Index extends Component
         $overdueStatusSql = $this->overdueStatusSql($todayDate);
         $overdueDaysSql = $this->overdueDaysSql($todayDate);
 
-        $overduePortfolioTotal = $this->overduePortfolioTotal($todayDate, $overdueStatusSql);
+        $overduePortfolioTotal = $this->overduePortfolioTotal($todayDate, $overdueStatusSql, $currentPlazaId);
         $activeContracts = Contract::query()
-            ->where('status', Contract::STATUS_ACTIVE)
+            ->join('units', 'units.id', '=', 'contracts.unit_id')
+            ->join('properties', 'properties.id', '=', 'units.property_id')
+            ->where('contracts.status', Contract::STATUS_ACTIVE)
+            ->when($currentPlazaId !== null, function (Builder $query) use ($currentPlazaId): void {
+                $query->where('properties.plaza_id', $currentPlazaId);
+            })
             ->count();
 
         $activeUnits = Unit::query()
-            ->where('status', 'active')
-            ->count();
+            ->join('properties', 'properties.id', '=', 'units.property_id')
+            ->where('units.status', 'active')
+            ->when($currentPlazaId !== null, function (Builder $query) use ($currentPlazaId): void {
+                $query->where('properties.plaza_id', $currentPlazaId);
+            })
+            ->count('units.id');
         $occupiedUnits = (int) Contract::query()
-            ->where('status', Contract::STATUS_ACTIVE)
+            ->join('units', 'units.id', '=', 'contracts.unit_id')
+            ->join('properties', 'properties.id', '=', 'units.property_id')
+            ->where('contracts.status', Contract::STATUS_ACTIVE)
+            ->when($currentPlazaId !== null, function (Builder $query) use ($currentPlazaId): void {
+                $query->where('properties.plaza_id', $currentPlazaId);
+            })
             ->distinct('unit_id')
-            ->count('unit_id');
+            ->count('contracts.unit_id');
         $availableUnits = max($activeUnits - $occupiedUnits, 0);
 
-        $overdueContracts = $this->contractsByStatus($todayDate, $overdueStatusSql, $overdueDaysSql, 'overdue');
-        $graceContracts = $this->contractsByStatus($todayDate, $overdueStatusSql, $overdueDaysSql, 'grace');
-        $recentPayments = $this->recentPayments();
+        $overdueContracts = $this->contractsByStatus(
+            $todayDate,
+            $overdueStatusSql,
+            $overdueDaysSql,
+            'overdue',
+            $currentPlazaId
+        );
+        $graceContracts = $this->contractsByStatus(
+            $todayDate,
+            $overdueStatusSql,
+            $overdueDaysSql,
+            'grace',
+            $currentPlazaId
+        );
+        $recentPayments = $this->recentPayments($currentPlazaId);
+        $onboardingChecklist = $this->buildOnboardingChecklist($organizationId, $now, $settingsService);
 
         return view('livewire.dashboard.index', [
             'incomeMonth' => $incomeMonth,
@@ -67,9 +156,145 @@ class Index extends Component
             'overdueContracts' => $overdueContracts,
             'graceContracts' => $graceContracts,
             'recentPayments' => $recentPayments,
+            'onboardingChecklist' => $onboardingChecklist,
         ])->layout('layouts.app', [
             'title' => 'Dashboard operativo',
         ]);
+    }
+
+    /**
+     * @return array{
+     *     show:bool,
+     *     current_month:string,
+     *     critical_completed:int,
+     *     critical_total:int,
+     *     critical_progress_percent:int,
+     *     critical_steps:list<array{
+     *         key:string,
+     *         title:string,
+     *         description:string,
+     *         complete:bool,
+     *         ctas:list<array{type:string,label:string,route?:string}>
+     *     }>,
+     *     recommended_steps:list<array{
+     *         key:string,
+     *         title:string,
+     *         description:string,
+     *         complete:bool,
+     *         ctas:list<array{type:string,label:string,route?:string}>
+     *     }>
+     * }
+     */
+    private function buildOnboardingChecklist(
+        int $organizationId,
+        CarbonImmutable $now,
+        OrganizationSettingsService $settingsService
+    ): array {
+        $currentMonth = $now->format('Y-m');
+
+        $propertiesCount = Property::query()->count();
+        $unitsCount = Unit::query()->count();
+        $tenantsCount = Tenant::query()->count();
+        $activeContractsCount = Contract::query()
+            ->where('status', Contract::STATUS_ACTIVE)
+            ->count();
+        $rentChargesCurrentMonthCount = Charge::query()
+            ->where('type', Charge::TYPE_RENT)
+            ->where('period', $currentMonth)
+            ->whereHas('contract', fn (Builder $query): Builder => $query->where('status', Contract::STATUS_ACTIVE))
+            ->count();
+        $paymentsCount = Payment::query()->count();
+        $expensesCount = Expense::query()->count();
+
+        $criticalSteps = [
+            [
+                'key' => 'properties',
+                'title' => 'Crear propiedad o casa',
+                'description' => 'Registra tu primer inmueble para empezar a operar.',
+                'complete' => $propertiesCount > 0,
+                'ctas' => [
+                    ['type' => 'route', 'label' => 'Ir a propiedades', 'route' => 'properties.index'],
+                    ['type' => 'route', 'label' => 'Nueva casa', 'route' => 'houses.create'],
+                ],
+            ],
+            [
+                'key' => 'units',
+                'title' => 'Crear unidades',
+                'description' => 'Define unidades ocupables para poder contratar.',
+                'complete' => $unitsCount > 0,
+                'ctas' => [
+                    ['type' => 'route', 'label' => 'Gestionar unidades', 'route' => 'properties.index'],
+                ],
+            ],
+            [
+                'key' => 'tenants',
+                'title' => 'Crear inquilinos',
+                'description' => 'Captura al menos un inquilino activo.',
+                'complete' => $tenantsCount > 0,
+                'ctas' => [
+                    ['type' => 'route', 'label' => 'Ir a inquilinos', 'route' => 'tenants.index'],
+                ],
+            ],
+            [
+                'key' => 'contracts',
+                'title' => 'Crear contratos activos',
+                'description' => 'Necesitas un contrato activo para generar rentas y cobranza.',
+                'complete' => $activeContractsCount > 0,
+                'ctas' => [
+                    ['type' => 'route', 'label' => 'Nuevo contrato', 'route' => 'contracts.create'],
+                ],
+            ],
+            [
+                'key' => 'rent_charges',
+                'title' => 'Generar o confirmar rentas del mes',
+                'description' => "Valida que existan cargos RENT para {$currentMonth}.",
+                'complete' => $rentChargesCurrentMonthCount > 0,
+                'ctas' => [
+                    ['type' => 'action_generate_rent', 'label' => 'Generar rentas del mes'],
+                ],
+            ],
+        ];
+
+        $recommendedSteps = [
+            [
+                'key' => 'payments',
+                'title' => 'Registrar primer pago',
+                'description' => 'Recomendado para validar recibo, allocation y cobranza.',
+                'complete' => $paymentsCount > 0,
+                'ctas' => [
+                    ['type' => 'action_open_quick_payment', 'label' => 'Registrar pago'],
+                ],
+            ],
+            [
+                'key' => 'expenses',
+                'title' => 'Registrar primer egreso',
+                'description' => 'Recomendado para validar reporte de flujo y neto.',
+                'complete' => $expensesCount > 0,
+                'ctas' => [
+                    ['type' => 'action_open_quick_expense', 'label' => 'Registrar egreso'],
+                ],
+            ],
+        ];
+
+        $criticalCompleted = collect($criticalSteps)
+            ->filter(fn (array $step): bool => (bool) $step['complete'])
+            ->count();
+        $criticalTotal = count($criticalSteps);
+        $criticalProgressPercent = $criticalTotal > 0
+            ? (int) round(($criticalCompleted / $criticalTotal) * 100)
+            : 0;
+        $criticalReady = $criticalCompleted === $criticalTotal;
+        $dismissed = $settingsService->isOnboardingDismissed($organizationId, $now);
+
+        return [
+            'show' => ! $criticalReady && ! $dismissed,
+            'current_month' => $currentMonth,
+            'critical_completed' => $criticalCompleted,
+            'critical_total' => $criticalTotal,
+            'critical_progress_percent' => $criticalProgressPercent,
+            'critical_steps' => $criticalSteps,
+            'recommended_steps' => $recommendedSteps,
+        ];
     }
 
     /**
@@ -79,9 +304,10 @@ class Index extends Component
         string $todayDate,
         string $overdueStatusSql,
         string $overdueDaysSql,
-        string $status
+        string $status,
+        ?int $currentPlazaId
     ): Collection {
-        $query = $this->contractsLedgerBaseQuery($todayDate, $overdueStatusSql, $overdueDaysSql)
+        $query = $this->contractsLedgerBaseQuery($todayDate, $overdueStatusSql, $overdueDaysSql, $currentPlazaId)
             ->whereRaw("{$overdueStatusSql} = ?", [$status]);
 
         if ($status === 'overdue') {
@@ -97,21 +323,30 @@ class Index extends Component
             ->get();
     }
 
-    private function overduePortfolioTotal(string $todayDate, string $overdueStatusSql): float
+    private function overduePortfolioTotal(string $todayDate, string $overdueStatusSql, ?int $currentPlazaId): float
     {
-        $total = $this->contractsLedgerBaseQuery($todayDate, $overdueStatusSql, $this->overdueDaysSql($todayDate))
+        $total = $this->contractsLedgerBaseQuery(
+            $todayDate,
+            $overdueStatusSql,
+            $this->overdueDaysSql($todayDate),
+            $currentPlazaId
+        )
             ->whereRaw("{$overdueStatusSql} = 'overdue'")
             ->sum(DB::raw('COALESCE(balance_stats.pending_balance, 0)'));
 
         return round((float) $total, 2);
     }
 
-    private function contractsLedgerBaseQuery(string $todayDate, string $overdueStatusSql, string $overdueDaysSql): Builder
-    {
+    private function contractsLedgerBaseQuery(
+        string $todayDate,
+        string $overdueStatusSql,
+        string $overdueDaysSql,
+        ?int $currentPlazaId
+    ): Builder {
         $balanceSubquery = $this->balanceByContractSubquery();
         $oldestPendingRentSubquery = $this->oldestPendingRentSubquery();
 
-        return Contract::query()
+        $query = Contract::query()
             ->select([
                 'contracts.id as contract_id',
                 'contracts.status as contract_status',
@@ -142,6 +377,12 @@ class Index extends Component
                 DB::raw("{$overdueStatusSql} as overdue_status"),
                 DB::raw("{$overdueDaysSql} as overdue_days"),
             ]);
+
+        if ($currentPlazaId !== null) {
+            $query->where('properties.plaza_id', $currentPlazaId);
+        }
+
+        return $query;
     }
 
     private function balanceByContractSubquery(): Builder
@@ -209,13 +450,13 @@ class Index extends Component
     /**
      * @return Collection<int, object>
      */
-    private function recentPayments(): Collection
+    private function recentPayments(?int $currentPlazaId): Collection
     {
         $allocationSubquery = PaymentAllocation::query()
             ->selectRaw('payment_allocations.payment_id, SUM(payment_allocations.amount) as allocated_total')
             ->groupBy('payment_allocations.payment_id');
 
-        return Payment::query()
+        $query = Payment::query()
             ->select([
                 'payments.id as payment_id',
                 'payments.receipt_folio',
@@ -239,7 +480,13 @@ class Index extends Component
             ->whereColumn('tenants.organization_id', 'payments.organization_id')
             ->whereColumn('units.organization_id', 'payments.organization_id')
             ->whereColumn('properties.organization_id', 'payments.organization_id')
-            ->orderByDesc('payments.paid_at')
+            ->orderByDesc('payments.paid_at');
+
+        if ($currentPlazaId !== null) {
+            $query->where('properties.plaza_id', $currentPlazaId);
+        }
+
+        return $query
             ->limit(10)
             ->get();
     }

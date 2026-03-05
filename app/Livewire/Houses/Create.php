@@ -2,10 +2,13 @@
 
 namespace App\Livewire\Houses;
 
+use App\Models\Organization;
+use App\Models\Plaza;
 use App\Models\Property;
 use App\Models\Unit;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Livewire\Component;
 
 class Create extends Component
@@ -16,15 +19,19 @@ class Create extends Component
 
     public ?string $notes = null;
 
+    public ?int $plazaId = null;
+
     public function save(): mixed
     {
         $validated = $this->validate($this->rules(), $this->messages());
 
         DB::transaction(function () use ($validated): void {
             $organizationId = (int) auth()->user()?->organization_id;
+            $plazaId = $this->resolvePlazaIdForSave($validated['plazaId'] ?? null);
 
             $property = Property::query()->create([
                 'organization_id' => $organizationId,
+                'plaza_id' => $plazaId,
                 'name' => $validated['name'],
                 'code' => null,
                 'status' => 'active',
@@ -66,6 +73,13 @@ class Create extends Component
             'name' => ['required', 'string', 'max:150'],
             'address' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'plazaId' => [
+                'nullable',
+                'integer',
+                Rule::exists('plazas', 'id')->where(
+                    fn ($query) => $query->where('organization_id', auth()->user()?->organization_id)
+                ),
+            ],
         ];
     }
 
@@ -80,5 +94,26 @@ class Create extends Component
             'address.max' => 'La dirección no debe exceder 255 caracteres.',
             'notes.max' => 'Las notas no deben exceder 1000 caracteres.',
         ];
+    }
+
+    private function resolvePlazaIdForSave(?int $requestedPlazaId): int
+    {
+        $organizationId = (int) (auth()->user()?->organization_id ?? 0);
+        $organization = Organization::query()->findOrFail($organizationId);
+
+        if ($requestedPlazaId !== null) {
+            $exists = Plaza::query()
+                ->where('id', $requestedPlazaId)
+                ->where('organization_id', $organizationId)
+                ->exists();
+
+            if ($exists) {
+                return $requestedPlazaId;
+            }
+        }
+
+        return (int) $organization->ensureDefaultPlaza(
+            auth()->id() !== null ? (int) auth()->id() : null
+        )->id;
     }
 }

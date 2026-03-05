@@ -5,8 +5,10 @@ namespace App\Livewire\Reports;
 use App\Models\Expense;
 use App\Models\MonthClose;
 use App\Support\OperatingIncomeService;
+use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Livewire\Component;
 
 class CashFlow extends Component
@@ -36,14 +38,20 @@ class CashFlow extends Component
         $dateFrom = CarbonImmutable::parse($this->date_from, 'America/Tijuana')->startOfDay();
         $dateTo = CarbonImmutable::parse($this->date_to, 'America/Tijuana')->endOfDay();
         $organizationId = (int) auth()->user()?->organization_id;
+        $currentPlazaId = TenantContext::currentPlazaId();
 
         $operatingIncomeService = app(OperatingIncomeService::class);
-        $incomeDetails = $operatingIncomeService->allocationsForRange($organizationId, $dateFrom, $dateTo);
-        $incomeByType = $operatingIncomeService->totalsByTypeForRange($organizationId, $dateFrom, $dateTo);
+        $incomeDetails = $operatingIncomeService->allocationsForRange($organizationId, $dateFrom, $dateTo, $currentPlazaId);
+        $incomeByType = $operatingIncomeService->totalsByTypeForRange($organizationId, $dateFrom, $dateTo, $currentPlazaId);
         $incomeTotal = round((float) array_sum($incomeByType), 2);
 
         $expenses = Expense::query()
             ->with(['unit.property'])
+            ->when($currentPlazaId !== null, function (Builder $query) use ($currentPlazaId): void {
+                $query->whereHas('unit.property', function (Builder $propertyQuery) use ($currentPlazaId): void {
+                    $propertyQuery->where('plaza_id', $currentPlazaId);
+                });
+            })
             ->whereBetween('spent_at', [$dateFrom->toDateString(), $dateTo->toDateString()])
             ->orderBy('spent_at')
             ->get();

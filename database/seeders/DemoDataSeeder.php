@@ -10,6 +10,7 @@ use App\Models\MonthClose;
 use App\Models\Organization;
 use App\Models\Payment;
 use App\Models\PaymentAllocation;
+use App\Models\Plaza;
 use App\Models\Property;
 use App\Models\Tenant;
 use App\Models\Unit;
@@ -56,6 +57,40 @@ class DemoDataSeeder extends Seeder
             $admin->assignRole('Admin');
         }
 
+        $organization->ensureDefaultPlaza((int) $admin->id);
+
+        $tijuanaPlaza = Plaza::query()
+            ->withoutOrganizationScope()
+            ->updateOrCreate(
+                [
+                    'organization_id' => $organization->id,
+                    'nombre' => 'Tijuana',
+                ],
+                [
+                    'ciudad' => 'Tijuana',
+                    'timezone' => 'America/Tijuana',
+                    'is_default' => false,
+                    'created_by_user_id' => $admin->id,
+                    'deleted_at' => null,
+                ]
+            );
+
+        $ensenadaPlaza = Plaza::query()
+            ->withoutOrganizationScope()
+            ->updateOrCreate(
+                [
+                    'organization_id' => $organization->id,
+                    'nombre' => 'Ensenada',
+                ],
+                [
+                    'ciudad' => 'Ensenada',
+                    'timezone' => 'America/Tijuana',
+                    'is_default' => false,
+                    'created_by_user_id' => $admin->id,
+                    'deleted_at' => null,
+                ]
+            );
+
         $building = Property::query()
             ->withoutOrganizationScope()
             ->updateOrCreate(
@@ -67,6 +102,7 @@ class DemoDataSeeder extends Seeder
                     'name' => 'Edificio Smoke',
                     'status' => 'active',
                     'kind' => Property::KIND_BUILDING,
+                    'plaza_id' => $tijuanaPlaza->id,
                     'address' => 'Av. Demo 100',
                     'notes' => 'Datos de prueba para smoke test',
                 ]
@@ -117,6 +153,7 @@ class DemoDataSeeder extends Seeder
                     'name' => 'Casa Smoke',
                     'status' => 'active',
                     'kind' => Property::KIND_STANDALONE_HOUSE,
+                    'plaza_id' => $ensenadaPlaza->id,
                     'address' => 'Calle Casa 12',
                     'notes' => 'Casa standalone demo',
                 ]

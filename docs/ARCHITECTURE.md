@@ -108,7 +108,14 @@ Definir la arquitectura base del SaaS de administración inmobiliaria y alinear 
 - El tenant principal es `Organization` (equivalente a Account).
 - Relacion base:
   - `User belongsTo Organization`.
+  - `Organization hasMany Plaza`.
+  - Cada `Organization` debe tener siempre una `Plaza` default (`Principal`) para habilitar operación multi-ciudad sin romper compatibilidad.
+  - `Property belongsTo Plaza` (obligatorio).
+  - `Unit` y `Contract` heredan plaza vía `Property` (sin `plaza_id` propio por ahora).
   - Todo modelo de dominio futuro (`Propiedad`, `Unidad`, `Contrato`, etc.) debe incluir `organization_id`.
+- Regla UX de plazas:
+  - Si la organización tiene una sola plaza, la plaza es "invisible" en pantallas (comportamiento igual al sistema actual).
+  - Si tiene 2 o más plazas, la UI debe empezar a mostrar selector/filtro por plaza.
 - Scoping obligatorio:
   - Middleware `SetTenantOrganization` fija el `organization_id` activo del usuario autenticado por request.
   - Trait reusable `BelongsToOrganization` aplica `Global Scope` por `organization_id` para modelos de dominio.
@@ -145,6 +152,7 @@ Definir la arquitectura base del SaaS de administración inmobiliaria y alinear 
 ### Relaciones (diagrama textual)
 ```text
 Organization 1---* User
+Organization 1---* Plaza
 Organization 1---* Property
 Property     1---* Unit
 Organization 1---* Tenant

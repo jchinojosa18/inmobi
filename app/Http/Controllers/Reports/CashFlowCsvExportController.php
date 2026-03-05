@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Reports;
 use App\Http\Controllers\Controller;
 use App\Models\Expense;
 use App\Support\OperatingIncomeService;
+use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -21,20 +23,28 @@ class CashFlowCsvExportController extends Controller
         $dateFrom = CarbonImmutable::parse($validated['date_from'])->startOfDay();
         $dateTo = CarbonImmutable::parse($validated['date_to'])->endOfDay();
         $organizationId = (int) $request->user()?->organization_id;
+        $currentPlazaId = TenantContext::currentPlazaId();
 
         $incomeDetails = $operatingIncomeService->allocationsForRange(
             organizationId: $organizationId,
             dateFrom: $dateFrom,
             dateTo: $dateTo,
+            plazaId: $currentPlazaId,
         );
         $incomeByType = $operatingIncomeService->totalsByTypeForRange(
             organizationId: $organizationId,
             dateFrom: $dateFrom,
             dateTo: $dateTo,
+            plazaId: $currentPlazaId,
         );
 
         $expenses = Expense::query()
             ->with(['unit.property'])
+            ->when($currentPlazaId !== null, function (Builder $query) use ($currentPlazaId): void {
+                $query->whereHas('unit.property', function (Builder $propertyQuery) use ($currentPlazaId): void {
+                    $propertyQuery->where('plaza_id', $currentPlazaId);
+                });
+            })
             ->whereBetween('spent_at', [$dateFrom->toDateString(), $dateTo->toDateString()])
             ->orderBy('spent_at')
             ->get();

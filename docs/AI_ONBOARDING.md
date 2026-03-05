@@ -57,10 +57,16 @@ Credenciales de prueba comunes:
 - Seed base (`DatabaseSeeder`): `test@example.com` / `password`
 - Seed demo smoke (`DemoDataSeeder`): `admin-smoke@inmo.test` / `password`
 
+Self-signup (sin seed):
+- `GET /register`
+- Campos: `Empresa`, `Nombre`, `Email`, `Contraseña`, `Confirmar contraseña`
+- Al registrar: crea `Organization`, plaza default `Principal`, usuario owner con rol `Admin`, login automático y redirección a `/dashboard`.
+
 ## 3) Mapa mental del dominio
 ```text
 Organization
  ├─ Users
+ ├─ Plazas
  ├─ Properties
  │   └─ Units
  │      ├─ Contracts
@@ -85,6 +91,7 @@ Relaciones clave en modelos:
 - [`PaymentAllocation`](../app/Models/PaymentAllocation.php)
 - [`Expense`](../app/Models/Expense.php)
 - [`CreditBalance`](../app/Models/CreditBalance.php)
+- [`Plaza`](../app/Models/Plaza.php)
 
 ## 4) Reglas de negocio INNEGOCIABLES
 ### 4.1 Multa diaria compuesta
@@ -168,6 +175,7 @@ Definición en [`routes/console.php`](../routes/console.php):
 - `inmo:penalties:run`: diario `00:05` America/Tijuana.
 - `inmo:generate-rent --month=YYYY-MM`: día 1 a `00:10` America/Tijuana.
 - `inmo:backup`: diario `03:10` America/Tijuana.
+- `inmo:plazas:backfill-default`: backfill/normalización idempotente de plaza default por organización.
 
 Locks/mutex (Redis/Cache lock, salida `0` cuando ya está tomado):
 - [`GenerateRentChargesCommand`](../app/Console/Commands/GenerateRentChargesCommand.php)
@@ -182,13 +190,24 @@ Comandos manuales útiles:
 ./vendor/bin/sail artisan inmo:daily
 ./vendor/bin/sail artisan inmo:backup --keep=14
 ./vendor/bin/sail artisan inmo:smoke --date=2026-03-10
+./vendor/bin/sail artisan inmo:plazas:backfill-default
 ```
+
+Regla de operación de plazas:
+- Toda organización debe tener una plaza default (`Principal`) creada automáticamente.
+- Toda `Property` pertenece obligatoriamente a una `Plaza` (`properties.plaza_id` NOT NULL).
+- `Unit` y `Contract` no tienen `plaza_id`; la plaza se deriva por relación desde `Property`.
+- Con 1 sola plaza la UX se mantiene igual que hoy (plaza implícita/invisible).
+- Con 2+ plazas, los nuevos filtros/selectores por ciudad/plaza deben activarse en UI.
 
 Nota:
 - `inmo:preflight` no existe actualmente en `app/Console/Commands`.
 
 ## 7) UI / rutas principales
 Definidas en [`routes/web.php`](../routes/web.php) (todas auth salvo donde se indique):
+- `/login` (guest) -> vista [`auth/login.blade.php`](../resources/views/auth/login.blade.php)
+- `/register` (guest) -> vista [`auth/register.blade.php`](../resources/views/auth/register.blade.php), backend [`RegisterController`](../app/Http/Controllers/Auth/RegisterController.php)
+- `/invite/{token}` (guest/auth) -> acepta invitación existente de organización sin crear nueva empresa ([`AcceptOrganizationInvitationController`](../app/Http/Controllers/Auth/AcceptOrganizationInvitationController.php))
 - `/dashboard` -> [`App\Livewire\Dashboard\Index`](../app/Livewire/Dashboard/Index.php)
 - `/properties` -> [`Properties\Index`](../app/Livewire/Properties/Index.php)
 - `/properties/{property}/units` -> [`Units\Index`](../app/Livewire/Units/Index.php) (redirige a casa si standalone)
@@ -205,11 +224,31 @@ Definidas en [`routes/web.php`](../routes/web.php) (todas auth salvo donde se in
 - `/reports/flow` -> [`Reports\CashFlow`](../app/Livewire/Reports/CashFlow.php)
 - `/month-closes` -> [`MonthCloses\Index`](../app/Livewire/MonthCloses/Index.php)
 - `/settings` -> [`Settings\Index`](../app/Livewire/Settings/Index.php)
+- `/settings/invitations` (Admin) -> [`Settings\InvitationsIndex`](../app/Livewire/Settings/InvitationsIndex.php)
 - `/admin/system` (Admin) -> [`Admin\SystemStatus`](../app/Livewire/Admin/SystemStatus.php)
 - `/admin/health` (role:Admin) JSON health simple
 - `/receipts/{paymentId}/shared.pdf` firmado (sin auth, con `signed`)
 
 Navegación principal está en [`resources/views/layouts/app.blade.php`](../resources/views/layouts/app.blade.php).
+
+### Command Palette (Cmd/Ctrl + K)
+- Componente: [`app/Livewire/Search/CommandPalette.php`](../app/Livewire/Search/CommandPalette.php)
+- Vista: [`resources/views/livewire/search/command-palette.blade.php`](../resources/views/livewire/search/command-palette.blade.php)
+- Soporta navegación de teclado unificada (`Acciones` + resultados) con `↑↓` y `Enter`.
+- Quick actions actuales:
+  - `Registrar pago` -> evento global `open-quick-payment`
+  - `Registrar egreso` -> evento global `open-quick-expense`
+  - `Nuevo contrato` -> `/contracts/create`
+  - `Nueva casa` -> `/houses/create`
+  - `Ir a Cobranza` -> `/cobranza`
+  - `Ir a Contratos` -> `/contracts`
+  - `Reporte de flujo` -> `/reports/flow`
+  - `Generar rentas del mes` (solo Admin, con confirmación en palette)
+- Cómo agregar nuevas acciones:
+  - registrar entrada en `buildActions()` (`id`, `label`, `keywords`, `icon`, `kind`, `payload`)
+  - si requiere seguridad, usar flags (`requires_admin`) y validar en `executeAction()`
+  - si requiere confirmación, usar `requires_confirmation=true`
+  - mantener eventos modales globales para acciones tipo `modal`
 
 ## 8) Testing y CI
 ### Comandos
@@ -280,3 +319,37 @@ System status/heartbeats:
   - Sugerencia: reflejar que ya existen recibo/finiquito PDF reales (`PaymentReceiptPdfController`, `ContractSettlementPdfController`).
 - [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md): contiene partes históricas “antes de implementar código” y naming genérico que ya no representa al 100% la estructura real.
   - Sugerencia: separar “target architecture” vs “implemented architecture”.
+
+## 12) Quick register payment modal
+- Component: `App\Livewire\Payments\QuickRegisterModal`
+- Mounted globally in `layouts/app.blade.php`
+- Open via JS: `Livewire.dispatch('open-quick-payment')` or `Livewire.dispatch('open-quick-payment', { contractId: X })`
+- 3 steps: search → form → done
+- Reuses `RegisterContractPaymentAction` + `MonthCloseGuard` (throws ValidationException)
+- After save: dispatches `payment-registered` → Dashboard & Cobranza re-render
+- Existing `/contracts/{id}/payments/create` remains as fallback
+
+## 13) Onboarding checklist (Dashboard)
+- Location: `App\Livewire\Dashboard\Index` + `resources/views/livewire/dashboard/index.blade.php`.
+- Purpose: evitar dashboard vacío en cuentas nuevas.
+- Critical steps (gatean visibilidad):
+  - propiedades > 0
+  - unidades > 0
+  - inquilinos > 0
+  - contratos activos > 0
+  - cargos RENT del mes actual (`YYYY-MM`, America/Tijuana) > 0 para contratos activos
+- Recommended steps (no bloqueantes):
+  - primer pago registrado
+  - primer egreso registrado
+- CTA integrado:
+  - generar rentas del mes: llama `GenerateMonthlyRentChargesAction::executeForOrganization(...)` (idempotente)
+  - registrar pago/egreso: abre modales rápidos (`open-quick-payment`, `open-quick-expense`)
+- Dismiss strategy:
+  - “Ocultar por ahora” persiste en `organization_settings.onboarding_dismissed_until`
+  - ventana: 7 días (por organización)
+  - si se completan los críticos (1–5), se oculta automáticamente aunque no esté dismissed
+- Reset manual:
+```bash
+php artisan tinker
+>>> App\Models\OrganizationSetting::query()->withoutOrganizationScope()->where('organization_id', <ORG_ID>)->update(['onboarding_dismissed_until' => null]);
+```

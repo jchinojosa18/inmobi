@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\OrganizationSetting;
+use Carbon\CarbonImmutable;
 
 class OrganizationSettingsService
 {
@@ -27,7 +28,7 @@ Tambien puedes consultarlo en: {shared_receipt_url}
 Gracias.';
 
     /**
-     * @return array<string, int|string>
+     * @return array<string, int|string|null>
      */
     public function forOrganization(int $organizationId): array
     {
@@ -40,7 +41,7 @@ Gracias.';
     }
 
     /**
-     * @return array<string, int|string>
+     * @return array<string, int|string|null>
      */
     public function current(): array
     {
@@ -54,7 +55,7 @@ Gracias.';
     }
 
     /**
-     * @return array<string, int|string>
+     * @return array<string, int|string|null>
      */
     public function defaults(): array
     {
@@ -66,7 +67,40 @@ Gracias.';
             'penalty_calculation_policy' => self::DEFAULT_PENALTY_CALCULATION_POLICY,
             'whatsapp_template' => self::DEFAULT_WHATSAPP_TEMPLATE,
             'email_template' => self::DEFAULT_EMAIL_TEMPLATE,
+            'onboarding_dismissed_until' => null,
         ];
+    }
+
+    public function dismissOnboardingForDays(int $organizationId, int $days = 7): CarbonImmutable
+    {
+        $dismissUntil = CarbonImmutable::now('America/Tijuana')
+            ->addDays(max($days, 1))
+            ->endOfDay();
+
+        OrganizationSetting::query()
+            ->withoutOrganizationScope()
+            ->updateOrCreate(
+                ['organization_id' => $organizationId],
+                ['onboarding_dismissed_until' => $dismissUntil->toDateTimeString()]
+            );
+
+        return $dismissUntil;
+    }
+
+    public function isOnboardingDismissed(int $organizationId, ?CarbonImmutable $now = null): bool
+    {
+        $now ??= CarbonImmutable::now('America/Tijuana');
+
+        $settings = OrganizationSetting::query()
+            ->withoutOrganizationScope()
+            ->where('organization_id', $organizationId)
+            ->first();
+
+        if ($settings?->onboarding_dismissed_until === null) {
+            return false;
+        }
+
+        return CarbonImmutable::instance($settings->onboarding_dismissed_until)->greaterThan($now);
     }
 
     /**
@@ -98,7 +132,7 @@ Gracias.';
     }
 
     /**
-     * @return array<string, int|string>
+     * @return array<string, int|string|null>
      */
     private function normalize(?OrganizationSetting $settings): array
     {
@@ -150,6 +184,7 @@ Gracias.';
             'penalty_calculation_policy' => $penaltyPolicy,
             'whatsapp_template' => $whatsAppTemplate,
             'email_template' => $emailTemplate,
+            'onboarding_dismissed_until' => $settings->onboarding_dismissed_until?->toDateTimeString(),
         ];
     }
 }

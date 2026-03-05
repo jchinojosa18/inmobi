@@ -7,6 +7,7 @@ use App\Models\Contract;
 use App\Models\PaymentAllocation;
 use App\Models\Property;
 use App\Models\Unit;
+use App\Support\TenantContext;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
@@ -93,16 +94,25 @@ class Index extends Component
 
     public function render(): View
     {
-        $properties = Property::query()
+        $propertiesQuery = Property::query()
             ->orderBy('name')
-            ->get(['id', 'name']);
+            ->select(['id', 'name']);
+
+        TenantContext::applyCurrentPlazaFilter($propertiesQuery, 'properties.plaza_id');
+
+        $properties = $propertiesQuery->get();
 
         $units = collect();
         if ($this->property_id !== '') {
-            $units = Unit::query()
-                ->where('property_id', (int) $this->property_id)
-                ->orderBy('name')
-                ->get(['id', 'name', 'code']);
+            $unitsQuery = Unit::query()
+                ->join('properties', 'properties.id', '=', 'units.property_id')
+                ->where('units.property_id', (int) $this->property_id)
+                ->orderBy('units.name')
+                ->select(['units.id', 'units.name', 'units.code']);
+
+            TenantContext::applyCurrentPlazaFilter($unitsQuery, 'properties.plaza_id');
+
+            $units = $unitsQuery->get();
         }
 
         $contracts = $this->buildContractsQuery()->paginate(12);
@@ -156,6 +166,8 @@ class Index extends Component
                 'unit.property:id,name',
                 'creditBalance:id,contract_id,balance',
             ]);
+
+        TenantContext::applyCurrentPlazaFilter($query, 'properties.plaza_id');
 
         $this->applyFilters($query, $overdueStatusSql);
         $this->applySorting($query, $urgencyRankSql, $overdueDaysSql);

@@ -1,4 +1,27 @@
 <header class="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 border-b border-slate-200 bg-white px-4 sm:px-6">
+    @php
+        $organizationId = (int) (auth()->user()?->organization_id ?? 0);
+        $plazas = collect();
+        $showPlazaSelector = false;
+        $currentPlazaId = \App\Support\TenantContext::currentPlazaId();
+        $currentPlazaLabel = 'Todas';
+
+        if ($organizationId > 0) {
+            $plazas = \App\Models\Plaza::query()
+                ->orderByDesc('is_default')
+                ->orderBy('nombre')
+                ->get(['id', 'nombre']);
+
+            $showPlazaSelector = $plazas->count() > 1;
+
+            if ($currentPlazaId !== null) {
+                $selectedPlaza = $plazas->firstWhere('id', $currentPlazaId);
+                if ($selectedPlaza !== null) {
+                    $currentPlazaLabel = $selectedPlaza->nombre;
+                }
+            }
+        }
+    @endphp
 
     {{-- ─── Hamburger (solo mobile) ──────────────────────────────────────── --}}
     <button
@@ -39,6 +62,25 @@
 
     {{-- ─── Acciones derecha ───────────────────────────────────────────────── --}}
     <div class="flex items-center gap-2">
+        @if ($showPlazaSelector)
+            <form method="POST" action="{{ route('tenant.current-plaza.update') }}" class="flex items-center gap-2">
+                @csrf
+                <label for="topbar-plaza-select" class="text-xs font-medium text-slate-600">
+                    Plaza: {{ $currentPlazaLabel }}
+                </label>
+                <select
+                    id="topbar-plaza-select"
+                    name="plaza_id"
+                    onchange="this.form.submit()"
+                    class="h-9 rounded-lg border border-slate-300 bg-white px-2 text-sm text-slate-700 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-300"
+                >
+                    <option value="" @selected($currentPlazaId === null)>Todas</option>
+                    @foreach ($plazas as $plaza)
+                        <option value="{{ $plaza->id }}" @selected((int) $currentPlazaId === (int) $plaza->id)>{{ $plaza->nombre }}</option>
+                    @endforeach
+                </select>
+            </form>
+        @endif
 
         {{-- Nuevo contrato (solo desktop) --}}
         <a

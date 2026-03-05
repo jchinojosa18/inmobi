@@ -5,14 +5,23 @@ namespace App\Livewire\Expenses;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use App\Models\Unit;
+use App\Support\TenantContext;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
 
 class Index extends Component
 {
     use WithPagination;
+
+    #[On('expense-created')]
+    public function onExpenseCreated(): void
+    {
+        $this->resetPage();
+    }
 
     public ?string $dateFromFilter = null;
 
@@ -112,9 +121,14 @@ class Index extends Component
 
     public function render(): View
     {
-        $units = Unit::query()
-            ->orderBy('name')
-            ->get(['id', 'name', 'code']);
+        $unitsQuery = Unit::query()
+            ->join('properties', 'properties.id', '=', 'units.property_id')
+            ->orderBy('units.name')
+            ->select(['units.id', 'units.name', 'units.code']);
+
+        TenantContext::applyCurrentPlazaFilter($unitsQuery, 'properties.plaza_id');
+
+        $units = $unitsQuery->get();
 
         $configuredCategories = ExpenseCategory::query()
             ->where('is_active', true)
@@ -122,7 +136,14 @@ class Index extends Component
             ->pluck('name')
             ->values();
 
+        $currentPlazaId = TenantContext::currentPlazaId();
+
         $historicCategories = Expense::query()
+            ->when($currentPlazaId !== null, function (Builder $query) use ($currentPlazaId): void {
+                $query->whereHas('unit.property', function (Builder $propertyQuery) use ($currentPlazaId): void {
+                    $propertyQuery->where('plaza_id', $currentPlazaId);
+                });
+            })
             ->select('category')
             ->distinct()
             ->orderBy('category')
@@ -137,6 +158,11 @@ class Index extends Component
 
         $expenses = Expense::query()
             ->with(['unit.property'])
+            ->when($currentPlazaId !== null, function (Builder $query) use ($currentPlazaId): void {
+                $query->whereHas('unit.property', function (Builder $propertyQuery) use ($currentPlazaId): void {
+                    $propertyQuery->where('plaza_id', $currentPlazaId);
+                });
+            })
             ->when($this->dateFromFilter, fn ($query) => $query->whereDate('spent_at', '>=', $this->dateFromFilter))
             ->when($this->dateToFilter, fn ($query) => $query->whereDate('spent_at', '<=', $this->dateToFilter))
             ->when($this->unitFilter, fn ($query) => $query->where('unit_id', $this->unitFilter))

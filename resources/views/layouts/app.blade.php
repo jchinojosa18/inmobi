@@ -63,6 +63,12 @@
     {{-- Command Palette (montado globalmente) --}}
     <livewire:search.command-palette />
 
+    {{-- Quick Register Payment Modal (montado globalmente) --}}
+    <livewire:payments.quick-register-modal />
+
+    {{-- Quick Register Expense Modal (montado globalmente) --}}
+    <livewire:expenses.quick-register-modal />
+
     @livewireScripts
 
     {{-- ─────────────────────────────────────────────────────────────────── --}}
@@ -187,8 +193,7 @@
                 cpApplySelection(items);
             } else if (e.key === 'Enter' && cpSelectedIndex >= 0 && items[cpSelectedIndex]) {
                 e.preventDefault();
-                var href = items[cpSelectedIndex].dataset.href;
-                if (href) window.location.href = href;
+                items[cpSelectedIndex].click();
             }
             // Escape: manejado por wire:keydown.escape en el input + dispatch como backup
         });
@@ -203,13 +208,75 @@
 
         // Foco automático en el input al abrir el modal
         window.addEventListener('cp-opened', function () {
+            cpSelectedIndex = -1;
             setTimeout(function () {
                 var input = document.getElementById('cp-input');
                 if (input) input.focus();
             }, 40);
         });
     }());
+
+    /* ── Quick Payment Modal ─────────────────────────────────────────────── */
+    (function () {
+        'use strict';
+
+        window.addEventListener('qpm-opened', function () {
+            setTimeout(function () {
+                var input = document.getElementById('qpm-input');
+                if (input) input.focus();
+            }, 40);
+        });
+    }());
+
+    /* ── Quick Expense Modal ─────────────────────────────────────────────── */
+    (function () {
+        'use strict';
+
+        window.addEventListener('qem-opened', function () {
+            setTimeout(function () {
+                var input = document.getElementById('qem-category');
+                if (input) input.focus();
+            }, 40);
+        });
+    }());
     </script>
+
+    {{-- Toast global: egreso registrado --}}
+    <div
+        x-data="{ show: false }"
+        x-on:expense-created.window="show = true; setTimeout(() => show = false, 2500)"
+        x-show="show"
+        x-transition.opacity
+        class="fixed bottom-6 right-6 z-50 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-lg"
+        style="display: none;"
+        aria-live="polite"
+    >
+        Egreso registrado correctamente.
+    </div>
+
+    {{-- Toast global: command palette actions --}}
+    <div
+        x-data="{
+            show: false,
+            message: '',
+            timeout: null,
+            notify(event) {
+                this.message = event.detail?.message || '';
+                if (!this.message) return;
+                this.show = true;
+                clearTimeout(this.timeout);
+                this.timeout = setTimeout(() => { this.show = false; }, 2600);
+            }
+        }"
+        x-on:cp-notify.window="notify($event)"
+        x-show="show"
+        x-transition.opacity
+        class="fixed bottom-6 right-6 z-50 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-lg"
+        style="display: none;"
+        aria-live="polite"
+    >
+        <span x-text="message"></span>
+    </div>
 
 </body>
 </html>

@@ -3,14 +3,17 @@
 namespace Tests\Feature\Search;
 
 use App\Livewire\Search\CommandPalette;
+use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\Organization;
 use App\Models\Property;
 use App\Models\Tenant;
 use App\Models\Unit;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class CommandPaletteTest extends TestCase
@@ -53,6 +56,30 @@ class CommandPaletteTest extends TestCase
             ->call('open')
             ->set('q', 'a')
             ->assertSet('results', []);
+    }
+
+    public function test_renders_actions_section_when_opened(): void
+    {
+        $user = User::factory()->create();
+
+        Livewire::actingAs($user)
+            ->test(CommandPalette::class)
+            ->call('open')
+            ->assertSee('Acciones')
+            ->assertSee('Registrar pago')
+            ->assertSee('Registrar egreso');
+    }
+
+    public function test_filters_actions_by_query_text(): void
+    {
+        $user = User::factory()->create();
+
+        Livewire::actingAs($user)
+            ->test(CommandPalette::class)
+            ->call('open')
+            ->set('q', 'pago')
+            ->assertSee('Registrar pago')
+            ->assertDontSee('Registrar egreso');
     }
 
     // ─── Scoping por organización ────────────────────────────────────────────
@@ -193,5 +220,48 @@ class CommandPaletteTest extends TestCase
             ->get(route('dashboard'))
             ->assertOk()
             ->assertSeeLivewire(CommandPalette::class);
+    }
+
+    public function test_admin_can_run_generate_current_month_rent_action_idempotently(): void
+    {
+        $month = CarbonImmutable::now('America/Tijuana')->format('Y-m');
+        $org = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $org->id]);
+        Role::findOrCreate('Admin', 'web');
+        $user->assignRole('Admin');
+
+        $contract = Contract::factory()->create([
+            'organization_id' => $org->id,
+            'status' => Contract::STATUS_ACTIVE,
+            'starts_at' => CarbonImmutable::now('America/Tijuana')->subMonth()->toDateString(),
+            'ends_at' => null,
+        ]);
+
+        $component = Livewire::actingAs($user)
+            ->test(CommandPalette::class)
+            ->call('open');
+
+        $component
+            ->call('executeAction', 'generate_current_month_rent')
+            ->assertSet('confirmingActionId', 'generate_current_month_rent');
+
+        $component->call('executeAction', 'generate_current_month_rent');
+
+        $this->assertSame(1, Charge::query()
+            ->where('contract_id', $contract->id)
+            ->where('type', Charge::TYPE_RENT)
+            ->where('period', $month)
+            ->count());
+
+        $component
+            ->call('open')
+            ->call('executeAction', 'generate_current_month_rent')
+            ->call('executeAction', 'generate_current_month_rent');
+
+        $this->assertSame(1, Charge::query()
+            ->where('contract_id', $contract->id)
+            ->where('type', Charge::TYPE_RENT)
+            ->where('period', $month)
+            ->count());
     }
 }

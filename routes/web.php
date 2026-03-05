@@ -1,8 +1,11 @@
 <?php
 
+use App\Http\Controllers\Auth\AcceptOrganizationInvitationController;
+use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\ContractSettlementPdfController;
 use App\Http\Controllers\PaymentReceiptPdfController;
 use App\Http\Controllers\Reports\CashFlowCsvExportController;
+use App\Http\Controllers\Tenant\UpdateCurrentPlazaController;
 use App\Livewire\Admin\SystemStatus as AdminSystemStatus;
 use App\Livewire\Cobranza\Index as CobranzaIndex;
 use App\Livewire\Contracts\Form as ContractForm;
@@ -18,6 +21,8 @@ use App\Livewire\Payments\Show as PaymentShow;
 use App\Livewire\Properties\Index as PropertiesIndex;
 use App\Livewire\Reports\CashFlow as CashFlowReport;
 use App\Livewire\Settings\Index as SettingsIndex;
+use App\Livewire\Settings\InvitationsIndex as SettingsInvitationsIndex;
+use App\Livewire\Settings\PlazasIndex as SettingsPlazasIndex;
 use App\Livewire\Tenants\Index as TenantsIndex;
 use App\Livewire\Units\Index as UnitsIndex;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -31,6 +36,7 @@ Route::get('/', function () {
 
 Route::middleware('guest')->group(function (): void {
     Route::view('/login', 'auth.login')->name('login');
+    Route::get('/register', [RegisterController::class, 'show'])->name('register');
 
     Route::post('/login', function (Request $request) {
         $credentials = $request->validate([
@@ -48,6 +54,8 @@ Route::middleware('guest')->group(function (): void {
 
         return redirect()->intended(route('dashboard'));
     })->name('login.store');
+
+    Route::post('/register', [RegisterController::class, 'store'])->name('register.store');
 });
 
 Route::post('/logout', function (Request $request) {
@@ -62,6 +70,8 @@ Route::post('/logout', function (Request $request) {
 Route::get('/dashboard', DashboardIndex::class)->middleware('auth')->name('dashboard');
 
 Route::middleware('auth')->group(function (): void {
+    Route::post('/tenant/current-plaza', UpdateCurrentPlazaController::class)->name('tenant.current-plaza.update');
+
     Route::get('/properties', PropertiesIndex::class)->name('properties.index');
     Route::get('/properties/{property}/units', UnitsIndex::class)->name('properties.units.index');
     Route::get('/houses/create', HouseCreate::class)->name('houses.create');
@@ -72,6 +82,12 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/reports/flow/export.csv', CashFlowCsvExportController::class)->name('reports.flow.export.csv');
     Route::get('/month-closes', MonthClosesIndex::class)->name('month-closes.index');
     Route::get('/settings', SettingsIndex::class)->name('settings.index');
+    Route::get('/settings/invitations', SettingsInvitationsIndex::class)
+        ->middleware('role:Admin')
+        ->name('settings.invitations.index');
+    Route::get('/settings/plazas', SettingsPlazasIndex::class)
+        ->middleware('role:Admin')
+        ->name('settings.plazas.index');
 
     Route::get('/contracts', ContractsIndex::class)->name('contracts.index');
     Route::get('/contracts/create', ContractForm::class)->name('contracts.create');
@@ -85,6 +101,8 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/payments/{paymentId}/receipt.pdf', PaymentReceiptPdfController::class)->name('payments.receipt.pdf');
     Route::get('/cobranza', CobranzaIndex::class)->name('cobranza.index');
 });
+
+Route::get('/invite/{token}', AcceptOrganizationInvitationController::class)->name('invitations.accept');
 
 Route::get('/receipts/{paymentId}/shared.pdf', PaymentReceiptPdfController::class)
     ->middleware('signed')

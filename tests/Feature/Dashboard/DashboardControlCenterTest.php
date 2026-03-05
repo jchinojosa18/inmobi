@@ -177,7 +177,7 @@ class DashboardControlCenterTest extends TestCase
         $response->assertSeeText('Inquilino Vencido');
         $response->assertSeeText('#'.$contractGrace->id);
         $response->assertSeeText('REC-DASH-0001');
-        $response->assertSee(route('contracts.payments.create', $contractOverdue->id), false);
+        $response->assertSeeHtml('open-quick-payment');
         $response->assertSee(route('payments.receipt.pdf', ['paymentId' => $payment->id]), false);
     }
 }
