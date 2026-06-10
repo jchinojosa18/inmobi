@@ -34,19 +34,13 @@ class Panel extends Component
         $this->title = $title;
     }
 
-    public function upload(): void
+    public function save(): void
     {
         if (! (auth()->user()?->can('documents.upload') ?? false)) {
             abort(403);
         }
 
-        $this->validate([
-            'document' => ['required', 'file', 'max:5120', 'mimes:jpg,jpeg,png,pdf'],
-        ], [
-            'document.required' => 'Selecciona un archivo para subir.',
-            'document.max' => 'El archivo excede el limite de 5 MB.',
-            'document.mimes' => 'Solo se permiten archivos JPG, PNG o PDF.',
-        ]);
+        $this->validate();
 
         $documentable = $this->resolveDocumentable();
         $disk = (string) config('filesystems.documents_disk', 'public');
@@ -69,10 +63,8 @@ class Panel extends Component
                 ],
             ]);
         } catch (ValidationException $exception) {
-            $message = $exception->errors()['month_close'][0] ?? 'No se pudo subir el documento.';
-            $this->addError('document', $message);
-
-            return;
+            $this->reset('document');
+            throw $exception;
         }
 
         app(AuditLogger::class)->log(
@@ -88,6 +80,22 @@ class Panel extends Component
 
         $this->reset('document');
         session()->flash('success', 'Documento subido correctamente.');
+    }
+
+    protected function rules(): array
+    {
+        return [
+            'document' => ['required', 'file', 'max:5120', 'mimes:jpg,jpeg,png,pdf'],
+        ];
+    }
+
+    protected function messages(): array
+    {
+        return [
+            'document.required' => 'Selecciona un archivo para subir.',
+            'document.max' => 'El archivo excede el limite de 5 MB.',
+            'document.mimes' => 'Solo se permiten archivos JPG, PNG o PDF.',
+        ];
     }
 
     public function render(): View

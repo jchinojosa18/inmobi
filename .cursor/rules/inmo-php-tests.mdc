@@ -1,0 +1,33 @@
+---
+description: Estilo PHP, tests y comandos artisan de inmo-admin
+globs: app/**/*.php,tests/**/*.php,database/**/*.php,routes/**/*.php
+alwaysApply: false
+---
+
+# PHP, tests y calidad
+
+## Estilo
+
+- Seguir convenciones Laravel 11 y código circundante.
+- Formatear con `./vendor/bin/sail pint` (no Pint manual fuera de Sail).
+- Tipado estricto donde ya se usa; imports ordenados como en archivos vecinos.
+
+## Tests
+
+- Feature tests en `tests/Feature/`; usar factories y seeders existentes.
+- Demo smoke: `DemoDataSeeder` + `admin-smoke@inmo.test`.
+- Filtrar tests relevantes: `./vendor/bin/sail test --filter=NombreTest`.
+
+## Comandos custom (`inmo:*`)
+
+Mutex por cache lock; salida `0` si skipped (locked). No eliminar idempotencia al tocar:
+`inmo:generate-rent`, `inmo:penalties:run`, `inmo:daily`, `inmo:backup`.
+
+## Migraciones
+
+- Backfills idempotentes cuando sea posible.
+- No romper constraints únicos de multas/rentas.
+
+## Permisos nuevos
+
+Si agregas permiso: actualizar `SyncRolesAndPermissionsSeeder` + `config/permissions_ui.php` + rutas/Livewire.

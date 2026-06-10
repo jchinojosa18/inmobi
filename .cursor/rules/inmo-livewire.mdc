@@ -1,0 +1,29 @@
+---
+description: Convenciones Livewire y Blade para inmo-admin
+globs: app/Livewire/**/*.php,resources/views/**/*.blade.php
+alwaysApply: false
+---
+
+# Livewire y UI
+
+## Responsabilidades
+
+- Livewire orquesta formularios, listados y filtros.
+- Reglas financieras van en `app/Actions` o `app/Support`, no duplicadas en componentes.
+- Validar permisos: `abort(403)` o `@can` en Blade; rutas con middleware `permission:*`.
+
+## Patrones del proyecto
+
+- Componentes en `app/Livewire/{Modulo}/` con vista en `resources/views/livewire/{modulo}/`.
+- Layout principal: `resources/views/layouts/app.blade.php`.
+- Tailwind CSS; assets vía Vite (`@vite`).
+
+## Al agregar pantallas
+
+1. Registrar ruta en `routes/web.php` con middleware auth + permiso.
+2. Reutilizar estilos y patrones de listados/filtros existentes en el mismo módulo.
+3. Respetar scope de plaza cuando aplique (filtros solo con 2+ plazas).
+
+## Documentos
+
+Morph en `Document`; disk `DOCUMENTS_DISK` (default `public`). Validar tipos/tamaño como en flujos existentes.

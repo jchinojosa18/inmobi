@@ -47,7 +47,7 @@
             <p class="mt-1 text-xs text-slate-500">Permitidos: JPG, PNG, PDF. Maximo 5 MB.</p>
 
             @if ($canUploadDocuments)
-                <form wire:submit="upload" class="mt-3 space-y-3" enctype="multipart/form-data">
+                <form wire:submit="save" class="mt-3 space-y-3" enctype="multipart/form-data">
                     <input
                         type="file"
                         wire:model="document"
@@ -55,6 +55,9 @@
                         class="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
                     >
                     @error('document')
+                        <p class="text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                    @error('month_close')
                         <p class="text-sm text-red-600">{{ $message }}</p>
                     @enderror
 

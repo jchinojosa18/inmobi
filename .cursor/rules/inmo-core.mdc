@@ -1,0 +1,44 @@
+---
+description: Contexto base de inmo-admin — stack, Sail, docs y verificación
+alwaysApply: true
+---
+
+# inmo-admin — reglas base
+
+SaaS Laravel 11 + Livewire 4 + Tailwind para administración inmobiliaria multi-tenant (`organization_id`).
+
+## Antes de implementar
+
+1. Lee `docs/AI_ONBOARDING.md` (dominio y reglas de negocio).
+2. Revisa código existente en `app/Actions`, `app/Support` y modelos relacionados.
+3. Mantén el diff mínimo; no refactorices fuera del alcance pedido.
+
+## Entorno local (Sail obligatorio)
+
+- **Siempre** usa `./vendor/bin/sail` para artisan, composer, npm y tests.
+- **No** uses `php artisan serve` suelto: `.env` apunta a `DB_HOST=mysql` (Docker).
+- Arranque: `./vendor/bin/sail up -d` + `./vendor/bin/sail npm run dev`
+- App: http://127.0.0.1:8000 · Mailpit: http://localhost:8025
+
+## Verificación antes de terminar
+
+```bash
+./vendor/bin/sail test --filter=<TestRelacionado>
+./vendor/bin/sail pint --dirty
+```
+
+Smoke E2E (cambios financieros): `./vendor/bin/sail artisan inmo:smoke --date=2026-03-10`
+
+## Dónde vive qué
+
+| Capa | Rol |
+|------|-----|
+| `app/Actions` | Casos de uso transaccionales (reglas de negocio) |
+| `app/Support` | Servicios compartidos (ingresos, cierres, depósitos) |
+| `app/Livewire` | UI + queries; **no** redefinir lógica financiera core |
+| `app/Models` | Relaciones, scopes, hooks (`OrganizationScopedModel`) |
+
+## Git
+
+- No commitear sin que el usuario lo pida explícitamente.
+- No tocar `.env` ni secretos.

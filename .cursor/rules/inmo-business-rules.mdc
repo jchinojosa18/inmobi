@@ -1,0 +1,35 @@
+---
+description: Reglas de negocio financieras innegociables de inmo-admin
+globs: app/Actions/**/*.php,app/Support/**/*.php,app/Models/{Charge,Payment,PaymentAllocation,Contract,Expense,CreditBalance,MonthClose}.php
+alwaysApply: false
+---
+
+# Reglas de negocio (INNEGOCIABLES)
+
+Ledger: `Charge` + `Payment` + `PaymentAllocation`. Ingresos operativos = suma de **allocations**, no `payments.amount`.
+
+## Pagos (`ApplyPaymentAction`)
+
+Prioridad: RENT antiguo → SERVICE reembolsable → PENALTY → resto. Idempotente si ya tiene allocations. Saldo a favor en `credit_balances`, no cargos negativos.
+
+## Multas (`RunDailyPenaltiesAction`)
+
+- 1 multa/contrato/día; constraint único `charges_contract_penalty_type_unique`.
+- `penalty_rate_daily`: decimal (`0.05` = 5%). UI en %; guardrail max `0.5`.
+- Idempotencia obligatoria; no romper backfill/rebuild.
+
+## Depósitos y finiquito
+
+Tipos: `DEPOSIT_HOLD`, `MOVEOUT`, `DEPOSIT_APPLY`. `DEPOSIT_HOLD`/`DEPOSIT_APPLY` excluidos de ingresos operativos.
+
+## Cierre mensual (`MonthCloseGuard`)
+
+Mes cerrado bloquea create/update/delete en `Payment`, `Expense`, `Charge`, `Document`. Excepción: `ADJUSTMENT` con `meta.reason`.
+
+## Multi-tenant
+
+Modelos scoped por `organization_id`. En jobs/comandos usar `withoutOrganizationScope()` solo cuando sea necesario y documentado.
+
+## RBAC
+
+Permisos en `SyncRolesAndPermissionsSeeder`. Validar con `permission:*` en rutas y `can()` en Livewire. No inventar permisos sin actualizar seeder.
