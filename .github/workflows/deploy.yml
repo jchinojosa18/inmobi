@@ -79,29 +79,32 @@ jobs:
           test -n "${{ secrets.HOSTINGER_SSH_KEY }}" || (echo "::error::Missing secret HOSTINGER_SSH_KEY" && exit 1)
           test -n "${DEPLOY_PATH}" || (echo "::error::Missing secret HOSTINGER_PATH" && exit 1)
 
-      - name: Setup SSH agent
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.HOSTINGER_SSH_KEY }}
-
-      - name: Add Hostinger to known hosts
-        run: ssh-keyscan -p "${SSH_PORT}" -H "${{ secrets.HOSTINGER_HOST }}" >> ~/.ssh/known_hosts
+      - name: Setup SSH key
+        run: |
+          install -m 700 -d ~/.ssh
+          echo "${{ secrets.HOSTINGER_SSH_KEY }}" | base64 -d > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          if ! ssh-keygen -y -f ~/.ssh/deploy_key >/dev/null 2>&1; then
+            echo "::error::HOSTINGER_SSH_KEY invalida. Genera base64 con: base64 -i ~/.ssh/inmo_deploy | tr -d '\\n'"
+            exit 1
+          fi
+          ssh-keyscan -p "${SSH_PORT}" -H "${{ secrets.HOSTINGER_HOST }}" >> ~/.ssh/known_hosts
 
       - name: Test SSH connection
         run: |
-          ssh -p "${SSH_PORT}" -o BatchMode=yes -o ConnectTimeout=20 "${SSH_TARGET}" \
+          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT}" -o BatchMode=yes -o ConnectTimeout=20 "${SSH_TARGET}" \
             "cd '${DEPLOY_PATH}' && php artisan --version"
 
       - name: Backup production
         continue-on-error: true
         run: |
-          ssh -p "${SSH_PORT}" -o BatchMode=yes "${SSH_TARGET}" \
+          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT}" -o BatchMode=yes "${SSH_TARGET}" \
             "cd '${DEPLOY_PATH}' && php artisan inmo:backup --keep=14"
 
       - name: Rsync to server
         run: |
           rsync -avz --delete \
-            -e "ssh -p ${SSH_PORT} -o BatchMode=yes" \
+            -e "ssh -i ~/.ssh/deploy_key -p ${SSH_PORT} -o BatchMode=yes" \
             --exclude '.env' \
             --exclude '.git' \
             --exclude '.github' \
@@ -120,5 +123,5 @@ jobs:
 
       - name: Run migrations and warm caches
         run: |
-          ssh -p "${SSH_PORT}" -o BatchMode=yes "${SSH_TARGET}" \
+          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT}" -o BatchMode=yes "${SSH_TARGET}" \
             "cd '${DEPLOY_PATH}' && php artisan migrate --force && (php artisan storage:link || true) && php artisan config:cache && php artisan route:cache && php artisan view:cache"
