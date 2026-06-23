@@ -152,6 +152,23 @@ class AppServiceProvider extends ServiceProvider
                     }),
             ];
         });
+
+        RateLimiter::for('password-reset', function (Request $request) {
+            $email = mb_strtolower(trim((string) $request->input('email', '')));
+            $key = 'password-reset|'.$request->ip().'|'.$email;
+
+            return [
+                Limit::perMinute(3)
+                    ->by($key)
+                    ->response(function (Request $request, array $headers) use ($key) {
+                        $retryAfter = max((int) RateLimiter::availableIn($key), 1);
+
+                        return response()->view('auth.forgot-password', [
+                            'throttleMessage' => "Demasiados intentos. Intenta de nuevo en {$retryAfter} segundos.",
+                        ], 429, $headers);
+                    }),
+            ];
+        });
     }
 
     private function loginEmailThrottleKey(Request $request): string

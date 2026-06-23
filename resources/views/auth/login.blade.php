@@ -107,21 +107,12 @@
                         <span>Recordarme</span>
                     </label>
 
-                    @if (Route::has('password.request'))
-                        <a
-                            href="{{ route('password.request') }}"
-                            class="whitespace-nowrap text-sm leading-5 text-slate-600 underline-offset-4 transition hover:text-slate-900 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 dark:text-slate-300 dark:hover:text-slate-100"
-                        >
-                            ¿Olvidaste tu contraseña?
-                        </a>
-                    @else
-                        <a
-                            href="mailto:soporte@inmo-admin.local?subject=Recuperar%20acceso"
-                            class="whitespace-nowrap text-sm leading-5 text-slate-600 underline-offset-4 transition hover:text-slate-900 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 dark:text-slate-300 dark:hover:text-slate-100"
-                        >
-                            ¿Olvidaste tu contraseña?
-                        </a>
-                    @endif
+                    <a
+                        href="{{ route('password.request') }}"
+                        class="whitespace-nowrap text-sm leading-5 text-slate-600 underline-offset-4 transition hover:text-slate-900 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 dark:text-slate-300 dark:hover:text-slate-100"
+                    >
+                        ¿Olvidaste tu contraseña?
+                    </a>
                 </div>
 
                 <button
