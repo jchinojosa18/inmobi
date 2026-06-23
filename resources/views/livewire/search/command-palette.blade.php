@@ -17,7 +17,7 @@
     ></div>
 
     {{-- Card --}}
-    <div class="relative w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-slate-900/10">
+    <div class="relative w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200/80">
 
         {{-- ── Input ──────────────────────────────────────────────────────── --}}
         <div class="flex items-center gap-3 border-b border-slate-200 px-4">
@@ -107,7 +107,7 @@
                             wire:click="executeAction('{{ $action['id'] }}')"
                             data-cp-result
                             data-cp-kind="action"
-                            class="group mx-2 flex w-[calc(100%-1rem)] items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-slate-100"
+                            class="group mx-2 flex w-[calc(100%-1rem)] items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-indigo-50"
                             role="option"
                             tabindex="-1"
                         >
@@ -215,7 +215,7 @@
                                     data-href="{{ $item['href'] }}"
                                     @if($item['href2']) data-href2="{{ $item['href2'] }}" @endif
                                     onclick="window.location.href='{{ $item['href'] }}'"
-                                    class="group mx-2 flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-slate-100"
+                                    class="group mx-2 flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-indigo-50"
                                     role="option"
                                     tabindex="-1"
                                 >

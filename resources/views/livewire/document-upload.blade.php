@@ -1,4 +1,4 @@
-<div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+<x-ui.card>
     <h2 class="mb-3 text-lg font-semibold">Subir evidencia/documento</h2>
     <p class="mb-4 text-sm text-slate-600">
         Tipos permitidos: JPG, PNG, PDF. Tamano maximo: 5 MB.
@@ -10,20 +10,19 @@
                 type="file"
                 wire:model="document"
                 accept=".jpg,.jpeg,.png,.pdf"
-                class="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                class="block w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
             >
             @error('document')
                 <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
             @enderror
         </div>
 
-        <button
+        <x-ui.button
             type="submit"
             wire:loading.attr="disabled"
-            class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
         >
             Subir documento
-        </button>
+        </x-ui.button>
 
         <p wire:loading wire:target="document,upload" class="text-sm text-slate-500">
             Procesando archivo...
@@ -45,4 +44,4 @@
             </a>
         </div>
     @endif
-</div>
+</x-ui.card>

@@ -1,19 +1,16 @@
 <section class="space-y-6">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-            <h1 class="text-2xl font-semibold tracking-tight">Plazas</h1>
-            <p class="mt-1 text-sm text-slate-600">Administración de plazas por organización (multi-ciudad).</p>
-        </div>
+    <x-ui.page-header
+        title="Plazas"
+        description="Administración de plazas por organización (multi-ciudad)."
+    >
         @if ($canManagePlazas)
-            <button
-                type="button"
-                wire:click="startCreate"
-                class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-            >
-                Nueva plaza
-            </button>
+            <x-slot:actions>
+                <x-ui.button type="button" wire:click="startCreate">
+                    Nueva plaza
+                </x-ui.button>
+            </x-slot:actions>
         @endif
-    </div>
+    </x-ui.page-header>
 
     @if ($singlePlaza)
         <div class="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
@@ -36,20 +33,17 @@
         >
             <form wire:submit="save" class="grid gap-4 md:grid-cols-2">
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Nombre</label>
-                    <input type="text" wire:model.blur="nombre" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    <x-ui.input label="Nombre" type="text" wire:model.blur="nombre" />
                     @error('nombre') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Ciudad</label>
-                    <input type="text" wire:model.blur="ciudad" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    <x-ui.input label="Ciudad" type="text" wire:model.blur="ciudad" />
                     @error('ciudad') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Timezone</label>
-                    <input type="text" wire:model.blur="timezone" placeholder="America/Tijuana" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    <x-ui.input label="Timezone" type="text" wire:model.blur="timezone" placeholder="America/Tijuana" />
                     @error('timezone') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
@@ -62,12 +56,12 @@
                 </div>
 
                 <div class="md:col-span-2 flex justify-end gap-2">
-                    <button type="button" wire:click="cancelForm" class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                    <x-ui.button type="button" wire:click="cancelForm" variant="secondary">
                         Cancelar
-                    </button>
-                    <button type="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
+                    </x-ui.button>
+                    <x-ui.button type="submit">
                         Guardar
-                    </button>
+                    </x-ui.button>
                 </div>
             </form>
         </x-ui.modal>
@@ -89,58 +83,50 @@
         </x-ui.confirm-modal>
     @endif
 
-    <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-slate-200 text-sm">
-                <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    <tr>
-                        <th class="px-4 py-3">Nombre</th>
-                        <th class="px-4 py-3">Ciudad</th>
-                        <th class="px-4 py-3">Timezone</th>
-                        <th class="px-4 py-3">Default</th>
-                        <th class="px-4 py-3 text-right">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 bg-white">
-                    @forelse ($plazas as $plaza)
-                        <tr>
-                            <td class="px-4 py-3 font-medium text-slate-900">{{ $plaza->nombre }}</td>
-                            <td class="px-4 py-3 text-slate-700">{{ $plaza->ciudad ?: '—' }}</td>
-                            <td class="px-4 py-3 text-slate-700">{{ $plaza->timezone }}</td>
-                            <td class="px-4 py-3">
-                                @if ($plaza->is_default)
-                                    <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">Default</span>
-                                @else
-                                    <span class="text-xs text-slate-500">No</span>
+    <x-ui.table>
+        <x-slot:head>
+            <th class="px-4 py-3">Nombre</th>
+            <th class="px-4 py-3">Ciudad</th>
+            <th class="px-4 py-3">Timezone</th>
+            <th class="px-4 py-3">Default</th>
+            <th class="px-4 py-3 text-right">Acciones</th>
+        </x-slot:head>
+        <x-slot:body>
+            @forelse ($plazas as $plaza)
+                <tr>
+                    <td class="px-4 py-3 font-medium text-slate-900">{{ $plaza->nombre }}</td>
+                    <td class="px-4 py-3 text-slate-700">{{ $plaza->ciudad ?: '—' }}</td>
+                    <td class="px-4 py-3 text-slate-700">{{ $plaza->timezone }}</td>
+                    <td class="px-4 py-3">
+                        @if ($plaza->is_default)
+                            <x-ui.badge variant="success">Default</x-ui.badge>
+                        @else
+                            <span class="text-xs text-slate-500">No</span>
+                        @endif
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                        @if ($canManagePlazas)
+                            <div class="inline-flex items-center gap-2">
+                                @if (! $plaza->is_default)
+                                    <x-ui.button type="button" wire:click="markAsDefault({{ $plaza->id }})" variant="secondary" size="sm" class="border-emerald-300 text-emerald-700 hover:bg-emerald-50">
+                                        Marcar default
+                                    </x-ui.button>
                                 @endif
-                            </td>
-                            <td class="px-4 py-3 text-right">
-                                @if ($canManagePlazas)
-                                    <div class="inline-flex items-center gap-2">
-                                        @if (! $plaza->is_default)
-                                            <button type="button" wire:click="markAsDefault({{ $plaza->id }})" class="rounded-md border border-emerald-300 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50">
-                                                Marcar default
-                                            </button>
-                                        @endif
-                                        <button type="button" wire:click="startEdit({{ $plaza->id }})" class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
-                                            Editar
-                                        </button>
-                                        <button type="button" wire:click="confirmDelete({{ $plaza->id }})" class="rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50">
-                                            Eliminar
-                                        </button>
-                                    </div>
-                                @else
-                                    <span class="text-xs text-slate-500">Solo lectura</span>
-                                @endif
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5" class="px-4 py-6 text-center text-slate-500">Sin plazas registradas.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
+                                <x-ui.button type="button" wire:click="startEdit({{ $plaza->id }})" variant="secondary" size="sm">
+                                    Editar
+                                </x-ui.button>
+                                <x-ui.button type="button" wire:click="confirmDelete({{ $plaza->id }})" variant="danger" size="sm">
+                                    Eliminar
+                                </x-ui.button>
+                            </div>
+                        @else
+                            <span class="text-xs text-slate-500">Solo lectura</span>
+                        @endif
+                    </td>
+                </tr>
+            @empty
+                <x-ui.empty-state title="Sin plazas registradas." :colspan="5" />
+            @endforelse
+        </x-slot:body>
+    </x-ui.table>
 </section>

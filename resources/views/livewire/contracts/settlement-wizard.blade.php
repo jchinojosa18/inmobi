@@ -1,4 +1,4 @@
-<div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+<x-ui.card>
     <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
             <h2 class="text-lg font-semibold text-slate-900">Finiquito de contrato</h2>
@@ -24,8 +24,7 @@
 
         <div class="grid gap-4 md:grid-cols-3">
             <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700">Fecha salida *</label>
-                <input type="date" wire:model.blur="move_out_date" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                <x-ui.input label="Fecha salida *" type="date" wire:model.blur="move_out_date" />
                 @error('move_out_date') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
             </div>
         </div>
@@ -33,9 +32,9 @@
         <div class="space-y-3">
             <div class="flex items-center justify-between">
                 <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-700">Conceptos de salida</h3>
-                <button type="button" wire:click="addConcept" class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
+                <x-ui.button type="button" wire:click="addConcept" variant="secondary" size="sm">
                     Agregar concepto
-                </button>
+                </x-ui.button>
             </div>
 
             @error('concepts') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
@@ -43,42 +42,40 @@
             @foreach ($concepts as $index => $concept)
                 <div class="grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 md:grid-cols-12">
                     <div class="md:col-span-5">
-                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Concepto *</label>
-                        <input type="text" wire:model.blur="concepts.{{ $index }}.description" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                        <x-ui.input label="Concepto *" type="text" wire:model.blur="concepts.{{ $index }}.description" />
                         @error('concepts.'.$index.'.description') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
                     <div class="md:col-span-3">
-                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Monto *</label>
-                        <input type="number" step="0.01" min="0.01" wire:model.blur="concepts.{{ $index }}.amount" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                        <x-ui.input label="Monto *" type="number" step="0.01" min="0.01" wire:model.blur="concepts.{{ $index }}.amount" />
                         @error('concepts.'.$index.'.amount') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
                     <div class="md:col-span-3">
-                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Evidencia (foto)</label>
-                        <input type="file" wire:model="evidenceFiles.{{ $index }}" accept=".jpg,.jpeg,.png,.webp" class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm">
+                        <label class="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">Evidencia (foto)</label>
+                        <input type="file" wire:model="evidenceFiles.{{ $index }}" accept=".jpg,.jpeg,.png,.webp" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
                         @error('evidenceFiles.'.$index) <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
                     <div class="flex items-end justify-end md:col-span-1">
-                        <button type="button" wire:click="removeConcept({{ $index }})" class="rounded-md border border-red-200 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50">
+                        <x-ui.button type="button" wire:click="removeConcept({{ $index }})" variant="danger" size="sm">
                             Quitar
-                        </button>
+                        </x-ui.button>
                     </div>
                 </div>
             @endforeach
         </div>
 
         <div class="flex justify-end">
-            <button type="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
+            <x-ui.button type="submit">
                 Confirmar finiquito
-            </button>
+            </x-ui.button>
         </div>
     </form>
 
     @if ($lastSettlementPdfUrl)
         <div class="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
             <p>{{ $lastSettlementSummary }}</p>
-            <a href="{{ $lastSettlementPdfUrl }}" target="_blank" rel="noopener noreferrer" class="mt-2 inline-flex rounded-md bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-600">
+            <a href="{{ $lastSettlementPdfUrl }}" target="_blank" rel="noopener noreferrer" class="mt-2 inline-flex rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-600">
                 Ver PDF de finiquito
             </a>
         </div>
     @endif
-</div>
+</x-ui.card>

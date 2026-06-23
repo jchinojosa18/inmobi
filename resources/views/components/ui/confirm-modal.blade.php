@@ -63,22 +63,14 @@
                     {{ $slot }}
                 </div>
 
-                <div class="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-200 bg-slate-50 px-5 py-4 sm:flex-row sm:justify-end">
-                    <button
-                        type="button"
-                        wire:click="{{ $cancelAction }}"
-                        class="inline-flex w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 sm:w-auto"
-                    >
+                <div class="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-100 bg-slate-50 px-5 py-4 sm:flex-row sm:justify-end">
+                    <x-ui.button type="button" variant="secondary" wire:click="{{ $cancelAction }}" class="w-full sm:w-auto">
                         {{ $cancelLabel }}
-                    </button>
+                    </x-ui.button>
                     @if ($confirmAction !== '')
-                        <button
-                            type="button"
-                            wire:click="{{ $confirmAction }}"
-                            class="inline-flex w-full items-center justify-center rounded-lg border border-red-300 bg-white px-4 py-2.5 text-sm font-semibold text-red-700 shadow-sm transition hover:bg-red-50 sm:w-auto"
-                        >
+                        <x-ui.button type="button" variant="danger" wire:click="{{ $confirmAction }}" class="w-full sm:w-auto">
                             {{ $confirmLabel }}
-                        </button>
+                        </x-ui.button>
                     @endif
                 </div>
             </div>

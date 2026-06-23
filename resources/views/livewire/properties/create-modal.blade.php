@@ -25,13 +25,9 @@
             </div>
         @else
             <div class="mb-4 flex items-center gap-2">
-                <button
-                    type="button"
-                    wire:click="backToPicker"
-                    class="rounded-md border border-slate-300 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
-                >
+                <x-ui.button type="button" wire:click="backToPicker" variant="secondary" size="sm">
                     ← Cambiar tipo
-                </button>
+                </x-ui.button>
                 <span class="text-xs text-slate-500">{{ $selectedTypeLabel }}</span>
             </div>
 
@@ -42,45 +38,41 @@
 
                 <form wire:submit="save" class="grid gap-4 md:grid-cols-2">
                     <div class="md:col-span-2">
-                        <label class="mb-1 block text-sm font-medium text-slate-700">Nombre *</label>
-                        <input type="text" wire:model.live="name" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm uppercase">
+                        <x-ui.input label="Nombre *" type="text" wire:model.live="name" class="uppercase" />
                         @error('name') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-slate-700">Código *</label>
-                        <input type="text" wire:model.live="code" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm uppercase">
+                        <x-ui.input label="Código *" type="text" wire:model.live="code" class="uppercase" />
                         @error('code') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-slate-700">Estado *</label>
-                        <select wire:model="formStatus" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                        <x-ui.select label="Estado *" wire:model="formStatus">
                             <option value="active">Activo</option>
                             <option value="inactive">Inactivo</option>
-                        </select>
+                        </x-ui.select>
                         @error('formStatus') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div class="md:col-span-2">
-                        <label class="mb-1 block text-sm font-medium text-slate-700">Dirección</label>
-                        <input type="text" wire:model.live="address" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm uppercase">
+                        <x-ui.input label="Dirección" type="text" wire:model.live="address" class="uppercase" />
                         @error('address') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div class="md:col-span-2">
-                        <label class="mb-1 block text-sm font-medium text-slate-700">Notas</label>
-                        <textarea wire:model.blur="notes" rows="3" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"></textarea>
+                        <label class="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">Notas</label>
+                        <textarea wire:model.blur="notes" rows="3" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"></textarea>
                         @error('notes') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div class="md:col-span-2 flex flex-wrap items-center justify-end gap-2">
-                        <button type="button" wire:click="cancelForm" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                        <x-ui.button type="button" wire:click="cancelForm" variant="secondary">
                             Cancelar
-                        </button>
-                        <button type="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
+                        </x-ui.button>
+                        <x-ui.button type="submit">
                             Crear edificio
-                        </button>
+                        </x-ui.button>
                     </div>
                 </form>
             @else
@@ -90,30 +82,28 @@
 
                 <form wire:submit="save" class="grid gap-4 md:grid-cols-2">
                     <div class="md:col-span-2">
-                        <label class="mb-1 block text-sm font-medium text-slate-700">Nombre *</label>
-                        <input type="text" wire:model.live="name" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm uppercase">
+                        <x-ui.input label="Nombre *" type="text" wire:model.live="name" class="uppercase" />
                         @error('name') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div class="md:col-span-2">
-                        <label class="mb-1 block text-sm font-medium text-slate-700">Dirección</label>
-                        <input type="text" wire:model.live="address" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm uppercase">
+                        <x-ui.input label="Dirección" type="text" wire:model.live="address" class="uppercase" />
                         @error('address') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div class="md:col-span-2">
-                        <label class="mb-1 block text-sm font-medium text-slate-700">Notas</label>
-                        <textarea wire:model.blur="notes" rows="3" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"></textarea>
+                        <label class="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">Notas</label>
+                        <textarea wire:model.blur="notes" rows="3" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"></textarea>
                         @error('notes') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div class="md:col-span-2 flex flex-wrap items-center justify-end gap-2">
-                        <button type="button" wire:click="cancelForm" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                        <x-ui.button type="button" wire:click="cancelForm" variant="secondary">
                             Cancelar
-                        </button>
-                        <button type="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
+                        </x-ui.button>
+                        <x-ui.button type="submit">
                             Crear {{ strtolower($selectedTypeLabel) }}
-                        </button>
+                        </x-ui.button>
                     </div>
                 </form>
             @endif

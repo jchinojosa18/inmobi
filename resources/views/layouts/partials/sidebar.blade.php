@@ -1,8 +1,8 @@
 @php
-    $active   = 'bg-slate-100 text-slate-900 font-medium';
-    $inactive = 'text-slate-600 hover:bg-slate-50 hover:text-slate-900';
-    $aIcon    = 'text-slate-700';
-    $iIcon    = 'text-slate-400 group-hover:text-slate-600';
+    $active   = 'bg-white/10 text-white font-medium';
+    $inactive = 'text-slate-400 hover:bg-white/5 hover:text-slate-200';
+    $aIcon    = 'text-indigo-400';
+    $iIcon    = 'text-slate-500 group-hover:text-slate-300';
     $linkBase = 'group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ';
     $iconBase = 'h-4 w-4 shrink-0 ';
 
@@ -11,15 +11,17 @@
 @endphp
 
 {{-- ─── Branding ──────────────────────────────────────────────────────── --}}
-<div class="flex h-14 shrink-0 items-center gap-2 border-b border-slate-200 px-4">
-    <a href="{{ route('dashboard') }}"
-       class="flex-1 text-base font-semibold tracking-tight text-slate-900">
-        Inmo Admin
+<div class="flex h-14 shrink-0 items-center gap-2 border-b border-white/10 px-4">
+    <a href="{{ route('dashboard') }}" class="flex-1">
+        <span class="block text-base font-semibold tracking-tight text-white">Inmo Admin</span>
+        @if (auth()->user()->organization?->name)
+            <span class="block truncate text-xs text-slate-400">{{ auth()->user()->organization->name }}</span>
+        @endif
     </a>
 
     {{-- Close button – visible solo en mobile --}}
     <button id="sidebar-close-btn" type="button"
-            class="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 lg:hidden"
+            class="rounded-lg p-1.5 text-slate-400 transition hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 lg:hidden"
             aria-label="Cerrar menú de navegación">
         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none"
              stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -29,11 +31,11 @@
 </div>
 
 {{-- ─── Navegación ─────────────────────────────────────────────────────── --}}
-<nav class="flex-1 overflow-y-auto px-3 py-4 space-y-6" aria-label="Menú principal">
+<nav class="sidebar-scrollbar flex-1 overflow-y-auto px-3 py-4 space-y-6" aria-label="Menú principal">
 
     {{-- OPERACIÓN --}}
     <div>
-        <p class="mb-1 px-3 text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+        <p class="mb-1 px-3 text-[11px] font-semibold uppercase tracking-widest text-slate-500">
             Operación
         </p>
         <ul class="space-y-0.5">
@@ -88,7 +90,7 @@
 
     {{-- CATÁLOGOS --}}
     <div>
-        <p class="mb-1 px-3 text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+        <p class="mb-1 px-3 text-[11px] font-semibold uppercase tracking-widest text-slate-500">
             Catálogos
         </p>
         <ul class="space-y-0.5">
@@ -131,7 +133,7 @@
 
     {{-- FINANZAS --}}
     <div>
-        <p class="mb-1 px-3 text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+        <p class="mb-1 px-3 text-[11px] font-semibold uppercase tracking-widest text-slate-500">
             Finanzas
         </p>
         <ul class="space-y-0.5">
@@ -194,7 +196,7 @@
 
     {{-- SISTEMA --}}
     <div>
-        <p class="mb-1 px-3 text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+        <p class="mb-1 px-3 text-[11px] font-semibold uppercase tracking-widest text-slate-500">
             Sistema
         </p>
         <ul class="space-y-0.5">
@@ -322,9 +324,9 @@
 
 {{-- ─── CTA Nuevo contrato ──────────────────────────────────────────────── --}}
 @can('contracts.manage')
-    <div class="shrink-0 border-t border-slate-200 p-3">
+    <div class="shrink-0 border-t border-white/10 p-3">
         <a href="{{ route('contracts.create') }}"
-           class="flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2">
+           class="flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"
                  stroke="currentColor" stroke-width="2.5" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>

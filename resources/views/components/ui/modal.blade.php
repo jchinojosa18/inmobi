@@ -29,13 +29,13 @@
             aria-hidden="true"
         ></div>
 
-        <div class="relative z-10 flex w-full {{ $maxWidthClass }} max-h-[90vh] flex-col rounded-2xl bg-white shadow-xl">
-            <div class="flex shrink-0 items-center justify-between border-b border-slate-200 px-5 py-4">
+        <div class="relative z-10 flex w-full {{ $maxWidthClass }} max-h-[90vh] flex-col rounded-2xl border border-slate-200/80 bg-white shadow-lg">
+            <div class="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-4">
                 <h2 class="text-base font-semibold text-slate-900">{{ $title }}</h2>
                 <button
                     type="button"
                     wire:click="{{ $closeAction }}"
-                    class="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                    class="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
                     aria-label="Cerrar"
                 >
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

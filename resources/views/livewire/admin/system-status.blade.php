@@ -1,92 +1,81 @@
 <section class="space-y-6">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-            <h1 class="text-2xl font-semibold tracking-tight">Admin · System</h1>
-            <p class="mt-1 text-sm text-slate-600">Checklist técnico de salud operativa para producción.</p>
-        </div>
-    </div>
+    <x-ui.page-header
+        title="Admin · System"
+        description="Checklist técnico de salud operativa para producción."
+    />
 
     <div class="grid gap-4 md:grid-cols-3">
-        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p class="text-xs uppercase tracking-wide text-slate-500">APP_ENV</p>
-            <p class="mt-2 text-lg font-semibold text-slate-900">{{ $appStatus['app_env'] }}</p>
-        </article>
-        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p class="text-xs uppercase tracking-wide text-slate-500">APP_DEBUG</p>
-            <p class="mt-2 text-lg font-semibold text-slate-900">{{ $appStatus['app_debug'] }}</p>
-        </article>
-        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p class="text-xs uppercase tracking-wide text-slate-500">PHP Version</p>
-            <p class="mt-2 text-lg font-semibold text-slate-900">{{ $appStatus['php_version'] }}</p>
-        </article>
+        <x-ui.stat-card label="APP_ENV" :value="$appStatus['app_env']" />
+        <x-ui.stat-card label="APP_DEBUG" :value="$appStatus['app_debug']" />
+        <x-ui.stat-card label="PHP Version" :value="$appStatus['php_version']" />
     </div>
 
     <div class="grid gap-4 lg:grid-cols-2">
-        <article class="rounded-xl border {{ $dbStatus['ok'] ? 'border-emerald-200' : 'border-red-200' }} bg-white p-4 shadow-sm">
+        <x-ui.card class="{{ $dbStatus['ok'] ? 'border-emerald-200/80' : 'border-red-200/80' }}">
             <div class="flex items-center justify-between">
                 <h2 class="text-base font-semibold text-slate-900">Database</h2>
-                <span class="rounded-full px-2 py-1 text-xs font-semibold {{ $dbStatus['ok'] ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700' }}">
+                <x-ui.badge :variant="$dbStatus['ok'] ? 'success' : 'danger'">
                     {{ $dbStatus['ok'] ? 'OK' : 'ERROR' }}
-                </span>
+                </x-ui.badge>
             </div>
             <p class="mt-2 text-sm text-slate-700">{{ $dbStatus['message'] }}</p>
-        </article>
+        </x-ui.card>
 
-        <article class="rounded-xl border {{ $redisStatus['ok'] ? 'border-emerald-200' : 'border-red-200' }} bg-white p-4 shadow-sm">
+        <x-ui.card class="{{ $redisStatus['ok'] ? 'border-emerald-200/80' : 'border-red-200/80' }}">
             <div class="flex items-center justify-between">
                 <h2 class="text-base font-semibold text-slate-900">Redis</h2>
-                <span class="rounded-full px-2 py-1 text-xs font-semibold {{ $redisStatus['ok'] ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700' }}">
+                <x-ui.badge :variant="$redisStatus['ok'] ? 'success' : 'danger'">
                     {{ $redisStatus['ok'] ? 'OK' : 'ERROR' }}
-                </span>
+                </x-ui.badge>
             </div>
             <p class="mt-2 text-sm text-slate-700">{{ $redisStatus['message'] }}</p>
-        </article>
+        </x-ui.card>
 
-        <article class="rounded-xl border {{ $storageStatus['ok'] ? 'border-emerald-200' : 'border-amber-200' }} bg-white p-4 shadow-sm">
+        <x-ui.card class="{{ $storageStatus['ok'] ? 'border-emerald-200/80' : 'border-amber-200/80' }}">
             <div class="flex items-center justify-between">
                 <h2 class="text-base font-semibold text-slate-900">Storage</h2>
-                <span class="rounded-full px-2 py-1 text-xs font-semibold {{ $storageStatus['ok'] ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
+                <x-ui.badge :variant="$storageStatus['ok'] ? 'success' : 'warning'">
                     {{ $storageStatus['ok'] ? 'OK' : 'REVISAR' }}
-                </span>
+                </x-ui.badge>
             </div>
             <ul class="mt-2 space-y-1 text-sm text-slate-700">
                 <li>Writable: {{ $storageStatus['writable'] ? 'sí' : 'no' }}</li>
                 <li>Public link (`storage:link`): {{ $storageStatus['public_link_ok'] ? 'sí' : 'no' }}</li>
                 <li>{{ $storageStatus['message'] }}</li>
             </ul>
-        </article>
+        </x-ui.card>
 
-        <article class="rounded-xl border {{ $schedulerStatus['ok'] ? 'border-emerald-200' : 'border-amber-200' }} bg-white p-4 shadow-sm">
+        <x-ui.card class="{{ $schedulerStatus['ok'] ? 'border-emerald-200/80' : 'border-amber-200/80' }}">
             <div class="flex items-center justify-between">
                 <h2 class="text-base font-semibold text-slate-900">Scheduler</h2>
-                <span class="rounded-full px-2 py-1 text-xs font-semibold {{ $schedulerStatus['ok'] ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
+                <x-ui.badge :variant="$schedulerStatus['ok'] ? 'success' : 'warning'">
                     {{ $schedulerStatus['ok'] ? 'OK' : 'STALE' }}
-                </span>
+                </x-ui.badge>
             </div>
             <p class="mt-2 text-sm text-slate-700">{{ $schedulerStatus['message'] }}</p>
             <p class="mt-1 text-xs text-slate-500">Última corrida: {{ $schedulerStatus['last_run'] ?? 'sin registro' }} · fuente: {{ $schedulerStatus['source'] }}</p>
-        </article>
+        </x-ui.card>
 
-        <article class="rounded-xl border {{ $queueStatus['ok'] ? 'border-emerald-200' : 'border-amber-200' }} bg-white p-4 shadow-sm">
+        <x-ui.card class="{{ $queueStatus['ok'] ? 'border-emerald-200/80' : 'border-amber-200/80' }}">
             <div class="flex items-center justify-between">
                 <h2 class="text-base font-semibold text-slate-900">Queue Worker</h2>
-                <span class="rounded-full px-2 py-1 text-xs font-semibold {{ $queueStatus['ok'] ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
+                <x-ui.badge :variant="$queueStatus['ok'] ? 'success' : 'warning'">
                     {{ $queueStatus['ok'] ? 'OK' : 'REVISAR' }}
-                </span>
+                </x-ui.badge>
             </div>
             <p class="mt-2 text-sm text-slate-700">{{ $queueStatus['message'] }}</p>
             <p class="mt-1 text-xs text-slate-500">Última corrida: {{ $queueStatus['last_run'] ?? 'sin registro' }} · fuente: {{ $queueStatus['source'] }}</p>
-        </article>
+        </x-ui.card>
 
-        <article class="rounded-xl border {{ $backupStatus['ok'] ? 'border-emerald-200' : 'border-amber-200' }} bg-white p-4 shadow-sm">
+        <x-ui.card class="{{ $backupStatus['ok'] ? 'border-emerald-200/80' : 'border-amber-200/80' }}">
             <div class="flex items-center justify-between">
                 <h2 class="text-base font-semibold text-slate-900">Backups</h2>
-                <span class="rounded-full px-2 py-1 text-xs font-semibold {{ $backupStatus['ok'] ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
+                <x-ui.badge :variant="$backupStatus['ok'] ? 'success' : 'warning'">
                     {{ $backupStatus['ok'] ? 'OK' : 'REVISAR' }}
-                </span>
+                </x-ui.badge>
             </div>
             <p class="mt-2 text-sm text-slate-700">{{ $backupStatus['message'] }}</p>
             <p class="mt-1 text-xs text-slate-500">Última corrida: {{ $backupStatus['last_run'] ?? 'sin registro' }} · fuente: {{ $backupStatus['source'] }}</p>
-        </article>
+        </x-ui.card>
     </div>
 </section>

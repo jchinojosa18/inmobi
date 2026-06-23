@@ -1,48 +1,27 @@
 <section class="space-y-6">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-            <h1 class="text-2xl font-semibold tracking-tight">Contrato #{{ $contract->id }}</h1>
-            <p class="mt-1 text-sm text-slate-600">
-                {{ $contract->tenant->full_name }} · {{ $contract->unit->property->name }} / {{ $contract->unit->name }}
-            </p>
-        </div>
-        <div class="flex flex-wrap gap-2">
+    <x-ui.page-header
+        :title="'Contrato #'.$contract->id"
+        :description="$contract->tenant->full_name.' · '.$contract->unit->property->name.' / '.$contract->unit->name"
+    >
+        <x-slot:actions>
             @if ($canCreatePayments)
-                <a
-                    href="{{ route('contracts.payments.create', $contract) }}"
-                    class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
-                >
+                <x-ui.button href="{{ route('contracts.payments.create', $contract) }}" variant="accent">
                     Registrar pago
-                </a>
+                </x-ui.button>
             @endif
             @if ($canManageContracts)
-                <a
-                    href="{{ route('contracts.edit', $contract) }}"
-                    class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-                >
+                <x-ui.button href="{{ route('contracts.edit', $contract) }}">
                     Editar contrato
-                </a>
+                </x-ui.button>
             @endif
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-ui.page-header>
 
     <div class="grid gap-4 md:grid-cols-4">
-        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p class="text-xs uppercase tracking-wide text-slate-500">Estado</p>
-            <p class="mt-2 text-lg font-semibold text-slate-900">{{ strtoupper($contract->status) }}</p>
-        </article>
-        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p class="text-xs uppercase tracking-wide text-slate-500">Cargos acumulados</p>
-            <p class="mt-2 text-lg font-semibold text-slate-900">${{ number_format($chargesTotal, 2) }}</p>
-        </article>
-        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p class="text-xs uppercase tracking-wide text-slate-500">Aplicado</p>
-            <p class="mt-2 text-lg font-semibold text-slate-900">${{ number_format($allocatedTotal, 2) }}</p>
-        </article>
-        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p class="text-xs uppercase tracking-wide text-slate-500">Saldo a favor</p>
-            <p class="mt-2 text-lg font-semibold text-slate-900">${{ number_format($creditTotal, 2) }}</p>
-        </article>
+        <x-ui.stat-card label="Estado" :value="strtoupper($contract->status)" />
+        <x-ui.stat-card label="Cargos acumulados" :value="'$'.number_format($chargesTotal, 2)" />
+        <x-ui.stat-card label="Aplicado" :value="'$'.number_format($allocatedTotal, 2)" />
+        <x-ui.stat-card label="Saldo a favor" :value="'$'.number_format($creditTotal, 2)" />
     </div>
 
     @if ($canManageCharges)
@@ -60,7 +39,7 @@
     @endif
 
     @if ($canManageCharges)
-        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <x-ui.card>
             <h2 class="text-lg font-semibold text-slate-900">Crear ajuste</h2>
             <p class="mt-1 text-sm text-slate-600">
                 Para periodos cerrados no se editan movimientos previos. Registra un cargo tipo ADJUSTMENT con razón obligatoria.
@@ -74,45 +53,41 @@
                 @enderror
 
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Monto (+/-) *</label>
-                    <input type="number" step="0.01" wire:model.blur="adjustment_amount" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    <x-ui.input label="Monto (+/-) *" type="number" step="0.01" wire:model.blur="adjustment_amount" />
                     @error('adjustment_amount') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Fecha *</label>
-                    <input type="date" wire:model.blur="adjustment_charge_date" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    <x-ui.input label="Fecha *" type="date" wire:model.blur="adjustment_charge_date" />
                     @error('adjustment_charge_date') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Razón *</label>
-                    <input type="text" wire:model.blur="adjustment_reason" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    <x-ui.input label="Razón *" type="text" wire:model.blur="adjustment_reason" />
                     @error('adjustment_reason') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Referencia vinculada (opcional)</label>
-                    <input type="text" wire:model.blur="adjustment_linked_to" placeholder="payment:15 | charge:20 | expense:9" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    <x-ui.input label="Referencia vinculada (opcional)" type="text" wire:model.blur="adjustment_linked_to" placeholder="payment:15 | charge:20 | expense:9" />
                     @error('adjustment_linked_to') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div class="md:col-span-2">
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Comentario</label>
-                    <textarea wire:model.blur="adjustment_comment" rows="2" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"></textarea>
+                    <label class="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">Comentario</label>
+                    <textarea wire:model.blur="adjustment_comment" rows="2" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"></textarea>
                     @error('adjustment_comment') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div class="md:col-span-2 flex justify-end">
-                    <button type="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
+                    <x-ui.button type="submit">
                         Registrar ajuste
-                    </button>
+                    </x-ui.button>
                 </div>
             </form>
-        </div>
+        </x-ui.card>
     @endif
 
-    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+    <x-ui.card>
         <div class="flex flex-wrap items-center justify-between gap-3">
             <h2 class="text-lg font-semibold text-slate-900">Estado de cuenta</h2>
             <div class="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
@@ -156,15 +131,18 @@
                                         <td class="px-4 py-3 text-right">${{ number_format($row['paid'], 2) }}</td>
                                         <td class="px-4 py-3 text-right font-medium text-slate-900">${{ number_format($row['balance'], 2) }}</td>
                                         <td class="px-4 py-3">
-                                            <span class="inline-flex rounded-full px-2 py-1 text-xs font-medium
-                                                {{ $row['status_tone'] === 'red' ? 'bg-red-100 text-red-700' : '' }}
-                                                {{ $row['status_tone'] === 'amber' ? 'bg-amber-100 text-amber-700' : '' }}
-                                                {{ $row['status_tone'] === 'emerald' ? 'bg-emerald-100 text-emerald-700' : '' }}
-                                                {{ $row['status_tone'] === 'blue' ? 'bg-blue-100 text-blue-700' : '' }}
-                                                {{ $row['status_tone'] === 'slate' ? 'bg-slate-200 text-slate-700' : '' }}
-                                            ">
+                                            @php
+                                                $statusVariant = match ($row['status_tone']) {
+                                                    'red' => 'danger',
+                                                    'amber' => 'warning',
+                                                    'emerald' => 'success',
+                                                    'blue' => 'info',
+                                                    default => 'neutral',
+                                                };
+                                            @endphp
+                                            <x-ui.badge :variant="$statusVariant">
                                                 {{ $row['status_label'] }}
-                                            </span>
+                                            </x-ui.badge>
                                         </td>
                                     </tr>
                                 @endforeach
@@ -178,69 +156,52 @@
                 </p>
             @endforelse
         </div>
-    </div>
+    </x-ui.card>
 
-    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 class="text-lg font-semibold text-slate-900">Pagos recientes</h2>
-
-        <div class="mt-4 overflow-x-auto">
-            <table class="min-w-full divide-y divide-slate-200 text-sm">
-                <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    <tr>
-                        <th class="px-4 py-3">Folio</th>
-                        <th class="px-4 py-3">Fecha</th>
-                        <th class="px-4 py-3">Método</th>
-                        <th class="px-4 py-3 text-right">Monto</th>
-                        <th class="px-4 py-3 text-right">Aplicado</th>
-                        <th class="px-4 py-3 text-right">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 bg-white">
-                    @forelse ($payments as $payment)
-                        <tr>
-                            <td class="px-4 py-3 font-medium text-slate-900">{{ $payment['folio'] }}</td>
-                            <td class="px-4 py-3">{{ optional($payment['paid_at'])->format('Y-m-d H:i') }}</td>
-                            <td class="px-4 py-3">{{ $payment['method'] }}</td>
-                            <td class="px-4 py-3 text-right">${{ number_format($payment['amount'], 2) }}</td>
-                            <td class="px-4 py-3 text-right">${{ number_format($payment['allocated_amount'], 2) }}</td>
-                            <td class="px-4 py-3">
-                                <div class="flex justify-end gap-2">
-                                    @if ($canViewPayments)
-                                        <a
-                                            href="{{ $payment['show_url'] }}"
-                                            class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                                        >
-                                            Ver pago
-                                        </a>
-                                        <a
-                                            href="{{ $payment['receipt_url'] }}"
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                                        >
-                                            Ver recibo PDF
-                                        </a>
-                                    @endif
-                                    <a
-                                        href="{{ $payment['share_url'] }}"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        class="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800"
-                                    >
-                                        Link compartible
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="px-4 py-6 text-center text-slate-500">Aún no hay pagos registrados.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+    <x-ui.card :padding="false">
+        <div class="border-b border-slate-100 px-5 py-4">
+            <h2 class="text-lg font-semibold text-slate-900">Pagos recientes</h2>
         </div>
-    </div>
+
+        <x-ui.table>
+            <x-slot:head>
+                <th class="px-4 py-3">Folio</th>
+                <th class="px-4 py-3">Fecha</th>
+                <th class="px-4 py-3">Método</th>
+                <th class="px-4 py-3 text-right">Monto</th>
+                <th class="px-4 py-3 text-right">Aplicado</th>
+                <th class="px-4 py-3 text-right">Acciones</th>
+            </x-slot:head>
+            <x-slot:body>
+                @forelse ($payments as $payment)
+                    <tr>
+                        <td class="px-4 py-3 font-medium text-slate-900">{{ $payment['folio'] }}</td>
+                        <td class="px-4 py-3">{{ optional($payment['paid_at'])->format('Y-m-d H:i') }}</td>
+                        <td class="px-4 py-3">{{ $payment['method'] }}</td>
+                        <td class="px-4 py-3 text-right">${{ number_format($payment['amount'], 2) }}</td>
+                        <td class="px-4 py-3 text-right">${{ number_format($payment['allocated_amount'], 2) }}</td>
+                        <td class="px-4 py-3">
+                            <div class="flex justify-end gap-2">
+                                @if ($canViewPayments)
+                                    <x-ui.button href="{{ $payment['show_url'] }}" variant="secondary" size="sm">
+                                        Ver pago
+                                    </x-ui.button>
+                                    <x-ui.button href="{{ $payment['receipt_url'] }}" variant="secondary" size="sm" target="_blank" rel="noopener noreferrer">
+                                        Ver recibo PDF
+                                    </x-ui.button>
+                                @endif
+                                <x-ui.button href="{{ $payment['share_url'] }}" size="sm" target="_blank" rel="noopener noreferrer">
+                                    Link compartible
+                                </x-ui.button>
+                            </div>
+                        </td>
+                    </tr>
+                @empty
+                    <x-ui.empty-state title="Aún no hay pagos registrados." :colspan="6" />
+                @endforelse
+            </x-slot:body>
+        </x-ui.table>
+    </x-ui.card>
 
     <livewire:documents.panel
         :documentable-type="\App\Models\Contract::class"
