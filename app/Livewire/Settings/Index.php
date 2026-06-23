@@ -28,6 +28,12 @@ class Index extends Component
 
     public string $editingExpenseCategoryName = '';
 
+    public bool $showDeleteConfirm = false;
+
+    public ?int $pendingDeleteCategoryId = null;
+
+    public ?string $pendingDeleteCategoryName = null;
+
     public function mount(OrganizationSettingsService $settingsService): void
     {
         if (! (auth()->user()?->can('settings.manage') ?? false)) {
@@ -183,6 +189,33 @@ class Index extends Component
         }
 
         session()->flash('success', 'Categoría eliminada.');
+    }
+
+    public function confirmDeleteExpenseCategory(int $categoryId): void
+    {
+        $this->assertCanManageExpenseCategories();
+
+        $category = ExpenseCategory::query()->findOrFail($categoryId);
+        $this->pendingDeleteCategoryId = $category->id;
+        $this->pendingDeleteCategoryName = $category->name;
+        $this->showDeleteConfirm = true;
+    }
+
+    public function cancelDeleteConfirm(): void
+    {
+        $this->showDeleteConfirm = false;
+        $this->pendingDeleteCategoryId = null;
+        $this->pendingDeleteCategoryName = null;
+    }
+
+    public function executeDeleteConfirm(): void
+    {
+        if ($this->pendingDeleteCategoryId === null) {
+            return;
+        }
+
+        $this->deleteExpenseCategory($this->pendingDeleteCategoryId);
+        $this->cancelDeleteConfirm();
     }
 
     public function cancelEditingExpenseCategory(): void

@@ -27,13 +27,14 @@
         </div>
     @enderror
 
-    @if ($showForm && $canManagePlazas)
-        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 class="text-lg font-semibold text-slate-900">
-                {{ $editingId ? 'Editar plaza' : 'Nueva plaza' }}
-            </h2>
-
-            <form wire:submit="save" class="mt-4 grid gap-4 md:grid-cols-2">
+    @if ($canManagePlazas)
+        <x-ui.modal
+            :open="$showForm"
+            :title="$editingId ? 'Editar plaza' : 'Nueva plaza'"
+            aria-label="{{ $editingId ? 'Editar plaza' : 'Nueva plaza' }}"
+            max-width="2xl"
+        >
+            <form wire:submit="save" class="grid gap-4 md:grid-cols-2">
                 <div>
                     <label class="mb-1 block text-sm font-medium text-slate-700">Nombre</label>
                     <input type="text" wire:model.blur="nombre" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
@@ -69,7 +70,23 @@
                     </button>
                 </div>
             </form>
-        </div>
+        </x-ui.modal>
+
+        <x-ui.confirm-modal
+            :open="$showDeleteConfirm"
+            title="Eliminar plaza"
+            confirm-action="executeDeleteConfirm"
+            cancel-action="cancelDeleteConfirm"
+            confirm-label="Eliminar plaza"
+            aria-label="Confirmar eliminación de plaza"
+        >
+            <p class="text-slate-700">
+                Vas a eliminar la plaza <span class="font-semibold text-slate-900">{{ $pendingDeletePlazaName }}</span>.
+            </p>
+            <p class="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                Las propiedades asociadas conservarán su plaza asignada hasta que la modifiques manualmente.
+            </p>
+        </x-ui.confirm-modal>
     @endif
 
     <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -108,7 +125,7 @@
                                         <button type="button" wire:click="startEdit({{ $plaza->id }})" class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
                                             Editar
                                         </button>
-                                        <button type="button" wire:click="delete({{ $plaza->id }})" wire:confirm="¿Eliminar plaza?" class="rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50">
+                                        <button type="button" wire:click="confirmDelete({{ $plaza->id }})" class="rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50">
                                             Eliminar
                                         </button>
                                     </div>

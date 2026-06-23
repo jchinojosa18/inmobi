@@ -14,7 +14,6 @@ use App\Livewire\Contracts\Index as ContractsIndex;
 use App\Livewire\Contracts\Show as ContractShow;
 use App\Livewire\Dashboard\Index as DashboardIndex;
 use App\Livewire\Expenses\Index as ExpensesIndex;
-use App\Livewire\Houses\Create as HouseCreate;
 use App\Livewire\Houses\Show as HouseShow;
 use App\Livewire\MonthCloses\Index as MonthClosesIndex;
 use App\Livewire\Payments\Create as PaymentCreate;
@@ -110,7 +109,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/properties/{property}/units', UnitsIndex::class)
         ->middleware('permission:units.view')
         ->name('properties.units.index');
-    Route::get('/houses/create', HouseCreate::class)
+    Route::get('/houses/create', function () {
+        return redirect()->route('properties.index', ['create' => 1]);
+    })
         ->middleware('permission:properties.manage')
         ->name('houses.create');
     Route::get('/houses/{property}', HouseShow::class)
@@ -153,7 +154,15 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/contracts', ContractsIndex::class)
         ->middleware('permission:contracts.view')
         ->name('contracts.index');
-    Route::get('/contracts/create', ContractForm::class)
+    Route::get('/contracts/create', function (Request $request) {
+        $params = ['create_contract' => 1];
+
+        if ($request->integer('unit_id') > 0) {
+            $params['unit_id'] = $request->integer('unit_id');
+        }
+
+        return redirect()->route('contracts.index', $params);
+    })
         ->middleware('permission:contracts.manage')
         ->name('contracts.create');
     Route::get('/contracts/{contract}/edit', ContractForm::class)

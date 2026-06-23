@@ -2,7 +2,8 @@
 
 namespace Tests\Feature\Houses;
 
-use App\Livewire\Houses\Create as HouseCreate;
+use App\Livewire\Contracts\CreateModal as ContractCreateModal;
+use App\Livewire\Properties\CreateModal as PropertyCreateModal;
 use App\Models\Organization;
 use App\Models\Property;
 use App\Models\Unit;
@@ -23,17 +24,21 @@ class StandaloneHouseFlowTest extends TestCase
         ]);
 
         Livewire::actingAs($user)
-            ->test(HouseCreate::class)
+            ->test(PropertyCreateModal::class)
+            ->call('open')
+            ->call('selectType', PropertyCreateModal::TYPE_HOUSE)
             ->set('name', 'Casa Calle X #123')
             ->set('address', 'Calle X #123, Centro')
             ->set('notes', 'Casa de prueba')
             ->call('save')
-            ->assertRedirect(route('properties.index'));
+            ->assertSet('open', false)
+            ->assertDispatched('property-created');
 
-        $property = Property::query()->where('name', 'Casa Calle X #123')->first();
+        $property = Property::query()->where('name', 'CASA CALLE X #123')->first();
 
         $this->assertNotNull($property);
         $this->assertSame(Property::KIND_STANDALONE_HOUSE, $property->kind);
+        $this->assertSame('CALLE X #123, CENTRO', $property->address);
 
         $houseUnits = Unit::query()
             ->where('property_id', $property->id)
@@ -89,11 +94,18 @@ class StandaloneHouseFlowTest extends TestCase
             'status' => 'active',
         ]);
 
-        $response = $this
-            ->actingAs($user)
-            ->get(route('contracts.create'));
+        $this->actingAs($user);
 
-        $response->assertOk();
-        $response->assertSeeText('Casa Mision San Diego — Casa');
+        $unit = Unit::query()->where('property_id', $property->id)->firstOrFail();
+
+        Livewire::actingAs($user)
+            ->test(ContractCreateModal::class)
+            ->call('open')
+            ->assertSee('CASA MISION SAN DIEGO — Casa');
+
+        Livewire::actingAs($user)
+            ->test(ContractCreateModal::class)
+            ->call('open', $unit->id)
+            ->assertSet('unit_id', $unit->id);
     }
 }

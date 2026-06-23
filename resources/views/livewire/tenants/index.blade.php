@@ -46,13 +46,14 @@
         </div>
     </div>
 
-    @if ($showForm && $canManageTenants)
-        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 class="text-lg font-semibold text-slate-900">
-                {{ $editingId ? 'Editar inquilino' : 'Crear inquilino' }}
-            </h2>
-
-            <form wire:submit="save" class="mt-4 grid gap-4 md:grid-cols-2">
+    @if ($canManageTenants)
+        <x-ui.modal
+            :open="$showForm"
+            :title="$editingId ? 'Editar inquilino' : 'Crear inquilino'"
+            aria-label="{{ $editingId ? 'Editar inquilino' : 'Crear inquilino' }}"
+            max-width="2xl"
+        >
+            <form wire:submit="save" class="grid gap-4 md:grid-cols-2">
                 <div class="md:col-span-2">
                     <label class="mb-1 block text-sm font-medium text-slate-700">Nombre completo *</label>
                     <input type="text" wire:model.blur="full_name" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
@@ -102,7 +103,7 @@
                     </button>
                 </div>
             </form>
-        </div>
+        </x-ui.modal>
     @endif
 
     <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">

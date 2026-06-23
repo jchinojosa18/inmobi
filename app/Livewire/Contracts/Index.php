@@ -53,6 +53,11 @@ class Index extends Component
         if (! (auth()->user()?->can('contracts.view') ?? false)) {
             abort(403);
         }
+
+        if (request()->boolean('create_contract') && (auth()->user()?->can('contracts.manage') ?? false)) {
+            $unitId = request()->integer('unit_id');
+            $this->dispatch('open-contract-create', unitId: $unitId > 0 ? $unitId : null);
+        }
     }
 
     public function updatingQ(): void

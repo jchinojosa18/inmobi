@@ -55,6 +55,20 @@ class PropertyFactory extends Factory
         ]);
     }
 
+    public function standaloneLocal(): static
+    {
+        return $this->state(fn (): array => [
+            'kind' => Property::KIND_LOCAL,
+        ]);
+    }
+
+    public function standaloneLand(): static
+    {
+        return $this->state(fn (): array => [
+            'kind' => Property::KIND_LAND,
+        ]);
+    }
+
     public function inPlaza(Plaza|int $plaza): static
     {
         $plazaId = $plaza instanceof Plaza ? (int) $plaza->id : (int) $plaza;

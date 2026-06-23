@@ -2,16 +2,19 @@
 
 namespace App\Livewire\Properties;
 
+use App\Livewire\Concerns\NormalizesPropertyUppercaseFields;
 use App\Models\Organization;
 use App\Models\Plaza;
 use App\Models\Property;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\Rule;
+use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
 
 class Index extends Component
 {
+    use NormalizesPropertyUppercaseFields;
     use WithPagination;
 
     public string $search = '';
@@ -52,21 +55,27 @@ class Index extends Component
         if (! (auth()->user()?->can('properties.view') ?? false)) {
             abort(403);
         }
+
+        if ((request()->boolean('create_house') || request()->boolean('create')) && (auth()->user()?->can('properties.manage') ?? false)) {
+            $this->dispatch('open-property-create');
+        }
+    }
+
+    #[On('property-created')]
+    public function onPropertyCreated(): void
+    {
+        $this->resetPage();
+    }
+
+    #[On('house-created')]
+    public function onHouseCreated(): void
+    {
+        $this->onPropertyCreated();
     }
 
     public function updatingStatusFilter(): void
     {
         $this->resetPage();
-    }
-
-    public function startCreate(): void
-    {
-        if (! (auth()->user()?->can('properties.manage') ?? false)) {
-            abort(403);
-        }
-
-        $this->resetForm();
-        $this->showForm = true;
     }
 
     public function startEdit(int $propertyId): void
@@ -98,6 +107,7 @@ class Index extends Component
             abort(403);
         }
 
+        $this->normalizePropertyUppercaseFields();
         $validated = $this->validate($this->rules(), $this->messages());
 
         $payload = [
@@ -110,17 +120,13 @@ class Index extends Component
             'notes' => $validated['notes'] ?: null,
         ];
 
-        if ($this->editingId !== null) {
-            $property = Property::query()->findOrFail($this->editingId);
-            $property->update($payload);
-            session()->flash('success', 'Propiedad actualizada correctamente.');
-        } else {
-            Property::query()->create([
-                ...$payload,
-                'kind' => Property::KIND_BUILDING,
-            ]);
-            session()->flash('success', 'Propiedad creada correctamente.');
+        if ($this->editingId === null) {
+            return;
         }
+
+        $property = Property::query()->findOrFail($this->editingId);
+        $property->update($payload);
+        session()->flash('success', 'Propiedad actualizada correctamente.');
 
         $this->resetForm();
         $this->resetPage();

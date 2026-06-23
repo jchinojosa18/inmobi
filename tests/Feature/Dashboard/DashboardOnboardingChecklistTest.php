@@ -28,7 +28,7 @@ class DashboardOnboardingChecklistTest extends TestCase
 
         $response->assertOk();
         $response->assertSeeText('Configura tu sistema');
-        $response->assertSeeText('Crear propiedad o casa');
+        $response->assertSeeText('Crear inmueble');
         $response->assertSeeText('Generar o confirmar rentas del mes');
     }
 

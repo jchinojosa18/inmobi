@@ -21,7 +21,7 @@ class Show extends Component
 
         $property->loadMissing('units');
 
-        if (! $property->isStandaloneHouse()) {
+        if (! $property->isStandaloneEntity()) {
             abort(404);
         }
 
@@ -37,12 +37,15 @@ class Show extends Component
 
     public function render(): View
     {
+        $entityLabel = $this->property->kindLabel();
+
         return view('livewire.houses.show', [
             'property' => $this->property,
             'unit' => $this->unit,
+            'entityLabel' => $entityLabel,
             'canManageContracts' => auth()->user()?->can('contracts.manage') ?? false,
         ])->layout('layouts.app', [
-            'title' => 'Detalle de casa',
+            'title' => 'Detalle de '.strtolower($entityLabel),
         ]);
     }
 }

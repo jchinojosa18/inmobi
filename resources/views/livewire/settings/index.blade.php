@@ -152,7 +152,7 @@
                                             <button type="button" wire:click="startEditingExpenseCategory({{ $category->id }})" class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
                                                 Editar
                                             </button>
-                                            <button type="button" wire:click="deleteExpenseCategory({{ $category->id }})" wire:confirm="¿Eliminar categoría?" class="rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50">
+                                            <button type="button" wire:click="confirmDeleteExpenseCategory({{ $category->id }})" class="rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50">
                                                 Eliminar
                                             </button>
                                         @endif
@@ -171,4 +171,22 @@
             </table>
         </div>
     </div>
+
+    @if ($canManageExpenseCategories)
+        <x-ui.confirm-modal
+            :open="$showDeleteConfirm"
+            title="Eliminar categoría"
+            confirm-action="executeDeleteConfirm"
+            cancel-action="cancelDeleteConfirm"
+            confirm-label="Eliminar categoría"
+            aria-label="Confirmar eliminación de categoría"
+        >
+            <p class="text-slate-700">
+                Vas a eliminar la categoría <span class="font-semibold text-slate-900">{{ $pendingDeleteCategoryName }}</span>.
+            </p>
+            <p class="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                Los egresos ya registrados con esta categoría no se modifican.
+            </p>
+        </x-ui.confirm-modal>
+    @endif
 </section>

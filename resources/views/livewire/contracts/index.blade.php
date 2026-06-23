@@ -5,12 +5,13 @@
             <p class="mt-1 text-sm text-slate-600">Listado operativo con foco en urgencia de cobranza.</p>
         </div>
         @if ($canManageContracts)
-            <a
-                href="{{ route('contracts.create') }}"
+            <button
+                type="button"
+                wire:click="$dispatch('open-contract-create')"
                 class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
             >
                 Nuevo contrato
-            </a>
+            </button>
         @endif
     </div>
 
@@ -228,4 +229,8 @@
             {{ $contracts->links() }}
         </div>
     </div>
+
+    @if ($canManageContracts)
+        <livewire:contracts.create-modal />
+    @endif
 </section>

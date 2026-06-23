@@ -270,9 +270,9 @@ class CommandPalette extends Component
                 'success_message' => 'Navegando a Nuevo contrato...',
             ],
             [
-                'id' => 'new_house',
-                'label' => 'Nueva casa',
-                'keywords' => ['casa', 'standalone', 'propiedad'],
+                'id' => 'new_property',
+                'label' => 'Nuevo inmueble',
+                'keywords' => ['casa', 'local', 'terreno', 'edificio', 'propiedad', 'inmueble'],
                 'icon' => 'home',
                 'kind' => 'route',
                 'payload' => ['href' => route('houses.create')],
@@ -280,7 +280,7 @@ class CommandPalette extends Component
                 'featured' => true,
                 'priority' => 40,
                 'requires_confirmation' => false,
-                'success_message' => 'Navegando a Nueva casa...',
+                'success_message' => 'Navegando a Nuevo inmueble...',
             ],
             [
                 'id' => 'go_cobranza',
@@ -526,11 +526,11 @@ class CommandPalette extends Component
 
         foreach ($properties as $p) {
             $label = $p->name.($p->code ? " ({$p->code})" : '');
-            $sublabel = $p->address ?? ($p->kind === Property::KIND_BUILDING ? 'Edificio' : 'Casa independiente');
+            $sublabel = $p->address ?? $p->kindLabel();
 
-            $href = $p->kind === Property::KIND_STANDALONE_HOUSE
+            $href = $p->isStandaloneEntity()
                 ? route('houses.show', $p->id)
-                : route('properties.index');
+                : route('properties.units.index', $p->id);
 
             $results[] = [
                 'type' => 'property',

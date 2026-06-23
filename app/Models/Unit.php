@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Domain\Shared\OrganizationScopedModel;
 use App\Models\Concerns\Auditable;
+use App\Support\TextCase;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -17,6 +19,10 @@ class Unit extends OrganizationScopedModel
     public const KIND_APARTMENT = 'apartment';
 
     public const KIND_HOUSE = 'house';
+
+    public const KIND_LOCAL = 'local';
+
+    public const KIND_LAND = 'land';
 
     /**
      * @var list<string>
@@ -83,6 +89,16 @@ class Unit extends OrganizationScopedModel
     public function isHouse(): bool
     {
         return $this->kind === self::KIND_HOUSE;
+    }
+
+    protected function code(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value): ?string => $value === null || $value === ''
+                ? $value
+                : mb_strtoupper($value, 'UTF-8'),
+            set: fn (?string $value): ?string => TextCase::upper($value),
+        );
     }
 
     /**

@@ -5,21 +5,13 @@
             <p class="mt-1 text-sm text-slate-600">Catálogo base de inmuebles por organización.</p>
         </div>
         @if ($canManageProperties)
-            <div class="flex flex-wrap gap-2">
-                <button
-                    type="button"
-                    wire:click="startCreate"
-                    class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-                >
-                    Nuevo edificio/propiedad
-                </button>
-                <a
-                    href="{{ route('houses.create') }}"
-                    class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                >
-                    Nueva casa
-                </a>
-            </div>
+            <button
+                type="button"
+                wire:click="$dispatch('open-property-create')"
+                class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+            >
+                Nuevo inmueble
+            </button>
         @endif
     </div>
 
@@ -54,22 +46,23 @@
         </div>
     </div>
 
-    @if ($showForm && $canManageProperties)
-        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 class="text-lg font-semibold text-slate-900">
-                {{ $editingId ? 'Editar propiedad' : 'Crear propiedad' }}
-            </h2>
-
-            <form wire:submit="save" class="mt-4 grid gap-4 md:grid-cols-2">
+    @if ($canManageProperties)
+        <x-ui.modal
+            :open="$showForm"
+            :title="'Editar propiedad'"
+            aria-label="Editar propiedad"
+            max-width="2xl"
+        >
+            <form wire:submit="save" class="grid gap-4 md:grid-cols-2">
                 <div class="md:col-span-2">
                     <label class="mb-1 block text-sm font-medium text-slate-700">Nombre *</label>
-                    <input type="text" wire:model.blur="name" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    <input type="text" wire:model.live="name" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm uppercase">
                     @error('name') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
                     <label class="mb-1 block text-sm font-medium text-slate-700">Código</label>
-                    <input type="text" wire:model.blur="code" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    <input type="text" wire:model.live="code" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm uppercase">
                     @error('code') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
@@ -84,7 +77,7 @@
 
                 <div class="md:col-span-2">
                     <label class="mb-1 block text-sm font-medium text-slate-700">Dirección</label>
-                    <input type="text" wire:model.blur="address" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    <input type="text" wire:model.live="address" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm uppercase">
                     @error('address') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
@@ -110,7 +103,7 @@
                     </button>
                 </div>
             </form>
-        </div>
+        </x-ui.modal>
     @endif
 
     <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -136,7 +129,7 @@
                                     @endif
                                 </p>
                                 <p class="mt-1 text-xs text-slate-500">
-                                    {{ $property->kind === \App\Models\Property::KIND_STANDALONE_HOUSE ? 'Casa standalone' : 'Edificio/propiedad' }}
+                                    {{ $property->kindLabel() }}
                                 </p>
                             </td>
                             <td class="px-4 py-3">
@@ -147,12 +140,12 @@
                             <td class="px-4 py-3 text-right font-medium text-slate-700">{{ $property->units_count }}</td>
                             <td class="px-4 py-3">
                                 <div class="flex justify-end gap-2">
-                                    @if ($property->kind === \App\Models\Property::KIND_STANDALONE_HOUSE)
+                                    @if ($property->isStandaloneEntity())
                                         <a
                                             href="{{ route('houses.show', $property) }}"
                                             class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
                                         >
-                                            Casa
+                                            Ver
                                         </a>
                                     @else
                                         <a
@@ -189,4 +182,8 @@
             {{ $properties->links() }}
         </div>
     </div>
+
+    @if ($canManageProperties)
+        <livewire:properties.create-modal />
+    @endif
 </section>

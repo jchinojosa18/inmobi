@@ -22,6 +22,12 @@ class PlazasIndex extends Component
 
     public bool $isDefault = false;
 
+    public bool $showDeleteConfirm = false;
+
+    public ?int $pendingDeletePlazaId = null;
+
+    public ?string $pendingDeletePlazaName = null;
+
     public function mount(): void
     {
         if (! (auth()->user()?->can('plazas.manage') ?? false)) {
@@ -155,6 +161,33 @@ class PlazasIndex extends Component
 
         $this->normalizeSingleDefault($organization);
         session()->flash('success', 'Plaza eliminada correctamente.');
+    }
+
+    public function confirmDelete(int $plazaId): void
+    {
+        $this->assertAdminCanEdit();
+
+        $plaza = Plaza::query()->findOrFail($plazaId);
+        $this->pendingDeletePlazaId = $plaza->id;
+        $this->pendingDeletePlazaName = $plaza->nombre;
+        $this->showDeleteConfirm = true;
+    }
+
+    public function cancelDeleteConfirm(): void
+    {
+        $this->showDeleteConfirm = false;
+        $this->pendingDeletePlazaId = null;
+        $this->pendingDeletePlazaName = null;
+    }
+
+    public function executeDeleteConfirm(): void
+    {
+        if ($this->pendingDeletePlazaId === null) {
+            return;
+        }
+
+        $this->delete($this->pendingDeletePlazaId);
+        $this->cancelDeleteConfirm();
     }
 
     public function render(): View

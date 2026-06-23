@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Domain\Shared\OrganizationScopedModel;
 use App\Models\Concerns\Auditable;
+use App\Support\TextCase;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -18,6 +20,14 @@ class Property extends OrganizationScopedModel
 
     public const KIND_STANDALONE_HOUSE = 'standalone_house';
 
+    public const KIND_LOCAL = 'local';
+
+    public const KIND_LAND = 'land';
+
+    public const NUMBERING_FLOOR_BASED = 'floor_based';
+
+    public const NUMBERING_SEQUENTIAL = 'sequential';
+
     /**
      * @var list<string>
      */
@@ -28,6 +38,7 @@ class Property extends OrganizationScopedModel
         'code',
         'status',
         'kind',
+        'unit_numbering_scheme',
         'address',
         'notes',
     ];
@@ -84,12 +95,66 @@ class Property extends OrganizationScopedModel
      */
     public function standaloneUnit(): HasOne
     {
-        return $this->hasOne(Unit::class)->where('kind', Unit::KIND_HOUSE);
+        return $this->hasOne(Unit::class)->whereIn('kind', [
+            Unit::KIND_HOUSE,
+            Unit::KIND_LOCAL,
+            Unit::KIND_LAND,
+        ]);
     }
 
     public function isStandaloneHouse(): bool
     {
         return $this->kind === self::KIND_STANDALONE_HOUSE;
+    }
+
+    public function isStandaloneEntity(): bool
+    {
+        return in_array($this->kind, [
+            self::KIND_STANDALONE_HOUSE,
+            self::KIND_LOCAL,
+            self::KIND_LAND,
+        ], true);
+    }
+
+    public function kindLabel(): string
+    {
+        return match ($this->kind) {
+            self::KIND_STANDALONE_HOUSE => 'Casa',
+            self::KIND_BUILDING => 'Edificio',
+            self::KIND_LOCAL => 'Local',
+            self::KIND_LAND => 'Terreno',
+            default => 'Propiedad',
+        };
+    }
+
+    protected function name(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value): ?string => $value === null || $value === ''
+                ? $value
+                : mb_strtoupper($value, 'UTF-8'),
+            set: fn (?string $value): ?string => TextCase::upper($value),
+        );
+    }
+
+    protected function code(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value): ?string => $value === null || $value === ''
+                ? $value
+                : mb_strtoupper($value, 'UTF-8'),
+            set: fn (?string $value): ?string => TextCase::upper($value),
+        );
+    }
+
+    protected function address(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value): ?string => $value === null || $value === ''
+                ? $value
+                : mb_strtoupper($value, 'UTF-8'),
+            set: fn (?string $value): ?string => TextCase::upper($value),
+        );
     }
 
     /**
@@ -103,6 +168,7 @@ class Property extends OrganizationScopedModel
             'code',
             'status',
             'kind',
+            'unit_numbering_scheme',
             'address',
         ];
     }

@@ -41,4 +41,22 @@ class UnitFactory extends Factory
             'floor' => null,
         ]);
     }
+
+    public function local(): static
+    {
+        return $this->state(fn (): array => [
+            'kind' => Unit::KIND_LOCAL,
+            'name' => 'Local',
+            'floor' => null,
+        ]);
+    }
+
+    public function land(): static
+    {
+        return $this->state(fn (): array => [
+            'kind' => Unit::KIND_LAND,
+            'name' => 'Terreno',
+            'floor' => null,
+        ]);
+    }
 }

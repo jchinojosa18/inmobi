@@ -224,12 +224,12 @@ class Index extends Component
         $criticalSteps = [
             [
                 'key' => 'properties',
-                'title' => 'Crear propiedad o casa',
+                'title' => 'Crear inmueble',
                 'description' => 'Registra tu primer inmueble para empezar a operar.',
                 'complete' => $propertiesCount > 0,
                 'ctas' => [
                     ['type' => 'route', 'label' => 'Ir a propiedades', 'route' => 'properties.index'],
-                    ['type' => 'route', 'label' => 'Nueva casa', 'route' => 'houses.create'],
+                    ['type' => 'route', 'label' => 'Nuevo inmueble', 'route' => 'houses.create'],
                 ],
             ],
             [

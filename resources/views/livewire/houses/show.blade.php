@@ -1,9 +1,9 @@
 <section class="space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-            <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Casa standalone</p>
+            <p class="text-xs font-medium uppercase tracking-wide text-slate-500">{{ $entityLabel }}</p>
             <h1 class="text-2xl font-semibold tracking-tight">{{ $property->name }}</h1>
-            <p class="mt-1 text-sm text-slate-600">Esta casa usa una única unidad interna para contratos y cobranza.</p>
+            <p class="mt-1 text-sm text-slate-600">Este inmueble usa una única unidad interna para contratos y cobranza.</p>
         </div>
         <div class="flex gap-2">
             <a
@@ -14,7 +14,7 @@
             </a>
             @if ($canManageContracts)
                 <a
-                    href="{{ route('contracts.create', ['unit_id' => $unit->id]) }}"
+                    href="{{ route('contracts.index', ['create_contract' => 1, 'unit_id' => $unit->id]) }}"
                     class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
                 >
                     Nuevo contrato
