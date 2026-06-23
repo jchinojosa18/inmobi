@@ -316,14 +316,35 @@ Repo → Settings → Secrets and variables → Actions → New repository secre
 
 | Secret | Valor |
 |--------|-------|
-| `HOSTINGER_HOST` | Host SSH de Hostinger (ej. IP o hostname del panel) |
+| `HOSTINGER_HOST` | Solo el hostname (sin `usuario@`). Ej: `fr-int-web1234.hostingerserver.com` |
 | `HOSTINGER_USER` | `u463162242` |
-| `HOSTINGER_SSH_PORT` | `65002` (o el puerto que muestre hPanel) |
-| `HOSTINGER_SSH_KEY` | Contenido completo de la clave privada `inmo_deploy` |
+| `HOSTINGER_SSH_PORT` | `65002` (Hostinger casi siempre usa este puerto) |
+| `HOSTINGER_SSH_KEY` | Clave privada **completa** de `inmo_deploy` (desde `-----BEGIN` hasta `-----END`) |
 | `HOSTINGER_PATH` | `/home/u463162242/domains/systemsjc.com/public_html/depas` |
 
 Importante: `HOSTINGER_PATH` es la **raiz de Laravel** (donde esta `artisan`), no la carpeta `public/`.
 El document root del dominio apunta a `.../depas/public`, pero rsync y artisan usan `.../depas`.
+
+**La clave privada en GitHub debe ser la pareja de la publica que subiste a Hostinger.**
+Si en tu Mac conectas con `~/.ssh/id_rsa` pero en GitHub pegaste `inmo_deploy`, fallara con exit code `255`.
+
+Copiar la clave privada para el secret:
+
+```bash
+cat ~/.ssh/inmo_deploy
+```
+
+Pega todo el bloque en `HOSTINGER_SSH_KEY`, incluyendo saltos de linea.
+
+### Troubleshooting deploy (exit code 255)
+
+| Sintoma | Causa probable | Solucion |
+|---------|----------------|----------|
+| `exit code 255` en SSH/rsync | Clave privada mal pegada o no coincide con la publica en Hostinger | Regenerar par de claves; publica en Hostinger, privada en GitHub |
+| `exit code 255` | `HOSTINGER_HOST` incluye `usuario@` | Usar solo hostname en `HOSTINGER_HOST` |
+| `exit code 255` | Puerto incorrecto | `HOSTINGER_SSH_PORT=65002` |
+| Falla `Test SSH connection` | `HOSTINGER_PATH` incorrecto | Debe ser la carpeta con `artisan`, no `public/` |
+| SSH funciona en Mac pero no en GitHub | Usas otra clave en Mac | Probar: `ssh -i ~/.ssh/inmo_deploy -p 65002 u463162242@HOST` |
 
 ### 3) Que hace cada deploy
 
