@@ -69,8 +69,8 @@ class PlazaScopedScreensTest extends TestCase
             ]));
 
         $reports->assertOk();
-        $reports->assertSeeText('Property Plaza A');
-        $reports->assertDontSeeText('Property Plaza B');
+        $reports->assertSeeText('PROPERTY PLAZA A');
+        $reports->assertDontSeeText('PROPERTY PLAZA B');
         $reports->assertSeeText('REC-PLAZA-A');
         $reports->assertDontSeeText('REC-PLAZA-B');
     }
@@ -120,8 +120,8 @@ class PlazaScopedScreensTest extends TestCase
             ]));
 
         $reports->assertOk();
-        $reports->assertSeeText('Property Plaza A');
-        $reports->assertSeeText('Property Plaza B');
+        $reports->assertSeeText('PROPERTY PLAZA A');
+        $reports->assertSeeText('PROPERTY PLAZA B');
         $reports->assertSeeText('REC-PLAZA-A');
         $reports->assertSeeText('REC-PLAZA-B');
     }

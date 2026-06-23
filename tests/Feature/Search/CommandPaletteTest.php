@@ -146,8 +146,8 @@ class CommandPaletteTest extends TestCase
             ->test(CommandPalette::class)
             ->call('open')
             ->set('q', 'Edificio')
-            ->assertSeeHtml('Edificio Orión')
-            ->assertDontSeeHtml('Edificio Sirio');
+            ->assertSeeHtml('EDIFICIO ORIÓN')
+            ->assertDontSeeHtml('EDIFICIO SIRIO');
     }
 
     public function test_finds_units_by_name_and_includes_property_name(): void
@@ -171,7 +171,7 @@ class CommandPaletteTest extends TestCase
             ->call('open')
             ->set('q', 'Depto 301')
             ->assertSeeHtml('Depto 301')
-            ->assertSeeHtml('Torre Norte');
+            ->assertSeeHtml('TORRE NORTE');
     }
 
     public function test_finds_contracts_and_includes_both_action_hrefs(): void
