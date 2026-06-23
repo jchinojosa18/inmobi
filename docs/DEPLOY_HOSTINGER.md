@@ -287,6 +287,66 @@ php artisan inmo:backup:prune --force --yes
 
 ---
 
+## Deploy automatico con GitHub Actions (recomendado)
+
+Cada merge o push a `main` ejecuta tests, build de assets y despliegue por SSH/rsync.
+
+Workflow: [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml)
+
+### 1) Generar clave SSH para deploy (en tu Mac)
+
+```bash
+ssh-keygen -t ed25519 -C "github-actions-deploy" -f ~/.ssh/inmo_deploy -N ""
+```
+
+- Clave **publica** (`inmo_deploy.pub`): agregala en Hostinger → hPanel → Advanced → SSH Access → SSH keys.
+- Clave **privada** (`inmo_deploy`): copiala completa para el secret de GitHub (incluye `BEGIN`/`END`).
+
+Prueba la conexion manual antes de configurar GitHub:
+
+```bash
+ssh -i ~/.ssh/inmo_deploy -p 65002 u463162242@TU_HOST_SSH
+```
+
+(`TU_HOST_SSH` lo ves en hPanel → SSH Access; Hostinger suele usar puerto `65002`.)
+
+### 2) Secrets en GitHub
+
+Repo → Settings → Secrets and variables → Actions → New repository secret:
+
+| Secret | Valor |
+|--------|-------|
+| `HOSTINGER_HOST` | Host SSH de Hostinger (ej. IP o hostname del panel) |
+| `HOSTINGER_USER` | `u463162242` |
+| `HOSTINGER_SSH_PORT` | `65002` (o el puerto que muestre hPanel) |
+| `HOSTINGER_SSH_KEY` | Contenido completo de la clave privada `inmo_deploy` |
+| `HOSTINGER_PATH` | `/home/u463162242/domains/systemsjc.com/public_html/depas` |
+
+Importante: `HOSTINGER_PATH` es la **raiz de Laravel** (donde esta `artisan`), no la carpeta `public/`.
+El document root del dominio apunta a `.../depas/public`, pero rsync y artisan usan `.../depas`.
+
+### 3) Que hace cada deploy
+
+1. Corre tests y Pint (igual que CI).
+2. `composer install --no-dev` + `npm run build`.
+3. Backup en produccion (`inmo:backup`).
+4. `rsync` al servidor (excluye `.env`, `storage/`, etc.).
+5. `migrate --force` + caches de Laravel.
+
+### 4) Proteger `main` (recomendado)
+
+GitHub → Settings → Branches → Add rule para `main`:
+
+- Require status checks: `quality` (CI) y/o `deploy / quality`.
+- Opcional: bloquear push directo a `main`.
+
+### 5) Verificar
+
+- GitHub → Actions: workflow **Deploy** en verde.
+- Produccion: `/admin/system` y smoke manual de la funcionalidad cambiada.
+
+---
+
 ## Comandos de referencia rapida
 
 Web Hosting (sin Docker):

@@ -1,0 +1,111 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: dom, mbstring, pdo_sqlite, sqlite3
+          coverage: none
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Prepare app key
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Run tests
+        run: composer test
+
+      - name: Run Pint
+        run: composer pint:test
+
+  deploy:
+    needs: quality
+    runs-on: ubuntu-latest
+
+    env:
+      SSH_PORT: ${{ secrets.HOSTINGER_SSH_PORT }}
+      DEPLOY_PATH: ${{ secrets.HOSTINGER_PATH }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: dom, mbstring, pdo_sqlite, sqlite3
+          coverage: none
+          tools: composer:v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Build release
+        run: |
+          composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+          npm ci
+          npm run build
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.HOSTINGER_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p "${SSH_PORT}" "${{ secrets.HOSTINGER_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Backup production
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT}" -o StrictHostKeyChecking=accept-new \
+            "${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}" \
+            "cd '${DEPLOY_PATH}' && php artisan inmo:backup --keep=14"
+
+      - name: Rsync to server
+        run: |
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/deploy_key -p ${SSH_PORT} -o StrictHostKeyChecking=accept-new" \
+            --exclude '.env' \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude 'storage' \
+            --exclude 'node_modules' \
+            --exclude 'tests' \
+            --exclude '.env.example' \
+            --exclude 'phpunit.xml' \
+            --exclude 'compose.yaml' \
+            --exclude 'docker' \
+            --exclude 'inmo-deploy.tar.gz' \
+            --exclude 'public/storage' \
+            --exclude '.cursor' \
+            --exclude 'docs' \
+            ./ "${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}:${DEPLOY_PATH}/"
+
+      - name: Run migrations and warm caches
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT}" -o StrictHostKeyChecking=accept-new \
+            "${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}" \
+            "cd '${DEPLOY_PATH}' && php artisan migrate --force && (php artisan storage:link || true) && php artisan config:cache && php artisan route:cache && php artisan view:cache"

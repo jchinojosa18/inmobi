@@ -223,5 +223,8 @@ Resultado esperado:
 - `Tests: ... passed`
 - `PASS ... Laravel Pint`
 
-## Deployment (placeholder)
-Pendiente por definir pipeline, estrategia de release y monitoreo.
+## Deployment
+
+- Guia Hostinger: [`docs/DEPLOY_HOSTINGER.md`](docs/DEPLOY_HOSTINGER.md)
+- CI en cada push: [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
+- Deploy automatico al mergear/pushear `main`: [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)
