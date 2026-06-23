@@ -1,59 +1,39 @@
 <section class="space-y-6">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-            <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Propiedad</p>
-            <h1 class="text-2xl font-semibold tracking-tight">{{ $property->name }}</h1>
-            <p class="mt-1 text-sm text-slate-600">Gestión de unidades asociadas.</p>
-        </div>
-        <div class="flex gap-2">
-            <a
-                href="{{ route('properties.index') }}"
-                class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
+    <x-ui.page-header
+        :title="$property->name"
+        description="Gestión de unidades asociadas."
+    >
+        <x-slot:actions>
+            <x-ui.button href="{{ route('properties.index') }}" variant="secondary">
                 Volver a propiedades
-            </a>
+            </x-ui.button>
             @if ($canManageUnits)
-                <button
-                    type="button"
-                    wire:click="startBulkGenerate"
-                    class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                >
+                <x-ui.button type="button" variant="secondary" wire:click="startBulkGenerate">
                     Gestionar unidades
-                </button>
+                </x-ui.button>
             @endif
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-ui.page-header>
 
-    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <x-ui.card :padding="true" class="!p-4">
         <div class="grid gap-3 md:grid-cols-3">
             <div class="md:col-span-2">
-                <label for="unit-search" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">
-                    Buscar
-                </label>
-                <input
+                <x-ui.input
                     id="unit-search"
+                    label="Buscar"
                     type="text"
                     wire:model.live.debounce.300ms="search"
                     placeholder="Nombre, código o piso..."
-                    class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-                >
+                />
             </div>
-            <div>
-                <label for="unit-status-filter" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">
-                    Estado
-                </label>
-                <select
-                    id="unit-status-filter"
-                    wire:model.live="statusFilter"
-                    class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-                >
-                    <option value="">Todos</option>
-                    <option value="active">Activo</option>
-                    <option value="inactive">Inactivo</option>
-                </select>
-            </div>
+
+            <x-ui.select id="unit-status-filter" label="Estado" wire:model.live="statusFilter">
+                <option value="">Todos</option>
+                <option value="active">Activo</option>
+                <option value="inactive">Inactivo</option>
+            </x-ui.select>
         </div>
-    </div>
+    </x-ui.card>
 
     @if ($canManageUnits)
         <x-ui.modal
@@ -76,13 +56,15 @@
                         <p class="mt-1 text-xs text-slate-600">
                             Este edificio ya tiene unidades con esta nomenclatura. No puedes generar con otra a menos que elimines todas las unidades (sin contratos ni movimientos) o cambies la nomenclatura del edificio.
                         </p>
-                        <button
+                        <x-ui.button
                             type="button"
+                            variant="secondary"
+                            size="sm"
                             wire:click="startEditingBuildingNumberingScheme"
-                            class="mt-3 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                            class="mt-3"
                         >
                             Cambiar nomenclatura del edificio
-                        </button>
+                        </x-ui.button>
                     </div>
                     <input type="hidden" wire:model="bulkNumberingScheme">
                 @elseif ($editingBuildingNumberingScheme)
@@ -114,25 +96,26 @@
                         </span>
                     </label>
                     <div class="flex flex-wrap gap-2 pt-1">
-                        <button
+                        <x-ui.button
                             type="button"
+                            size="sm"
                             wire:click="applyBuildingNumberingScheme"
                             wire:loading.attr="disabled"
                             wire:target="applyBuildingNumberingScheme"
-                            class="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800 disabled:opacity-60"
                         >
                             <span wire:loading.remove wire:target="applyBuildingNumberingScheme">Aplicar a todas las unidades</span>
                             <span wire:loading wire:target="applyBuildingNumberingScheme">Aplicando…</span>
-                        </button>
-                        <button
+                        </x-ui.button>
+                        <x-ui.button
                             type="button"
+                            variant="secondary"
+                            size="sm"
                             wire:click="cancelEditingBuildingNumberingScheme"
                             wire:loading.attr="disabled"
                             wire:target="applyBuildingNumberingScheme"
-                            class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
                         >
                             Cancelar
-                        </button>
+                        </x-ui.button>
                     </div>
                 @else
                     <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-3 transition has-[:checked]:border-slate-400 has-[:checked]:bg-slate-50">
@@ -234,20 +217,12 @@
             @endif
 
             <div class="mt-4 flex flex-wrap items-center justify-end gap-2">
-                <button
-                    type="button"
-                    wire:click="cancelBulkForm"
-                    class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                >
+                <x-ui.button type="button" variant="secondary" wire:click="cancelBulkForm">
                     Cancelar
-                </button>
-                <button
-                    type="button"
-                    wire:click="generateBulkUnits"
-                    class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-                >
+                </x-ui.button>
+                <x-ui.button type="button" wire:click="generateBulkUnits">
                     Generar {{ count($bulkPreview) }} unidades
-                </button>
+                </x-ui.button>
             </div>
             @endif
         </x-ui.modal>
@@ -322,93 +297,84 @@
         </div>
     @endif
 
-    <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-slate-200 text-sm">
-                <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    <tr>
-                        @if ($canManageUnits)
-                            <th class="px-4 py-3 w-10">
-                                @if ($pageDeletableIds !== [])
-                                    <input
-                                        type="checkbox"
-                                        wire:click="togglePageSelection"
-                                        @checked($allPageSelected)
-                                        class="rounded border-slate-300 text-slate-900 focus:ring-slate-500"
-                                        aria-label="Seleccionar unidades de esta página"
-                                    >
-                                @endif
-                            </th>
-                        @endif
-                        <th class="px-4 py-3">Código</th>
-                        <th class="px-4 py-3">Estado</th>
-                        <th class="px-4 py-3 text-right">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 bg-white">
-                    @forelse ($units as $unit)
-                        @php
-                            $unitIsDeletable = $unit->contracts_count === 0
-                                && $unit->charges_count === 0
-                                && $unit->expenses_count === 0
-                                && $unit->documents_count === 0;
-                        @endphp
-                        <tr wire:key="unit-row-{{ $unit->id }}">
-                            @if ($canManageUnits)
-                                <td class="px-4 py-3">
-                                    @if ($unitIsDeletable)
-                                        <input
-                                            type="checkbox"
-                                            wire:model="selectedUnitIds"
-                                            value="{{ $unit->id }}"
-                                            class="rounded border-slate-300 text-slate-900 focus:ring-slate-500"
-                                            aria-label="Seleccionar {{ $unit->code ?: 'unidad' }}"
-                                        >
-                                    @endif
-                                </td>
+    <x-ui.table>
+        <x-slot:head>
+            @if ($canManageUnits)
+                <th class="px-4 py-3 w-10">
+                    @if ($pageDeletableIds !== [])
+                        <input
+                            type="checkbox"
+                            wire:click="togglePageSelection"
+                            @checked($allPageSelected)
+                            class="rounded border-slate-300 text-slate-900 focus:ring-slate-500"
+                            aria-label="Seleccionar unidades de esta página"
+                        >
+                    @endif
+                </th>
+            @endif
+            <th class="px-4 py-3">Código</th>
+            <th class="px-4 py-3">Estado</th>
+            <th class="px-4 py-3 text-right">Acciones</th>
+        </x-slot:head>
+        <x-slot:body>
+            @forelse ($units as $unit)
+                @php
+                    $unitIsDeletable = $unit->contracts_count === 0
+                        && $unit->charges_count === 0
+                        && $unit->expenses_count === 0
+                        && $unit->documents_count === 0;
+                @endphp
+                <tr wire:key="unit-row-{{ $unit->id }}" class="transition hover:bg-slate-50/80">
+                    @if ($canManageUnits)
+                        <td class="px-4 py-3">
+                            @if ($unitIsDeletable)
+                                <input
+                                    type="checkbox"
+                                    wire:model="selectedUnitIds"
+                                    value="{{ $unit->id }}"
+                                    class="rounded border-slate-300 text-slate-900 focus:ring-slate-500"
+                                    aria-label="Seleccionar {{ $unit->code ?: 'unidad' }}"
+                                >
                             @endif
-                            <td class="px-4 py-3">
-                                <p class="font-medium uppercase text-slate-900">{{ $unit->code ?: 'Sin código' }}</p>
-                                @if ($lockedNumberingScheme === 'sequential' && $unit->floor)
-                                    <p class="text-xs text-slate-500">Piso {{ $unit->floor }}</p>
-                                @endif
-                            </td>
-                            <td class="px-4 py-3">
-                                <span class="rounded-full px-2 py-1 text-xs font-medium {{ $unit->status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">
-                                    {{ $unit->status === 'active' ? 'Activo' : 'Inactivo' }}
-                                </span>
-                            </td>
-                            <td class="px-4 py-3">
-                                <div class="flex justify-end gap-2">
-                                    @if ($canManageUnits && $unitIsDeletable)
-                                        <button
-                                            type="button"
-                                            wire:click="confirmDeleteUnit({{ $unit->id }})"
-                                            class="rounded-md border border-red-300 p-1.5 text-red-700 hover:bg-red-50"
-                                            aria-label="Eliminar {{ $unit->code ?: 'unidad' }}"
-                                            title="Eliminar"
-                                        >
-                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                            </svg>
-                                        </button>
-                                    @endif
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="{{ $canManageUnits ? 4 : 3 }}" class="px-4 py-8 text-center text-sm text-slate-500">
-                                No hay unidades con los filtros actuales.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        <div class="border-t border-slate-200 bg-slate-50 px-4 py-3">
-            {{ $units->links() }}
-        </div>
-    </div>
+                        </td>
+                    @endif
+                    <td class="px-4 py-3">
+                        <p class="font-medium uppercase text-slate-900">{{ $unit->code ?: 'Sin código' }}</p>
+                        @if ($lockedNumberingScheme === 'sequential' && $unit->floor)
+                            <p class="text-xs text-slate-500">Piso {{ $unit->floor }}</p>
+                        @endif
+                    </td>
+                    <td class="px-4 py-3">
+                        <x-ui.badge :variant="$unit->status === 'active' ? 'success' : 'neutral'">
+                            {{ $unit->status === 'active' ? 'Activo' : 'Inactivo' }}
+                        </x-ui.badge>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="flex justify-end gap-2">
+                            @if ($canManageUnits && $unitIsDeletable)
+                                <button
+                                    type="button"
+                                    wire:click="confirmDeleteUnit({{ $unit->id }})"
+                                    class="rounded-md border border-red-300 p-1.5 text-red-700 hover:bg-red-50"
+                                    aria-label="Eliminar {{ $unit->code ?: 'unidad' }}"
+                                    title="Eliminar"
+                                >
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            @endif
+                        </div>
+                    </td>
+                </tr>
+            @empty
+                <x-ui.empty-state title="No hay unidades con los filtros actuales." :colspan="$canManageUnits ? 4 : 3" />
+            @endforelse
+        </x-slot:body>
+        <x-slot:footer>
+            <div class="bg-slate-50/80 px-4 py-3">
+                {{ $units->links() }}
+            </div>
+        </x-slot:footer>
+    </x-ui.table>
 </section>

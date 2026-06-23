@@ -1,23 +1,20 @@
 <section class="space-y-6">
-    <div class="flex flex-wrap items-start justify-between gap-3">
-        <div>
-            <h1 class="text-2xl font-semibold tracking-tight">Roles y permisos</h1>
-            <p class="mt-1 text-sm text-slate-600">
-                Vista de solo lectura. Los permisos se sincronizan por código desde el seeder.
-            </p>
-        </div>
-
-        <div class="w-full sm:w-72">
-            <label for="role-preview-search" class="mb-1 block text-sm font-medium text-slate-700">Buscar permiso o acción</label>
-            <input
-                id="role-preview-search"
-                type="text"
-                wire:model.live.debounce.300ms="q"
-                placeholder="Ej. pagos.create, auditoría"
-                class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-300"
-            >
-        </div>
-    </div>
+    <x-ui.page-header
+        title="Roles y permisos"
+        description="Vista de solo lectura. Los permisos se sincronizan por código desde el seeder."
+    >
+        <x-slot:actions>
+            <div class="w-full sm:w-72">
+                <x-ui.input
+                    id="role-preview-search"
+                    label="Buscar permiso o acción"
+                    type="text"
+                    wire:model.live.debounce.300ms="q"
+                    placeholder="Ej. pagos.create, auditoría"
+                />
+            </div>
+        </x-slot:actions>
+    </x-ui.page-header>
 
     <div class="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
         Esta pantalla no permite edición. Si necesitas cambiar permisos, actualiza el seeder
@@ -26,15 +23,15 @@
 
     <div class="grid gap-4 xl:grid-cols-3">
         @foreach ($roles as $role)
-            <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <x-ui.card>
                 <div class="mb-4 flex items-start justify-between gap-3">
                     <div>
                         <h2 class="text-lg font-semibold text-slate-900">{{ $role['label'] }}</h2>
                         <p class="mt-1 text-sm text-slate-600">{{ $role['description'] }}</p>
                     </div>
-                    <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                    <x-ui.badge variant="neutral" class="font-semibold">
                         {{ $role['allowed_permissions'] }}/{{ $role['total_permissions'] }}
-                    </span>
+                    </x-ui.badge>
                 </div>
 
                 @if (count($role['modules']) === 0)
@@ -56,15 +53,15 @@
                                                 <p class="text-xs text-slate-500">{{ $permission['permission'] }}</p>
                                             </div>
                                             @if ($permission['allowed'])
-                                                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                                                <x-ui.badge variant="success">
                                                     <span aria-hidden="true">✅</span>
                                                     Permitido
-                                                </span>
+                                                </x-ui.badge>
                                             @else
-                                                <span class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700">
+                                                <x-ui.badge variant="danger">
                                                     <span aria-hidden="true">❌</span>
                                                     No permitido
-                                                </span>
+                                                </x-ui.badge>
                                             @endif
                                         </li>
                                     @endforeach
@@ -73,7 +70,7 @@
                         @endforeach
                     </div>
                 @endif
-            </article>
+            </x-ui.card>
         @endforeach
     </div>
 </section>

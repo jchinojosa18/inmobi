@@ -1,4 +1,4 @@
-<header class="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 border-b border-slate-200 bg-white px-4 sm:px-6">
+<header class="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 border-b border-slate-200/80 bg-white px-4 sm:px-6">
     @php
         $organizationId = (int) (auth()->user()?->organization_id ?? 0);
         $plazas = collect();
@@ -45,7 +45,7 @@
         <button
             type="button"
             onclick="Livewire.dispatch('open-command-palette')"
-            class="flex h-9 w-full max-w-xs items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 text-left transition hover:bg-slate-100 hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+            class="flex h-9 w-full max-w-xs items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 text-left transition hover:border-slate-300 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             aria-label="Abrir búsqueda rápida (⌘K)"
         >
             <svg class="h-4 w-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none"
@@ -72,7 +72,7 @@
                     id="topbar-plaza-select"
                     name="plaza_id"
                     onchange="this.form.submit()"
-                    class="h-9 rounded-lg border border-slate-300 bg-white px-2 text-sm text-slate-700 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-300"
+                    class="h-9 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-700 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
                 >
                     <option value="" @selected($currentPlazaId === null)>Todas</option>
                     @foreach ($plazas as $plaza)
@@ -107,7 +107,7 @@
                 aria-controls="user-menu-dropdown"
             >
                 {{-- Avatar inicial --}}
-                <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white" aria-hidden="true">
+                <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-semibold text-white" aria-hidden="true">
                     {{ mb_strtoupper(mb_substr(auth()->user()->name ?? 'U', 0, 1)) }}
                 </span>
                 <span class="hidden max-w-[120px] truncate text-sm font-medium text-slate-800 sm:block">
@@ -122,7 +122,7 @@
             {{-- Dropdown --}}
             <div
                 id="user-menu-dropdown"
-                class="absolute right-0 mt-1 hidden w-56 rounded-xl border border-slate-200 bg-white py-1 shadow-lg shadow-slate-900/10"
+                class="absolute right-0 mt-1 hidden w-56 rounded-xl border border-slate-200/80 bg-white py-1 shadow-lg"
                 role="menu"
                 aria-labelledby="user-menu-btn"
             >

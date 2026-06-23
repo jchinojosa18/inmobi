@@ -46,41 +46,40 @@
                     {{-- Date + Amount --}}
                     <div class="grid gap-3 sm:grid-cols-2">
                         <div>
-                            <label class="mb-1 block text-xs font-medium text-slate-700">Fecha *</label>
-                            <input
+                            <x-ui.input
+                                id="qem-spent-at"
+                                label="Fecha *"
                                 type="date"
                                 wire:model.blur="spentAt"
-                                class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
-                            >
+                            />
                             @error('spentAt') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                         </div>
 
                         <div>
-                            <label class="mb-1 block text-xs font-medium text-slate-700">Monto *</label>
-                            <input
+                            <x-ui.input
+                                id="qem-amount"
+                                label="Monto *"
                                 type="number"
                                 step="0.01"
                                 min="0.01"
                                 wire:model.blur="amount"
                                 placeholder="0.00"
-                                class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
-                            >
+                            />
                             @error('amount') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                         </div>
                     </div>
 
                     {{-- Category --}}
                     <div>
-                        <label class="mb-1 block text-xs font-medium text-slate-700">Categoría *</label>
-                        <input
+                        <x-ui.input
                             id="qem-category"
+                            label="Categoría *"
                             type="text"
                             list="qem-categories-list"
                             wire:model.blur="category"
                             placeholder="MANTENIMIENTO, LIMPIEZA, SERVICIO…"
                             autocomplete="off"
-                            class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
-                        >
+                        />
                         <datalist id="qem-categories-list">
                             @foreach($categories as $cat)
                                 <option value="{{ $cat }}"></option>
@@ -148,30 +147,26 @@
                     {{-- Vendor + Notes --}}
                     <div class="grid gap-3 sm:grid-cols-2">
                         <div>
-                            <label class="mb-1 block text-xs font-medium text-slate-700">
-                                Proveedor <span class="text-slate-400">(opcional)</span>
-                            </label>
-                            <input
+                            <x-ui.input
+                                id="qem-vendor"
+                                label="Proveedor (opcional)"
                                 type="text"
                                 wire:model.blur="vendor"
                                 maxlength="150"
                                 placeholder="Nombre del proveedor"
-                                class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
-                            >
+                            />
                             @error('vendor') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                         </div>
 
                         <div>
-                            <label class="mb-1 block text-xs font-medium text-slate-700">
-                                Notas <span class="text-slate-400">(opcional)</span>
-                            </label>
-                            <input
+                            <x-ui.input
+                                id="qem-notes"
+                                label="Notas (opcional)"
                                 type="text"
                                 wire:model.blur="notes"
                                 maxlength="1000"
                                 placeholder="Descripción breve"
-                                class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
-                            >
+                            />
                             @error('notes') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                         </div>
                     </div>
@@ -195,23 +190,18 @@
 
             {{-- Footer --}}
             <div class="flex items-center justify-end gap-3 border-t border-slate-200 px-5 py-4">
-                <button
-                    type="button"
-                    wire:click="close"
-                    class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                >
+                <x-ui.button type="button" variant="secondary" wire:click="close">
                     Cancelar
-                </button>
-                <button
+                </x-ui.button>
+                <x-ui.button
                     type="button"
                     wire:click="save"
                     wire:loading.attr="disabled"
                     wire:loading.class="opacity-60 cursor-not-allowed"
-                    class="rounded-md bg-slate-900 px-5 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
                 >
                     <span wire:loading.remove wire:target="save">Guardar egreso</span>
                     <span wire:loading wire:target="save">Guardando…</span>
-                </button>
+                </x-ui.button>
             </div>
 
         </div>

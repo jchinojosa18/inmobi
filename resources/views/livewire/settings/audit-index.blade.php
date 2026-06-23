@@ -1,133 +1,100 @@
 <section class="space-y-6">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-            <h1 class="text-2xl font-semibold tracking-tight">Auditoría</h1>
-            <p class="mt-1 text-sm text-slate-600">Historial de acciones de negocio registradas en el sistema.</p>
-        </div>
-        <a
-            href="{{ route('settings.audit.export') }}?{{ http_build_query(['date_from' => $dateFrom, 'date_to' => $dateTo, 'actor_user_id' => $actorUserId, 'action' => $action, 'search' => $search]) }}"
-            class="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"
-        >
-            Exportar CSV
-        </a>
-    </div>
+    <x-ui.page-header
+        title="Auditoría"
+        description="Historial de acciones de negocio registradas en el sistema."
+    >
+        <x-slot:actions>
+            <x-ui.button
+                variant="secondary"
+                href="{{ route('settings.audit.export') }}?{{ http_build_query(['date_from' => $dateFrom, 'date_to' => $dateTo, 'actor_user_id' => $actorUserId, 'action' => $action, 'search' => $search]) }}"
+            >
+                Exportar CSV
+            </x-ui.button>
+        </x-slot:actions>
+    </x-ui.page-header>
 
-    {{-- Filters --}}
-    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <x-ui.card :padding="true" class="!p-4">
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div>
-                <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Desde</label>
-                <input type="date" wire:model.live="dateFrom" class="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm">
-            </div>
-            <div>
-                <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Hasta</label>
-                <input type="date" wire:model.live="dateTo" class="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm">
-            </div>
-            <div>
-                <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Usuario</label>
-                <select wire:model.live="actorUserId" class="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm">
-                    <option value="">Todos</option>
-                    @foreach ($actors as $actor)
-                        <option value="{{ $actor->id }}">{{ $actor->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div>
-                <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Acción</label>
-                <select wire:model.live="action" class="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm">
-                    <option value="">Todas</option>
-                    @foreach ($actions as $act)
-                        <option value="{{ $act }}">{{ $act }}</option>
-                    @endforeach
-                </select>
-            </div>
+            <x-ui.input label="Desde" type="date" wire:model.live="dateFrom" />
+            <x-ui.input label="Hasta" type="date" wire:model.live="dateTo" />
+            <x-ui.select label="Usuario" wire:model.live="actorUserId">
+                <option value="">Todos</option>
+                @foreach ($actors as $actor)
+                    <option value="{{ $actor->id }}">{{ $actor->name }}</option>
+                @endforeach
+            </x-ui.select>
+            <x-ui.select label="Acción" wire:model.live="action">
+                <option value="">Todas</option>
+                @foreach ($actions as $act)
+                    <option value="{{ $act }}">{{ $act }}</option>
+                @endforeach
+            </x-ui.select>
             <div class="sm:col-span-2">
-                <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Buscar en resumen</label>
-                <input type="text" wire:model.live.debounce.400ms="search" placeholder="Buscar..." class="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm">
+                <x-ui.input label="Buscar en resumen" type="text" wire:model.live.debounce.400ms="search" placeholder="Buscar..." />
             </div>
-            <div>
-                <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Entidad</label>
-                <select wire:model.live="auditableType" class="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm">
-                    <option value="">Todas</option>
-                    @foreach ($auditableTypes as $fullClass => $label)
-                        <option value="{{ $fullClass }}">{{ $label }}</option>
-                    @endforeach
-                </select>
-            </div>
+            <x-ui.select label="Entidad" wire:model.live="auditableType">
+                <option value="">Todas</option>
+                @foreach ($auditableTypes as $fullClass => $label)
+                    <option value="{{ $fullClass }}">{{ $label }}</option>
+                @endforeach
+            </x-ui.select>
         </div>
-    </div>
+    </x-ui.card>
 
-    {{-- Table --}}
-    <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div class="overflow-x-auto">
-            <table class="min-w-full text-sm">
-                <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-                    <tr>
-                        <th class="px-4 py-2 whitespace-nowrap">Fecha/hora</th>
-                        <th class="px-4 py-2">Usuario</th>
-                        <th class="px-4 py-2">Acción</th>
-                        <th class="px-4 py-2">Resumen</th>
-                        <th class="px-4 py-2">Entidad</th>
-                        <th class="px-4 py-2 text-right">Ver</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    @forelse ($events as $event)
-                        <tr class="hover:bg-slate-50">
-                            <td class="px-4 py-2 whitespace-nowrap text-xs text-slate-500">
-                                {{ $event->occurred_at->timezone('America/Tijuana')->format('Y-m-d H:i') }}
-                            </td>
-                            <td class="px-4 py-2">
-                                @if ($event->actor)
-                                    <span class="font-medium">{{ $event->actor->name }}</span>
-                                    <span class="block text-xs text-slate-400">{{ $event->actor->email }}</span>
-                                @else
-                                    <span class="text-slate-400">Sistema</span>
-                                @endif
-                            </td>
-                            <td class="px-4 py-2">
-                                <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-mono font-medium text-slate-700">
-                                    {{ $event->action }}
-                                </span>
-                            </td>
-                            <td class="px-4 py-2 max-w-xs truncate">{{ $event->summary }}</td>
-                            <td class="px-4 py-2 text-xs text-slate-500">
-                                @if ($event->auditable_type)
-                                    {{ class_basename($event->auditable_type) }} #{{ $event->auditable_id }}
-                                @endif
-                            </td>
-                            <td class="px-4 py-2 text-right">
-                                <button
-                                    type="button"
-                                    wire:click="viewEvent({{ $event->id }})"
-                                    class="rounded border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
-                                >
-                                    Ver
-                                </button>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="px-4 py-8 text-center text-slate-400">
-                                Sin eventos para los filtros seleccionados.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
+    <x-ui.table>
+        <x-slot:head>
+            <th class="px-4 py-2 whitespace-nowrap">Fecha/hora</th>
+            <th class="px-4 py-2">Usuario</th>
+            <th class="px-4 py-2">Acción</th>
+            <th class="px-4 py-2">Resumen</th>
+            <th class="px-4 py-2">Entidad</th>
+            <th class="px-4 py-2 text-right">Ver</th>
+        </x-slot:head>
+        <x-slot:body>
+            @forelse ($events as $event)
+                <tr class="hover:bg-slate-50/80">
+                    <td class="px-4 py-2 whitespace-nowrap text-xs text-slate-500">
+                        {{ $event->occurred_at->timezone('America/Tijuana')->format('Y-m-d H:i') }}
+                    </td>
+                    <td class="px-4 py-2">
+                        @if ($event->actor)
+                            <span class="font-medium">{{ $event->actor->name }}</span>
+                            <span class="block text-xs text-slate-400">{{ $event->actor->email }}</span>
+                        @else
+                            <span class="text-slate-400">Sistema</span>
+                        @endif
+                    </td>
+                    <td class="px-4 py-2">
+                        <x-ui.badge variant="neutral" class="font-mono">{{ $event->action }}</x-ui.badge>
+                    </td>
+                    <td class="px-4 py-2 max-w-xs truncate">{{ $event->summary }}</td>
+                    <td class="px-4 py-2 text-xs text-slate-500">
+                        @if ($event->auditable_type)
+                            {{ class_basename($event->auditable_type) }} #{{ $event->auditable_id }}
+                        @endif
+                    </td>
+                    <td class="px-4 py-2 text-right">
+                        <x-ui.button type="button" wire:click="viewEvent({{ $event->id }})" variant="secondary" size="sm">
+                            Ver
+                        </x-ui.button>
+                    </td>
+                </tr>
+            @empty
+                <x-ui.empty-state title="Sin eventos para los filtros seleccionados." :colspan="6" />
+            @endforelse
+        </x-slot:body>
         @if ($events->hasPages())
-            <div class="border-t border-slate-200 px-4 py-3">
-                {{ $events->links() }}
-            </div>
+            <x-slot:footer>
+                <div class="px-4 py-3">
+                    {{ $events->links() }}
+                </div>
+            </x-slot:footer>
         @endif
-    </div>
+    </x-ui.table>
 
-    {{-- Detail Modal --}}
     @if ($selectedEvent)
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div class="w-full max-w-2xl rounded-xl bg-white shadow-xl">
+            <div class="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-xl">
                 <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
                     <div>
                         <h2 class="text-base font-semibold">Detalle del evento</h2>
@@ -184,9 +151,9 @@
                     @endif
                 </div>
                 <div class="border-t border-slate-200 px-6 py-4 text-right">
-                    <button type="button" wire:click="closeEvent" class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
+                    <x-ui.button type="button" wire:click="closeEvent">
                         Cerrar
-                    </button>
+                    </x-ui.button>
                 </div>
             </div>
         </div>

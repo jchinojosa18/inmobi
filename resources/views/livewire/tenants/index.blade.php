@@ -1,50 +1,36 @@
 <section class="space-y-6">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-            <h1 class="text-2xl font-semibold tracking-tight">Inquilinos</h1>
-            <p class="mt-1 text-sm text-slate-600">Directorio y administración de arrendatarios.</p>
-        </div>
-        @if ($canManageTenants)
-            <button
-                type="button"
-                wire:click="startCreate"
-                class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-            >
-                Nuevo inquilino
-            </button>
-        @endif
-    </div>
+    <x-ui.page-header
+        title="Inquilinos"
+        description="Directorio y administración de arrendatarios."
+    >
+        <x-slot:actions>
+            @if ($canManageTenants)
+                <x-ui.button type="button" wire:click="startCreate">
+                    Nuevo inquilino
+                </x-ui.button>
+            @endif
+        </x-slot:actions>
+    </x-ui.page-header>
 
-    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <x-ui.card :padding="true" class="!p-4">
         <div class="grid gap-3 md:grid-cols-3">
             <div class="md:col-span-2">
-                <label for="tenant-search" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">
-                    Buscar
-                </label>
-                <input
+                <x-ui.input
                     id="tenant-search"
+                    label="Buscar"
                     type="text"
                     wire:model.live.debounce.300ms="search"
                     placeholder="Nombre, email o teléfono..."
-                    class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-                >
+                />
             </div>
-            <div>
-                <label for="tenant-status-filter" class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">
-                    Estado
-                </label>
-                <select
-                    id="tenant-status-filter"
-                    wire:model.live="statusFilter"
-                    class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-                >
-                    <option value="">Todos</option>
-                    <option value="active">Activo</option>
-                    <option value="inactive">Inactivo</option>
-                </select>
-            </div>
+
+            <x-ui.select id="tenant-status-filter" label="Estado" wire:model.live="statusFilter">
+                <option value="">Todos</option>
+                <option value="active">Activo</option>
+                <option value="inactive">Inactivo</option>
+            </x-ui.select>
         </div>
-    </div>
+    </x-ui.card>
 
     @if ($canManageTenants)
         <x-ui.modal
@@ -88,80 +74,60 @@
                 </div>
 
                 <div class="md:col-span-2 flex flex-wrap items-center justify-end gap-2">
-                    <button
-                        type="button"
-                        wire:click="cancelForm"
-                        class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                    >
+                    <x-ui.button type="button" variant="secondary" wire:click="cancelForm">
                         Cancelar
-                    </button>
-                    <button
-                        type="submit"
-                        class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-                    >
+                    </x-ui.button>
+                    <x-ui.button type="submit">
                         Guardar
-                    </button>
+                    </x-ui.button>
                 </div>
             </form>
         </x-ui.modal>
     @endif
 
-    <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-slate-200 text-sm">
-                <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    <tr>
-                        <th class="px-4 py-3">Inquilino</th>
-                        <th class="px-4 py-3">Estado</th>
-                        <th class="px-4 py-3 text-right">Contratos</th>
-                        <th class="px-4 py-3 text-right">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 bg-white">
-                    @forelse ($tenants as $tenant)
-                        <tr>
-                            <td class="px-4 py-3">
-                                <p class="font-medium text-slate-900">{{ $tenant->full_name }}</p>
-                                <p class="text-xs text-slate-500">
-                                    {{ $tenant->email ?: 'Sin correo' }}
-                                    @if ($tenant->phone)
-                                        · {{ $tenant->phone }}
-                                    @endif
-                                </p>
-                            </td>
-                            <td class="px-4 py-3">
-                                <span class="rounded-full px-2 py-1 text-xs font-medium {{ $tenant->status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700' }}">
-                                    {{ $tenant->status === 'active' ? 'Activo' : 'Inactivo' }}
-                                </span>
-                            </td>
-                            <td class="px-4 py-3 text-right font-medium text-slate-700">{{ $tenant->contracts_count }}</td>
-                            <td class="px-4 py-3">
-                                <div class="flex justify-end">
-                                    @if ($canManageTenants)
-                                        <button
-                                            type="button"
-                                            wire:click="startEdit({{ $tenant->id }})"
-                                            class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                                        >
-                                            Editar
-                                        </button>
-                                    @endif
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="4" class="px-4 py-8 text-center text-sm text-slate-500">
-                                No hay inquilinos con los filtros actuales.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        <div class="border-t border-slate-200 bg-slate-50 px-4 py-3">
-            {{ $tenants->links() }}
-        </div>
-    </div>
+    <x-ui.table>
+        <x-slot:head>
+            <th class="px-4 py-3">Inquilino</th>
+            <th class="px-4 py-3">Estado</th>
+            <th class="px-4 py-3 text-right">Contratos</th>
+            <th class="px-4 py-3 text-right">Acciones</th>
+        </x-slot:head>
+        <x-slot:body>
+            @forelse ($tenants as $tenant)
+                <tr class="transition hover:bg-slate-50/80">
+                    <td class="px-4 py-3">
+                        <p class="font-medium text-slate-900">{{ $tenant->full_name }}</p>
+                        <p class="text-xs text-slate-500">
+                            {{ $tenant->email ?: 'Sin correo' }}
+                            @if ($tenant->phone)
+                                · {{ $tenant->phone }}
+                            @endif
+                        </p>
+                    </td>
+                    <td class="px-4 py-3">
+                        <x-ui.badge :variant="$tenant->status === 'active' ? 'success' : 'neutral'">
+                            {{ $tenant->status === 'active' ? 'Activo' : 'Inactivo' }}
+                        </x-ui.badge>
+                    </td>
+                    <td class="px-4 py-3 text-right font-medium text-slate-700">{{ $tenant->contracts_count }}</td>
+                    <td class="px-4 py-3">
+                        <div class="flex justify-end">
+                            @if ($canManageTenants)
+                                <x-ui.button type="button" variant="secondary" size="sm" wire:click="startEdit({{ $tenant->id }})">
+                                    Editar
+                                </x-ui.button>
+                            @endif
+                        </div>
+                    </td>
+                </tr>
+            @empty
+                <x-ui.empty-state title="No hay inquilinos con los filtros actuales." :colspan="4" />
+            @endforelse
+        </x-slot:body>
+        <x-slot:footer>
+            <div class="bg-slate-50/80 px-4 py-3">
+                {{ $tenants->links() }}
+            </div>
+        </x-slot:footer>
+    </x-ui.table>
 </section>

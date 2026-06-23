@@ -1,30 +1,29 @@
 <section class="space-y-6">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-            <h1 class="text-2xl font-semibold tracking-tight">Dashboard operativo</h1>
-            <p class="mt-1 text-sm text-slate-600">Centro de control operativo para administración diaria.</p>
-        </div>
-        <div class="flex flex-wrap items-center gap-2">
+    <x-ui.page-header
+        title="Dashboard operativo"
+        description="Centro de control operativo para administración diaria."
+    >
+        <x-slot:actions>
             @if ($canCreatePayments)
-                <button type="button" onclick="Livewire.dispatch('open-quick-payment')" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
+                <x-ui.button type="button" onclick="Livewire.dispatch('open-quick-payment')">
                     Registrar pago
-                </button>
+                </x-ui.button>
             @endif
             @if ($canCreateExpenses)
-                <button type="button" onclick="Livewire.dispatch('open-quick-expense')" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                <x-ui.button type="button" variant="secondary" onclick="Livewire.dispatch('open-quick-expense')">
                     Registrar egreso
-                </button>
+                </x-ui.button>
             @endif
             @if ($canManageContracts)
-                <a href="{{ route('contracts.create') }}" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                <x-ui.button href="{{ route('contracts.create') }}" variant="secondary">
                     Nuevo contrato
-                </a>
+                </x-ui.button>
             @endif
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-ui.page-header>
 
     @if ($onboardingChecklist['show'])
-        <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <x-ui.card>
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <h2 class="text-lg font-semibold text-slate-900">
@@ -34,18 +33,14 @@
                         Completa estos pasos para evitar un dashboard vacío y activar operación diaria.
                     </p>
                 </div>
-                <button
-                    type="button"
-                    wire:click="dismissOnboarding"
-                    class="rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
-                >
+                <x-ui.button type="button" variant="secondary" size="sm" wire:click="dismissOnboarding">
                     Ocultar por ahora
-                </button>
+                </x-ui.button>
             </div>
 
             <div class="mt-4 h-2 w-full overflow-hidden rounded-full bg-slate-100">
                 <div
-                    class="h-full rounded-full bg-slate-900 transition-all duration-300"
+                    class="h-full rounded-full bg-indigo-600 transition-all duration-300"
                     style="width: {{ $onboardingChecklist['critical_progress_percent'] }}%;"
                     role="progressbar"
                     aria-valuemin="0"
@@ -77,26 +72,19 @@
 
                             <div class="flex flex-wrap items-center gap-2">
                                 @if ($step['complete'])
-                                    <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">Completo</span>
+                                    <x-ui.badge variant="success">Completo</x-ui.badge>
                                 @else
                                     @foreach ($step['ctas'] as $cta)
                                         @if (($cta['type'] ?? '') === 'route' && isset($cta['route']))
-                                            <a
-                                                href="{{ route($cta['route']) }}"
-                                                class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
-                                            >
+                                            <x-ui.button href="{{ route($cta['route']) }}" variant="secondary" size="sm">
                                                 {{ $cta['label'] }}
-                                            </a>
+                                            </x-ui.button>
                                         @endif
 
                                         @if (($cta['type'] ?? '') === 'action_generate_rent')
-                                            <button
-                                                type="button"
-                                                wire:click="generateCurrentMonthRent"
-                                                class="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
-                                            >
+                                            <x-ui.button type="button" size="sm" wire:click="generateCurrentMonthRent">
                                                 {{ $cta['label'] }}
-                                            </button>
+                                            </x-ui.button>
                                         @endif
                                     @endforeach
                                 @endif
@@ -130,27 +118,19 @@
 
                                 <div class="flex flex-wrap items-center gap-2">
                                     @if ($step['complete'])
-                                        <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">Completo</span>
+                                        <x-ui.badge variant="success">Completo</x-ui.badge>
                                     @else
                                         @foreach ($step['ctas'] as $cta)
                                             @if (($cta['type'] ?? '') === 'action_open_quick_payment')
-                                                <button
-                                                    type="button"
-                                                    onclick="Livewire.dispatch('open-quick-payment')"
-                                                    class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
-                                                >
+                                                <x-ui.button type="button" variant="secondary" size="sm" onclick="Livewire.dispatch('open-quick-payment')">
                                                     {{ $cta['label'] }}
-                                                </button>
+                                                </x-ui.button>
                                             @endif
 
                                             @if (($cta['type'] ?? '') === 'action_open_quick_expense')
-                                                <button
-                                                    type="button"
-                                                    onclick="Livewire.dispatch('open-quick-expense')"
-                                                    class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
-                                                >
+                                                <x-ui.button type="button" variant="secondary" size="sm" onclick="Livewire.dispatch('open-quick-expense')">
                                                     {{ $cta['label'] }}
-                                                </button>
+                                                </x-ui.button>
                                             @endif
                                         @endforeach
                                     @endif
@@ -160,176 +140,151 @@
                     @endforeach
                 </div>
             </div>
-        </section>
+        </x-ui.card>
     @endif
 
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <article class="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
-            <p class="text-xs uppercase tracking-wide text-emerald-700">Ingresos operativos del mes</p>
-            <p class="mt-2 text-2xl font-semibold text-emerald-900">${{ number_format($incomeMonth, 2) }}</p>
-            <p class="mt-1 text-xs text-emerald-700">Allocations (sin depósitos)</p>
-        </article>
-
-        <article class="rounded-xl border border-rose-200 bg-rose-50 p-5">
-            <p class="text-xs uppercase tracking-wide text-rose-700">Egresos del mes</p>
-            <p class="mt-2 text-2xl font-semibold text-rose-900">${{ number_format($expenseMonth, 2) }}</p>
-        </article>
-
-        <article class="rounded-xl border border-slate-300 bg-white p-5">
-            <p class="text-xs uppercase tracking-wide text-slate-500">Neto</p>
-            <p class="mt-2 text-2xl font-semibold {{ $netMonth >= 0 ? 'text-emerald-700' : 'text-rose-700' }}">
-                ${{ number_format($netMonth, 2) }}
-            </p>
-        </article>
-
-        <article class="rounded-xl border border-amber-200 bg-amber-50 p-5">
-            <p class="text-xs uppercase tracking-wide text-amber-700">Cartera vencida total</p>
-            <p class="mt-2 text-2xl font-semibold text-amber-900">${{ number_format($overduePortfolioTotal, 2) }}</p>
-            <p class="mt-1 text-xs text-amber-700">Contratos con renta vencida</p>
-        </article>
-
-        <article class="rounded-xl border border-slate-300 bg-white p-5">
-            <p class="text-xs uppercase tracking-wide text-slate-500">Contratos activos</p>
-            <p class="mt-2 text-2xl font-semibold text-slate-900">{{ $activeContracts }}</p>
-        </article>
-
-        <article class="rounded-xl border border-slate-300 bg-white p-5">
-            <p class="text-xs uppercase tracking-wide text-slate-500">Unidades</p>
-            <p class="mt-2 text-2xl font-semibold text-slate-900">{{ $occupiedUnits }} ocupadas / {{ $availableUnits }} disponibles</p>
-        </article>
+        <x-ui.stat-card
+            label="Ingresos operativos del mes"
+            value="${{ number_format($incomeMonth, 2) }}"
+            hint="Allocations (sin depósitos)"
+            tone="success"
+        />
+        <x-ui.stat-card
+            label="Egresos del mes"
+            value="${{ number_format($expenseMonth, 2) }}"
+            tone="danger"
+        />
+        <x-ui.stat-card
+            label="Neto"
+            value="${{ number_format($netMonth, 2) }}"
+            :value-class="$netMonth >= 0 ? 'text-emerald-700' : 'text-rose-700'"
+        />
+        <x-ui.stat-card
+            label="Cartera vencida total"
+            value="${{ number_format($overduePortfolioTotal, 2) }}"
+            hint="Contratos con renta vencida"
+            tone="warning"
+        />
+        <x-ui.stat-card
+            label="Contratos activos"
+            :value="(string) $activeContracts"
+        />
+        <x-ui.stat-card
+            label="Unidades"
+            value="{{ $occupiedUnits }} ocupadas / {{ $availableUnits }} disponibles"
+        />
     </div>
 
     <div class="grid gap-6 xl:grid-cols-2">
-        <section class="rounded-xl border border-slate-200 bg-white shadow-sm">
-            <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+        <x-ui.table>
+            <x-slot:header>
                 <h2 class="text-sm font-semibold text-slate-900">Vencidos (top 10)</h2>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="min-w-full text-sm">
-                    <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-                        <tr>
-                            <th class="px-4 py-2">Contrato</th>
-                            <th class="px-4 py-2">Unidad</th>
-                            <th class="px-4 py-2">Inquilino</th>
-                            <th class="px-4 py-2 text-right">Días atraso</th>
-                            <th class="px-4 py-2 text-right">Saldo</th>
-                            <th class="px-4 py-2 text-right">Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        @forelse ($overdueContracts as $row)
-                            <tr class="hover:bg-slate-50/70">
-                                <td class="px-4 py-2 text-slate-700">#{{ $row->contract_id }}</td>
-                                <td class="px-4 py-2 text-slate-700">
-                                    {{ $row->property_name }} / {{ $row->unit_name ?? ($row->unit_code ?? '-') }}
-                                </td>
-                                <td class="px-4 py-2 text-slate-700">
-                                    {{ $row->tenant_name }}
-                                    <p class="text-xs text-slate-500">{{ $row->tenant_phone ?: ($row->tenant_email ?: 'Sin contacto') }}</p>
-                                </td>
-                                <td class="px-4 py-2 text-right font-medium text-amber-700">{{ (int) $row->overdue_days }}</td>
-                                <td class="px-4 py-2 text-right font-medium text-slate-900">${{ number_format((float) $row->pending_balance, 2) }}</td>
-                                <td class="px-4 py-2 text-right">
-                                    @if ($canCreatePayments)
-                                        <button type="button" onclick="Livewire.dispatch('open-quick-payment', { contractId: {{ $row->contract_id }} })" class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
-                                            Registrar pago
-                                        </button>
-                                    @endif
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="px-4 py-8 text-center text-sm text-slate-500">Sin contratos vencidos.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </section>
+            </x-slot:header>
+            <x-slot:head>
+                <th class="px-4 py-3">Contrato</th>
+                <th class="px-4 py-3">Unidad</th>
+                <th class="px-4 py-3">Inquilino</th>
+                <th class="px-4 py-3 text-right">Días atraso</th>
+                <th class="px-4 py-3 text-right">Saldo</th>
+                <th class="px-4 py-3 text-right">Acción</th>
+            </x-slot:head>
+            <x-slot:body>
+                @forelse ($overdueContracts as $row)
+                    <tr class="transition hover:bg-slate-50/80">
+                        <td class="px-4 py-3 text-slate-700">#{{ $row->contract_id }}</td>
+                        <td class="px-4 py-3 text-slate-700">
+                            {{ $row->property_name }} / {{ $row->unit_name ?? ($row->unit_code ?? '-') }}
+                        </td>
+                        <td class="px-4 py-3 text-slate-700">
+                            {{ $row->tenant_name }}
+                            <p class="text-xs text-slate-500">{{ $row->tenant_phone ?: ($row->tenant_email ?: 'Sin contacto') }}</p>
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            <x-ui.badge variant="warning">{{ (int) $row->overdue_days }} días</x-ui.badge>
+                        </td>
+                        <td class="px-4 py-3 text-right font-medium text-slate-900">${{ number_format((float) $row->pending_balance, 2) }}</td>
+                        <td class="px-4 py-3 text-right">
+                            @if ($canCreatePayments)
+                                <x-ui.button type="button" variant="secondary" size="sm" onclick="Livewire.dispatch('open-quick-payment', { contractId: {{ $row->contract_id }} })">
+                                    Registrar pago
+                                </x-ui.button>
+                            @endif
+                        </td>
+                    </tr>
+                @empty
+                    <x-ui.empty-state title="Sin contratos vencidos." :colspan="6" />
+                @endforelse
+            </x-slot:body>
+        </x-ui.table>
 
-        <section class="rounded-xl border border-slate-200 bg-white shadow-sm">
-            <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+        <x-ui.table>
+            <x-slot:header>
                 <h2 class="text-sm font-semibold text-slate-900">En gracia (top 10)</h2>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="min-w-full text-sm">
-                    <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-                        <tr>
-                            <th class="px-4 py-2">Contrato</th>
-                            <th class="px-4 py-2">Unidad</th>
-                            <th class="px-4 py-2">Vence / gracia</th>
-                            <th class="px-4 py-2 text-right">Saldo</th>
-                            <th class="px-4 py-2 text-right">Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        @forelse ($graceContracts as $row)
-                            <tr class="hover:bg-slate-50/70">
-                                <td class="px-4 py-2 text-slate-700">#{{ $row->contract_id }}</td>
-                                <td class="px-4 py-2 text-slate-700">{{ $row->property_name }} / {{ $row->unit_name ?? ($row->unit_code ?? '-') }}</td>
-                                <td class="px-4 py-2 text-slate-700">
-                                    {{ \Carbon\Carbon::parse($row->due_date)->format('Y-m-d') }}
-                                    <p class="text-xs text-slate-500">Gracia: {{ \Carbon\Carbon::parse($row->grace_until)->format('Y-m-d') }}</p>
-                                </td>
-                                <td class="px-4 py-2 text-right font-medium text-slate-900">${{ number_format((float) $row->pending_balance, 2) }}</td>
-                                <td class="px-4 py-2 text-right">
-                                    @if ($canCreatePayments)
-                                        <button type="button" onclick="Livewire.dispatch('open-quick-payment', { contractId: {{ $row->contract_id }} })" class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
-                                            Registrar pago
-                                        </button>
-                                    @endif
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="5" class="px-4 py-8 text-center text-sm text-slate-500">Sin contratos en gracia.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </section>
+            </x-slot:header>
+            <x-slot:head>
+                <th class="px-4 py-3">Contrato</th>
+                <th class="px-4 py-3">Unidad</th>
+                <th class="px-4 py-3">Vence / gracia</th>
+                <th class="px-4 py-3 text-right">Saldo</th>
+                <th class="px-4 py-3 text-right">Acción</th>
+            </x-slot:head>
+            <x-slot:body>
+                @forelse ($graceContracts as $row)
+                    <tr class="transition hover:bg-slate-50/80">
+                        <td class="px-4 py-3 text-slate-700">#{{ $row->contract_id }}</td>
+                        <td class="px-4 py-3 text-slate-700">{{ $row->property_name }} / {{ $row->unit_name ?? ($row->unit_code ?? '-') }}</td>
+                        <td class="px-4 py-3 text-slate-700">
+                            {{ \Carbon\Carbon::parse($row->due_date)->format('Y-m-d') }}
+                            <p class="text-xs text-slate-500">Gracia: {{ \Carbon\Carbon::parse($row->grace_until)->format('Y-m-d') }}</p>
+                        </td>
+                        <td class="px-4 py-3 text-right font-medium text-slate-900">${{ number_format((float) $row->pending_balance, 2) }}</td>
+                        <td class="px-4 py-3 text-right">
+                            @if ($canCreatePayments)
+                                <x-ui.button type="button" variant="secondary" size="sm" onclick="Livewire.dispatch('open-quick-payment', { contractId: {{ $row->contract_id }} })">
+                                    Registrar pago
+                                </x-ui.button>
+                            @endif
+                        </td>
+                    </tr>
+                @empty
+                    <x-ui.empty-state title="Sin contratos en gracia." :colspan="5" />
+                @endforelse
+            </x-slot:body>
+        </x-ui.table>
     </div>
 
-    <section class="rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+    <x-ui.table>
+        <x-slot:header>
             <h2 class="text-sm font-semibold text-slate-900">Pagos recientes (top 10)</h2>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="min-w-full text-sm">
-                <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-                    <tr>
-                        <th class="px-4 py-2">Folio</th>
-                        <th class="px-4 py-2">Fecha</th>
-                        <th class="px-4 py-2">Contrato</th>
-                        <th class="px-4 py-2 text-right">Monto</th>
-                        <th class="px-4 py-2 text-right">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    @forelse ($recentPayments as $payment)
-                        <tr class="hover:bg-slate-50/70">
-                            <td class="px-4 py-2 text-slate-700">{{ $payment->receipt_folio }}</td>
-                            <td class="px-4 py-2 text-slate-700">{{ \Carbon\Carbon::parse($payment->paid_at)->timezone('America/Tijuana')->format('Y-m-d H:i') }}</td>
-                            <td class="px-4 py-2 text-slate-700">
-                                #{{ $payment->contract_id }} · {{ $payment->tenant_name }}
-                                <p class="text-xs text-slate-500">{{ $payment->property_name }} / {{ $payment->unit_name ?? ($payment->unit_code ?? '-') }}</p>
-                            </td>
-                            <td class="px-4 py-2 text-right font-medium text-slate-900">${{ number_format((float) $payment->amount, 2) }}</td>
-                            <td class="px-4 py-2 text-right">
-                                <div class="inline-flex items-center gap-2">
-                                    <a href="{{ route('payments.show', $payment->payment_id) }}" class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">Ver pago</a>
-                                    <a href="{{ route('payments.receipt.pdf', ['paymentId' => $payment->payment_id]) }}" class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">Recibo PDF</a>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5" class="px-4 py-8 text-center text-sm text-slate-500">Sin pagos recientes.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </section>
+        </x-slot:header>
+        <x-slot:head>
+            <th class="px-4 py-3">Folio</th>
+            <th class="px-4 py-3">Fecha</th>
+            <th class="px-4 py-3">Contrato</th>
+            <th class="px-4 py-3 text-right">Monto</th>
+            <th class="px-4 py-3 text-right">Acciones</th>
+        </x-slot:head>
+        <x-slot:body>
+            @forelse ($recentPayments as $payment)
+                <tr class="transition hover:bg-slate-50/80">
+                    <td class="px-4 py-3 text-slate-700">{{ $payment->receipt_folio }}</td>
+                    <td class="px-4 py-3 text-slate-700">{{ \Carbon\Carbon::parse($payment->paid_at)->timezone('America/Tijuana')->format('Y-m-d H:i') }}</td>
+                    <td class="px-4 py-3 text-slate-700">
+                        #{{ $payment->contract_id }} · {{ $payment->tenant_name }}
+                        <p class="text-xs text-slate-500">{{ $payment->property_name }} / {{ $payment->unit_name ?? ($payment->unit_code ?? '-') }}</p>
+                    </td>
+                    <td class="px-4 py-3 text-right font-medium text-slate-900">${{ number_format((float) $payment->amount, 2) }}</td>
+                    <td class="px-4 py-3 text-right">
+                        <div class="inline-flex items-center gap-2">
+                            <x-ui.button href="{{ route('payments.show', $payment->payment_id) }}" variant="secondary" size="sm">Ver pago</x-ui.button>
+                            <x-ui.button href="{{ route('payments.receipt.pdf', ['paymentId' => $payment->payment_id]) }}" variant="secondary" size="sm">Recibo PDF</x-ui.button>
+                        </div>
+                    </td>
+                </tr>
+            @empty
+                <x-ui.empty-state title="Sin pagos recientes." :colspan="5" />
+            @endforelse
+        </x-slot:body>
+    </x-ui.table>
 </section>

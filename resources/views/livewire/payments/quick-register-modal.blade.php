@@ -40,15 +40,14 @@
                     <div class="space-y-3">
                         <p class="text-sm text-slate-600">Busca un contrato por nombre, email, teléfono, unidad o número de contrato.</p>
 
-                        <input
+                        <x-ui.input
                             id="qpm-input"
                             type="text"
                             wire:model.live.debounce.200ms="q"
                             wire:keydown.escape="close"
                             placeholder="Ej: Juan García, Unidad 101, #42…"
                             autocomplete="off"
-                            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
-                        >
+                        />
 
                         @if(strlen(trim($q)) >= 2)
                             @if(count($searchResults) > 0)
@@ -120,25 +119,25 @@
                         {{-- Form fields --}}
                         <div class="grid gap-3 sm:grid-cols-2">
                             <div>
-                                <label class="mb-1 block text-xs font-medium text-slate-700">Fecha y hora de pago</label>
-                                <input
+                                <x-ui.input
+                                    id="qpm-paid-at"
+                                    label="Fecha y hora de pago"
                                     type="datetime-local"
                                     wire:model.blur="paidAt"
-                                    class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
-                                >
+                                />
                                 @error('paidAt') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                             </div>
 
                             <div>
-                                <label class="mb-1 block text-xs font-medium text-slate-700">Monto</label>
-                                <input
+                                <x-ui.input
+                                    id="qpm-amount"
+                                    label="Monto"
                                     type="number"
                                     step="0.01"
                                     min="0.01"
                                     wire:model.blur="amount"
                                     placeholder="0.00"
-                                    class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
-                                >
+                                />
                                 @error('amount') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                             </div>
                         </div>
@@ -162,14 +161,14 @@
                         {{-- Reference (only for transfer) --}}
                         @if($method === \App\Models\Payment::METHOD_TRANSFER)
                         <div>
-                            <label class="mb-1 block text-xs font-medium text-slate-700">Referencia <span class="text-slate-400">(opcional)</span></label>
-                            <input
+                            <x-ui.input
+                                id="qpm-reference"
+                                label="Referencia (opcional)"
                                 type="text"
                                 wire:model.blur="reference"
                                 maxlength="120"
                                 placeholder="Número de transferencia, CLABE, etc."
-                                class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
-                            >
+                            />
                             @error('reference') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                         </div>
                         @endif
@@ -198,23 +197,18 @@
 
                     {{-- Footer --}}
                     <div class="mt-5 flex items-center justify-between gap-3">
-                        <button
-                            type="button"
-                            wire:click="backToSearch"
-                            class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                        >
+                        <x-ui.button type="button" variant="secondary" wire:click="backToSearch">
                             Cambiar contrato
-                        </button>
-                        <button
+                        </x-ui.button>
+                        <x-ui.button
                             type="button"
                             wire:click="save"
                             wire:loading.attr="disabled"
                             wire:loading.class="opacity-60 cursor-not-allowed"
-                            class="rounded-md bg-slate-900 px-5 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
                         >
                             <span wire:loading.remove wire:target="save">Registrar pago</span>
                             <span wire:loading wire:target="save">Guardando…</span>
-                        </button>
+                        </x-ui.button>
                     </div>
 
                 @elseif($step === 'done')
@@ -287,20 +281,12 @@
 
                         {{-- Footer --}}
                         <div class="flex justify-center gap-3 pt-2 border-t border-slate-100">
-                            <button
-                                type="button"
-                                wire:click="resetForm"
-                                class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                            >
+                            <x-ui.button type="button" variant="secondary" wire:click="resetForm">
                                 Nuevo pago
-                            </button>
-                            <button
-                                type="button"
-                                wire:click="close"
-                                class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-                            >
+                            </x-ui.button>
+                            <x-ui.button type="button" wire:click="close">
                                 Cerrar
-                            </button>
+                            </x-ui.button>
                         </div>
                     </div>
                 @endif

@@ -23,7 +23,7 @@
     {{-- ─────────────────────────────────────────────────────────────────── --}}
     <aside
         id="app-sidebar"
-        class="fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-white border-r border-slate-200
+        class="fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-slate-900
                -translate-x-full transition-transform duration-200 ease-in-out
                lg:translate-x-0"
         aria-label="Navegación principal"
@@ -41,14 +41,20 @@
         <main class="flex-1 px-4 py-6 sm:px-6 lg:px-8">
 
             @if (session('success'))
-                <div class="mb-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">
-                    {{ session('success') }}
+                <div class="mb-5 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">
+                    <svg class="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span>{{ session('success') }}</span>
                 </div>
             @endif
 
             @if (session('error'))
-                <div class="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
-                    {{ session('error') }}
+                <div class="mb-5 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+                    <svg class="mt-0.5 h-4 w-4 shrink-0 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
+                    </svg>
+                    <span>{{ session('error') }}</span>
                 </div>
             @endif
 
@@ -158,15 +164,15 @@
 
         function cpClearSelection(items) {
             items.forEach(function (el) {
-                el.classList.remove('bg-slate-100');
-                el.classList.add('hover:bg-slate-100');
+                el.classList.remove('bg-indigo-50');
+                el.classList.add('hover:bg-indigo-50');
             });
         }
 
         function cpApplySelection(items) {
             cpClearSelection(items);
             if (cpSelectedIndex >= 0 && items[cpSelectedIndex]) {
-                items[cpSelectedIndex].classList.add('bg-slate-100');
+                items[cpSelectedIndex].classList.add('bg-indigo-50');
                 items[cpSelectedIndex].scrollIntoView({ block: 'nearest' });
             }
         }
@@ -247,7 +253,7 @@
         x-on:expense-created.window="show = true; setTimeout(() => show = false, 2500)"
         x-show="show"
         x-transition.opacity
-        class="fixed bottom-6 right-6 z-50 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-lg"
+        class="fixed bottom-6 right-6 z-50 rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white shadow-lg"
         style="display: none;"
         aria-live="polite"
     >
@@ -271,7 +277,7 @@
         x-on:cp-notify.window="notify($event)"
         x-show="show"
         x-transition.opacity
-        class="fixed bottom-6 right-6 z-50 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-lg"
+        class="fixed bottom-6 right-6 z-50 rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white shadow-lg"
         style="display: none;"
         aria-live="polite"
     >
