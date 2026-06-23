@@ -79,6 +79,7 @@ jobs:
           ssh-keyscan -p "${SSH_PORT}" "${{ secrets.HOSTINGER_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null || true
 
       - name: Backup production
+        continue-on-error: true
         run: |
           ssh -i ~/.ssh/deploy_key -p "${SSH_PORT}" -o StrictHostKeyChecking=accept-new \
             "${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}" \
