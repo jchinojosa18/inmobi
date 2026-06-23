@@ -52,7 +52,7 @@ class ChargeFactory extends Factory
             'grace_until' => $graceUntil->toDateString(),
             'penalty_date' => $type === Charge::TYPE_PENALTY ? $chargeDate->toDateString() : null,
             'amount' => fake()->randomFloat(2, 200, 30000),
-            'meta' => null,
+            'meta' => $type === Charge::TYPE_ADJUSTMENT ? ['reason' => fake()->sentence()] : null,
         ];
     }
 }
