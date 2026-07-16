@@ -3,11 +3,17 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $title ?? 'Inmo Admin' }}</title>
+    <title>{{ $title ?? 'AXIS' }}</title>
+    <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
+    <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100">
     <div class="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+        <div class="absolute right-4 top-4 z-10 sm:right-6 sm:top-6">
+            <x-ui.locale-switcher />
+        </div>
+
         <div
             aria-hidden="true"
             class="pointer-events-none absolute inset-0 opacity-30 [background-image:radial-gradient(circle_at_1px_1px,rgb(148_163_184)_1px,transparent_0)] [background-size:22px_22px] dark:opacity-20"
@@ -17,27 +23,28 @@
             <div class="grid w-full max-w-5xl items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)]">
                 <section class="hidden max-w-xl rounded-3xl border border-white/45 bg-white/70 p-8 shadow-xl shadow-slate-900/10 backdrop-blur lg:block dark:border-slate-700/70 dark:bg-slate-900/55 dark:shadow-black/40">
                     <div class="space-y-6">
+                        <x-ui.brand variant="guest" class="mb-2" />
                         <p class="inline-flex rounded-full border border-slate-200/80 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-600 dark:border-slate-600/70 dark:bg-slate-900/60 dark:text-slate-300">
-                            Plataforma inmobiliaria
+                            {{ __('ui.guest.badge') }}
                         </p>
                         <h1 class="text-3xl font-semibold leading-tight tracking-tight text-slate-900 dark:text-slate-100">
-                            Opera tu cartera con disciplina financiera y trazabilidad real.
+                            {{ __('ui.guest.headline') }}
                         </h1>
                         <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                            Inmo Admin concentra la operación diaria en un panel claro para cobrar, cerrar periodos y monitorear métricas sin perder control.
+                            {{ __('ui.guest.description') }}
                         </p>
                         <ul class="space-y-2.5 text-sm text-slate-700 dark:text-slate-200">
                             <li class="flex items-start gap-2.5">
                                 <span class="mt-1.5 h-2 w-2 rounded-full bg-emerald-500"></span>
-                                Cobranza priorizada por vencimiento y periodo de gracia.
+                                {{ __('ui.guest.bullets.0') }}
                             </li>
                             <li class="flex items-start gap-2.5">
                                 <span class="mt-1.5 h-2 w-2 rounded-full bg-emerald-500"></span>
-                                Multas automáticas con cálculo diario compuesto.
+                                {{ __('ui.guest.bullets.1') }}
                             </li>
                             <li class="flex items-start gap-2.5">
                                 <span class="mt-1.5 h-2 w-2 rounded-full bg-emerald-500"></span>
-                                Reportes y cierres mensuales listos para auditoría.
+                                {{ __('ui.guest.bullets.2') }}
                             </li>
                         </ul>
                     </div>

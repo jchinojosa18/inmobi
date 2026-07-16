@@ -12,17 +12,17 @@
 
 {{-- ─── Branding ──────────────────────────────────────────────────────── --}}
 <div class="flex h-14 shrink-0 items-center gap-2 border-b border-white/10 px-4">
-    <a href="{{ route('dashboard') }}" class="flex-1">
-        <span class="block text-base font-semibold tracking-tight text-white">Inmo Admin</span>
-        @if (auth()->user()->organization?->name)
-            <span class="block truncate text-xs text-slate-400">{{ auth()->user()->organization->name }}</span>
-        @endif
-    </a>
+    <x-ui.brand
+        variant="sidebar"
+        :show-org="true"
+        :href="route('dashboard')"
+        class="flex-1"
+    />
 
     {{-- Close button – visible solo en mobile --}}
     <button id="sidebar-close-btn" type="button"
             class="rounded-lg p-1.5 text-slate-400 transition hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 lg:hidden"
-            aria-label="Cerrar menú de navegación">
+            aria-label="{{ __('ui.nav.close_menu') }}">
         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none"
              stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
@@ -31,12 +31,12 @@
 </div>
 
 {{-- ─── Navegación ─────────────────────────────────────────────────────── --}}
-<nav class="sidebar-scrollbar flex-1 overflow-y-auto px-3 py-4 space-y-6" aria-label="Menú principal">
+<nav class="sidebar-scrollbar flex-1 overflow-y-auto px-3 py-4 space-y-6" aria-label="{{ __('ui.nav.main') }}">
 
     {{-- OPERACIÓN --}}
     <div>
         <p class="mb-1 px-3 text-[11px] font-semibold uppercase tracking-widest text-slate-500">
-            Operación
+            {{ __('ui.nav.sections.operation') }}
         </p>
         <ul class="space-y-0.5">
             <li>
@@ -50,7 +50,7 @@
                                  v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21
                                  h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/>
                     </svg>
-                    Dashboard
+                    {{ __('ui.nav.dashboard') }}
                 </a>
                 @endcan
             </li>
@@ -65,7 +65,7 @@
                                  0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25
                                  0 004.5 19.5z"/>
                     </svg>
-                    Cobranza
+                    {{ __('ui.nav.cobranza') }}
                 </a>
                 @endcan
             </li>
@@ -81,7 +81,7 @@
                                  1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0
                                  1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
                     </svg>
-                    Contratos
+                    {{ __('ui.nav.contracts') }}
                 </a>
                 @endcan
             </li>
@@ -91,7 +91,7 @@
     {{-- CATÁLOGOS --}}
     <div>
         <p class="mb-1 px-3 text-[11px] font-semibold uppercase tracking-widest text-slate-500">
-            Catálogos
+            {{ __('ui.nav.sections.catalogs') }}
         </p>
         <ul class="space-y-0.5">
             <li>
@@ -106,7 +106,7 @@
                                  m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75
                                  c.621 0 1.125.504 1.125 1.125V21"/>
                     </svg>
-                    Propiedades
+                    {{ __('ui.nav.properties') }}
                 </a>
                 @endcan
             </li>
@@ -124,7 +124,7 @@
                                  3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25
                                  a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
                     </svg>
-                    Inquilinos
+                    {{ __('ui.nav.tenants') }}
                 </a>
                 @endcan
             </li>
@@ -134,7 +134,7 @@
     {{-- FINANZAS --}}
     <div>
         <p class="mb-1 px-3 text-[11px] font-semibold uppercase tracking-widest text-slate-500">
-            Finanzas
+            {{ __('ui.nav.sections.finance') }}
         </p>
         <ul class="space-y-0.5">
             <li>
@@ -145,7 +145,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round"
                               d="M9 12.75l3 3m0 0l3-3m-3 3v-7.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
-                    Egresos
+                    {{ __('ui.nav.expenses') }}
                 </a>
                 @endcan
             </li>
@@ -165,7 +165,7 @@
                                  21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25
                                  a1.125 1.125 0 01-1.125-1.125V4.125z"/>
                     </svg>
-                    Reporte flujo
+                    {{ __('ui.nav.cash_flow_report') }}
                 </a>
                 @endcan
             </li>
@@ -187,7 +187,7 @@
                                  2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H18
                                  v-.008zm0 2.25h.008v.008H18V15z"/>
                     </svg>
-                    Cierres
+                    {{ __('ui.nav.month_closes') }}
                 </a>
                 @endcan
             </li>
@@ -197,7 +197,7 @@
     {{-- SISTEMA --}}
     <div>
         <p class="mb-1 px-3 text-[11px] font-semibold uppercase tracking-widest text-slate-500">
-            Sistema
+            {{ __('ui.nav.sections.system') }}
         </p>
         <ul class="space-y-0.5">
             <li>
@@ -229,7 +229,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round"
                               d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                     </svg>
-                    Configuración
+                    {{ __('ui.nav.settings') }}
                 </a>
                 @endcan
             </li>
@@ -246,7 +246,7 @@
                                      016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25
                                      0 11-4.5 0 2.25 2.25 0 014.5 0z"/>
                         </svg>
-                        Roles y permisos
+                        {{ __('ui.nav.roles') }}
                     </a>
                 </li>
             @endcan
@@ -261,7 +261,7 @@
                                      19.5V9a1.5 1.5 0 011.5-1.5H6m12 0h-3m-6 0H6m3 0h6m-3 0v6m0 0l2.25-2.25
                                      M12 13.5l-2.25-2.25"/>
                         </svg>
-                        Invitaciones
+                        {{ __('ui.nav.invitations') }}
                     </a>
                 </li>
             @endcan
@@ -276,7 +276,7 @@
                                      11-3 0 1.5 1.5 0 013 0zm-7.5 4.5a1.5 1.5 0 11-3 0 1.5
                                      1.5 0 013 0z"/>
                         </svg>
-                        Plazas
+                        {{ __('ui.nav.plazas') }}
                     </a>
                 </li>
             @endcan
@@ -298,7 +298,7 @@
                                      c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008
                                      H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z"/>
                         </svg>
-                        Auditoría
+                        {{ __('ui.nav.audit') }}
                     </a>
                 </li>
             @endcan
@@ -313,7 +313,7 @@
                                      9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571
                                      -.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/>
                         </svg>
-                        Admin System
+                        {{ __('ui.nav.admin_system') }}
                     </a>
                 </li>
             @endcan
@@ -331,7 +331,7 @@
                  stroke="currentColor" stroke-width="2.5" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
             </svg>
-            Nuevo contrato
+            {{ __('ui.nav.new_contract') }}
         </a>
     </div>
 @endcan
