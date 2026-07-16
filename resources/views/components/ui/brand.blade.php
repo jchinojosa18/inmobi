@@ -17,7 +17,7 @@
 <div {{ $attributes->class(['flex items-center gap-2.5 min-w-0']) }}>
     <{{ $tag }}
         @if ($href) href="{{ $href }}" @endif
-        class="flex min-w-0 items-center gap-2.5 {{ $href ? '' : '' }}"
+        class="flex min-w-0 items-center gap-2.5"
     >
         <img
             src="{{ asset('images/brand/axis-mark.svg') }}"
