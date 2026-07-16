@@ -24,6 +24,7 @@ return [
         'subtitle' => 'Set up your company and access the panel in minutes.',
         'subtitle_invite' => 'Complete your account to join your company.',
         'check_errors' => 'Please check your details and try again.',
+        'login_link' => 'Sign in',
     ],
     'forgot_password' => [
         'title' => 'Reset password | AXIS',

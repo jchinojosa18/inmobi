@@ -24,6 +24,7 @@ return [
         'subtitle' => 'Configura tu empresa y entra al panel en minutos.',
         'subtitle_invite' => 'Completa tu cuenta para unirte a tu empresa.',
         'check_errors' => 'Revisa los datos e intenta nuevamente.',
+        'login_link' => 'Inicia sesión',
     ],
     'forgot_password' => [
         'title' => 'Recuperar contraseña | AXIS',

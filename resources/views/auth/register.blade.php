@@ -129,7 +129,7 @@
                         href="{{ route('login') }}"
                         class="font-medium underline-offset-4 hover:text-slate-900 hover:underline dark:hover:text-white"
                     >
-                        {{ __('auth.login.submit') }}
+                        {{ __('auth.register.login_link') }}
                     </a>
                 </p>
             @endif
