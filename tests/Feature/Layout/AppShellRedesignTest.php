@@ -17,7 +17,7 @@ class AppShellRedesignTest extends TestCase
         $response = $this->actingAs($user)->get(route('dashboard'));
 
         $response->assertOk();
-        $response->assertSee('Inmo Admin', false);
+        $response->assertSee('AXIS', false);
         $response->assertSee('bg-slate-900', false);
         $response->assertSee('Buscar', false);
         $response->assertSee('Dashboard operativo', false);
