@@ -7,7 +7,7 @@
     class="fixed inset-0 z-50 flex items-start justify-center px-4 pt-[12vh]"
     role="dialog"
     aria-modal="true"
-    aria-label="Búsqueda rápida"
+    aria-label="{{ __('command_palette.quick_search_aria') }}"
 >
     {{-- Overlay --}}
     <div
@@ -33,7 +33,7 @@
                 type="text"
                 wire:model.live.debounce.200ms="q"
                 wire:keydown.escape="handleEscape"
-                placeholder="Busca contratos, unidades, inquilinos…"
+                placeholder="{{ __('command_palette.placeholder') }}"
                 autocomplete="off"
                 spellcheck="false"
                 class="min-w-0 flex-1 bg-transparent py-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
@@ -66,10 +66,10 @@
                 $totalNavigable = count($this->navigableItems);
 
                 $typeLabels = [
-                    'contract' => 'Contratos',
-                    'tenant'   => 'Inquilinos',
-                    'unit'     => 'Unidades',
-                    'property' => 'Propiedades',
+                    'contract' => __('command_palette.type_labels.contract'),
+                    'tenant'   => __('command_palette.type_labels.tenant'),
+                    'unit'     => __('command_palette.type_labels.unit'),
+                    'property' => __('command_palette.type_labels.property'),
                 ];
                 $typeOrder = ['contract', 'tenant', 'unit', 'property'];
 
@@ -86,16 +86,18 @@
             <div class="py-2">
                 @if($this->confirmingActionLabel)
                     <div class="mx-2 mb-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                        Confirmar acción:
+                        {{ __('command_palette.confirm_action') }}
                         <span class="font-semibold">{{ $this->confirmingActionLabel }}</span>.
-                        Presiona <kbd class="rounded border border-amber-300 bg-white px-1 py-0.5 text-[10px] font-medium text-amber-700">Enter</kbd>
-                        para ejecutar o <kbd class="rounded border border-amber-300 bg-white px-1 py-0.5 text-[10px] font-medium text-amber-700">Esc</kbd> para cancelar.
+                        {!! __('command_palette.confirm_enter_hint', [
+                            'enter' => '<kbd class="rounded border border-amber-300 bg-white px-1 py-0.5 text-[10px] font-medium text-amber-700">Enter</kbd>',
+                            'esc' => '<kbd class="rounded border border-amber-300 bg-white px-1 py-0.5 text-[10px] font-medium text-amber-700">Esc</kbd>',
+                        ]) !!}
                     </div>
                 @endif
 
                 <div class="px-4 pb-0.5 pt-2">
                     <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
-                        Acciones
+                        {{ __('command_palette.actions_heading') }}
                     </p>
                 </div>
 
@@ -170,7 +172,7 @@
 
                             @if(($action['requires_confirmation'] ?? false) && $this->confirmingActionId === $action['id'])
                                 <span class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
-                                    Confirmar
+                                    {{ __('command_palette.confirm') }}
                                 </span>
                             @endif
 
@@ -181,7 +183,7 @@
                     @endforeach
                 @else
                     <div class="mx-2 rounded-lg border border-dashed border-slate-200 px-3 py-3 text-xs text-slate-500">
-                        No hay acciones que coincidan con <span class="font-medium text-slate-600">"{{ $trimmedQ }}"</span>.
+                        {{ __('command_palette.no_matching_actions', ['query' => $trimmedQ]) }}
                     </div>
                 @endif
 
@@ -189,12 +191,11 @@
 
                 @if(!$hasEntityQuery)
                     <div class="px-4 pb-3 pt-1 text-xs text-slate-500">
-                        Escribe al menos 2 caracteres para buscar contratos, unidades, inquilinos o propiedades.
+                        {{ __('command_palette.min_chars_hint') }}
                     </div>
                 @elseif(!$hasResults)
                     <div class="px-4 pb-3 pt-1 text-xs text-slate-500">
-                        Sin resultados de entidades para
-                        <span class="font-medium text-slate-700">"{{ $trimmedQ }}"</span>.
+                        {{ __('command_palette.no_entity_results', ['query' => $trimmedQ]) }}
                     </div>
                 @else
                     @foreach($typeOrder as $type)
@@ -236,9 +237,9 @@
 
                                     @if($item['badge'])
                                         <span class="hidden shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium
-                                            {{ $item['badge'] === 'Activo' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500' }}
+                                            {{ $item['badge'] === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500' }}
                                             sm:inline-flex">
-                                            {{ $item['badge'] }}
+                                            {{ __('common.'.$item['badge']) }}
                                         </span>
                                     @endif
 
@@ -247,14 +248,14 @@
                                             href="{{ $item['href2'] }}"
                                             onclick="event.stopPropagation()"
                                             class="hidden shrink-0 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 group-hover:inline-flex"
-                                            title="Registrar pago"
+                                            title="{{ __('common.register_payment') }}"
                                         >
                                             <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none"
                                                  stroke="currentColor" stroke-width="2.5" aria-hidden="true">
                                                 <path stroke-linecap="round" stroke-linejoin="round"
                                                       d="M12 4.5v15m7.5-7.5h-15"/>
                                             </svg>
-                                            Pago
+                                            {{ __('common.payment') }}
                                         </a>
                                     @endif
 
@@ -277,19 +278,19 @@
         <div class="flex items-center gap-4 border-t border-slate-100 bg-slate-50/70 px-4 py-2.5">
             <span class="flex items-center gap-1 text-[11px] text-slate-400">
                 <kbd class="rounded border border-slate-200 bg-white px-1 py-0.5 text-[10px] font-medium text-slate-500">↑↓</kbd>
-                Navegar
+                {{ __('command_palette.navigate') }}
             </span>
             <span class="flex items-center gap-1 text-[11px] text-slate-400">
                 <kbd class="rounded border border-slate-200 bg-white px-1 py-0.5 text-[10px] font-medium text-slate-500">⏎</kbd>
-                Ejecutar
+                {{ __('command_palette.execute') }}
             </span>
             <span class="flex items-center gap-1 text-[11px] text-slate-400">
                 <kbd class="rounded border border-slate-200 bg-white px-1 py-0.5 text-[10px] font-medium text-slate-500">Esc</kbd>
-                Cerrar
+                {{ __('command_palette.close') }}
             </span>
             @if($totalNavigable > 0)
                 <span class="ml-auto text-[11px] text-slate-400">
-                    {{ $totalNavigable }} {{ $totalNavigable === 1 ? 'elemento' : 'elementos' }}
+                    {{ trans_choice('command_palette.item', $totalNavigable, ['count' => $totalNavigable]) }}
                 </span>
             @endif
         </div>

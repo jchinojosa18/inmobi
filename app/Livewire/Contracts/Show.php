@@ -50,15 +50,15 @@ class Show extends Component
             'adjustment_comment' => ['nullable', 'string', 'max:500'],
             'adjustment_linked_to' => ['nullable', 'string', 'max:120'],
         ], [
-            'adjustment_amount.required' => 'El monto del ajuste es obligatorio.',
-            'adjustment_amount.numeric' => 'El monto del ajuste debe ser numérico.',
-            'adjustment_amount.not_in' => 'El monto del ajuste no puede ser cero.',
-            'adjustment_charge_date.required' => 'La fecha del ajuste es obligatoria.',
-            'adjustment_charge_date.date' => 'La fecha del ajuste no es válida.',
-            'adjustment_reason.required' => 'La razón del ajuste es obligatoria.',
-            'adjustment_reason.max' => 'La razón del ajuste no debe exceder 200 caracteres.',
-            'adjustment_comment.max' => 'El comentario no debe exceder 500 caracteres.',
-            'adjustment_linked_to.max' => 'La referencia no debe exceder 120 caracteres.',
+            'adjustment_amount.required' => __('contracts.validation.adjustment_amount_required'),
+            'adjustment_amount.numeric' => __('contracts.validation.adjustment_amount_numeric'),
+            'adjustment_amount.not_in' => __('contracts.validation.adjustment_amount_not_zero'),
+            'adjustment_charge_date.required' => __('contracts.validation.adjustment_date_required'),
+            'adjustment_charge_date.date' => __('contracts.validation.adjustment_date_invalid'),
+            'adjustment_reason.required' => __('contracts.validation.adjustment_reason_required'),
+            'adjustment_reason.max' => __('contracts.validation.adjustment_reason_max'),
+            'adjustment_comment.max' => __('contracts.validation.adjustment_comment_max'),
+            'adjustment_linked_to.max' => __('contracts.validation.adjustment_linked_max'),
         ]);
 
         $chargeDate = CarbonImmutable::parse($validated['adjustment_charge_date'], 'America/Tijuana')->startOfDay();
@@ -81,7 +81,7 @@ class Show extends Component
                 ],
             ]);
         } catch (ValidationException $exception) {
-            $message = $exception->errors()['month_close'][0] ?? 'No se pudo registrar el ajuste.';
+            $message = $exception->errors()['month_close'][0] ?? __('contracts.validation.adjustment_failed');
             $this->addError('adjustment_month_close', $message);
 
             return;
@@ -94,7 +94,7 @@ class Show extends Component
             'adjustment_linked_to',
         ]);
         $this->adjustment_charge_date = now('America/Tijuana')->toDateString();
-        session()->flash('success', 'Ajuste registrado correctamente.');
+        session()->flash('success', __('contracts.flash.adjustment_created'));
     }
 
     public function render(): View
@@ -151,7 +151,7 @@ class Show extends Component
             'canViewPayments' => auth()->user()?->can('payments.view') ?? false,
             'canSettleContracts' => auth()->user()?->can('contracts.settle') ?? false,
         ])->layout('layouts.app', [
-            'title' => 'Detalle de contrato',
+            'title' => __('contracts.show_page_title'),
         ]);
     }
 
@@ -264,7 +264,7 @@ class Show extends Component
         $status = $this->resolveChargeStatus($charge, $balance, $paid, $dueDate, $graceUntil);
 
         $periodValue = (string) ($charge->period ?? '');
-        $periodLabel = $periodValue !== '' ? $periodValue : 'Sin periodo';
+        $periodLabel = $periodValue !== '' ? $periodValue : __('contracts.no_period');
 
         return [
             'id' => $charge->id,
@@ -330,27 +330,27 @@ class Show extends Component
         ?CarbonImmutable $graceUntil
     ): array {
         if ($balance <= 0) {
-            return ['label' => 'Pagado', 'tone' => 'emerald'];
+            return ['label' => __('contracts.charge_statuses.paid'), 'tone' => 'emerald'];
         }
 
         if ($charge->type === Charge::TYPE_RENT && $dueDate !== null && $graceUntil !== null) {
             $today = now()->startOfDay();
 
             if ($today->gt($graceUntil)) {
-                return ['label' => 'Vencido', 'tone' => 'red'];
+                return ['label' => __('contracts.charge_statuses.overdue'), 'tone' => 'red'];
             }
 
             if ($today->betweenIncluded($dueDate, $graceUntil)) {
-                return ['label' => 'En gracia', 'tone' => 'amber'];
+                return ['label' => __('contracts.charge_statuses.grace'), 'tone' => 'amber'];
             }
 
-            return ['label' => 'Por vencer', 'tone' => 'blue'];
+            return ['label' => __('contracts.charge_statuses.upcoming'), 'tone' => 'blue'];
         }
 
         if ($paid > 0) {
-            return ['label' => 'Parcial', 'tone' => 'amber'];
+            return ['label' => __('contracts.charge_statuses.partial'), 'tone' => 'amber'];
         }
 
-        return ['label' => 'Pendiente', 'tone' => 'slate'];
+        return ['label' => __('contracts.charge_statuses.pending'), 'tone' => 'slate'];
     }
 }

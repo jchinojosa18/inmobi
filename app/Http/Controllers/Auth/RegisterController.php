@@ -41,7 +41,7 @@ class RegisterController extends Controller
 
         if ($inviteToken !== '' && $invitation === null) {
             throw ValidationException::withMessages([
-                'invite_token' => 'La invitación no es válida o expiró.',
+                'invite_token' => __('messages.validation.invite_invalid'),
             ]);
         }
 
@@ -58,21 +58,21 @@ class RegisterController extends Controller
                 'invite_token' => ['nullable', 'string'],
             ],
             [
-                'organization_name.required' => 'El nombre de la empresa es obligatorio.',
-                'organization_name.unique' => 'Ese nombre de empresa ya está registrado.',
-                'name.required' => 'El nombre es obligatorio.',
-                'email.required' => 'El email es obligatorio.',
-                'email.email' => 'El email no es válido.',
-                'email.unique' => 'Este email ya está registrado.',
-                'password.required' => 'La contraseña es obligatoria.',
-                'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
-                'password.confirmed' => 'La confirmación de contraseña no coincide.',
+                'organization_name.required' => __('messages.validation.organization_name_required'),
+                'organization_name.unique' => __('messages.validation.organization_name_unique'),
+                'name.required' => __('messages.validation.name_required'),
+                'email.required' => __('messages.validation.email_required'),
+                'email.email' => __('messages.validation.email_invalid'),
+                'email.unique' => __('messages.validation.email_unique'),
+                'password.required' => __('messages.validation.password_required'),
+                'password.min' => __('messages.validation.password_min'),
+                'password.confirmed' => __('messages.validation.password_confirmed'),
             ]
         );
 
         if ($invitation !== null && strtolower(trim((string) $validated['email'])) !== strtolower((string) $invitation->email)) {
             throw ValidationException::withMessages([
-                'email' => 'El email debe coincidir con la invitación recibida.',
+                'email' => __('messages.validation.invite_email_mismatch'),
             ]);
         }
 

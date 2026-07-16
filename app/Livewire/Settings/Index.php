@@ -60,17 +60,17 @@ class Index extends Component
             'whatsAppTemplate' => ['required', 'string', 'max:2000'],
             'emailTemplate' => ['required', 'string', 'max:4000'],
         ], [
-            'receiptFolioMode.required' => 'Selecciona un modo de folio.',
-            'receiptFolioMode.in' => 'El modo de folio no es válido.',
-            'receiptFolioPrefix.max' => 'El prefijo no debe exceder 20 caracteres.',
-            'receiptFolioPadding.required' => 'Define el padding del folio.',
-            'receiptFolioPadding.integer' => 'El padding debe ser un número entero.',
-            'receiptFolioPadding.min' => 'El padding mínimo es 3.',
-            'receiptFolioPadding.max' => 'El padding máximo es 10.',
-            'whatsAppTemplate.required' => 'La plantilla de WhatsApp es obligatoria.',
-            'whatsAppTemplate.max' => 'La plantilla de WhatsApp no debe exceder 2000 caracteres.',
-            'emailTemplate.required' => 'La plantilla de email es obligatoria.',
-            'emailTemplate.max' => 'La plantilla de email no debe exceder 4000 caracteres.',
+            'receiptFolioMode.required' => __('settings.validation.folio_mode_required'),
+            'receiptFolioMode.in' => __('settings.validation.folio_mode_invalid'),
+            'receiptFolioPrefix.max' => __('settings.validation.folio_prefix_max'),
+            'receiptFolioPadding.required' => __('settings.validation.folio_padding_required'),
+            'receiptFolioPadding.integer' => __('settings.validation.folio_padding_integer'),
+            'receiptFolioPadding.min' => __('settings.validation.folio_padding_min'),
+            'receiptFolioPadding.max' => __('settings.validation.folio_padding_max'),
+            'whatsAppTemplate.required' => __('settings.validation.whatsapp_required'),
+            'whatsAppTemplate.max' => __('settings.validation.whatsapp_max'),
+            'emailTemplate.required' => __('settings.validation.email_required'),
+            'emailTemplate.max' => __('settings.validation.email_max'),
         ]);
 
         OrganizationSetting::query()->updateOrCreate(
@@ -89,7 +89,7 @@ class Index extends Component
         app(AuditLogger::class)->log(
             action: 'settings.updated',
             auditable: null,
-            summary: 'Configuración de organización actualizada',
+            summary: __('settings.audit_summary.settings_updated'),
             meta: [
                 'receipt_folio_mode' => $validated['receiptFolioMode'],
                 'receipt_folio_prefix' => $validated['receiptFolioPrefix'] ?? null,
@@ -97,7 +97,7 @@ class Index extends Component
             ],
         );
 
-        session()->flash('success', 'Configuración actualizada correctamente.');
+        session()->flash('success', __('settings.flash.settings_updated'));
     }
 
     public function createExpenseCategory(): void
@@ -117,9 +117,9 @@ class Index extends Component
                         ->whereNull('deleted_at')),
             ],
         ], [
-            'newExpenseCategory.required' => 'La categoría es obligatoria.',
-            'newExpenseCategory.max' => 'La categoría no debe exceder 100 caracteres.',
-            'newExpenseCategory.unique' => 'La categoría ya existe en esta organización.',
+            'newExpenseCategory.required' => __('settings.validation.category_required'),
+            'newExpenseCategory.max' => __('settings.validation.category_max'),
+            'newExpenseCategory.unique' => __('settings.validation.category_unique'),
         ]);
 
         ExpenseCategory::query()->create([
@@ -129,7 +129,7 @@ class Index extends Component
         ]);
 
         $this->reset('newExpenseCategory');
-        session()->flash('success', 'Categoría registrada correctamente.');
+        session()->flash('success', __('settings.flash.category_created'));
     }
 
     public function startEditingExpenseCategory(int $categoryId): void
@@ -162,9 +162,9 @@ class Index extends Component
                         ->whereNull('deleted_at')),
             ],
         ], [
-            'editingExpenseCategoryName.required' => 'La categoría es obligatoria.',
-            'editingExpenseCategoryName.max' => 'La categoría no debe exceder 100 caracteres.',
-            'editingExpenseCategoryName.unique' => 'La categoría ya existe en esta organización.',
+            'editingExpenseCategoryName.required' => __('settings.validation.category_required'),
+            'editingExpenseCategoryName.max' => __('settings.validation.category_max'),
+            'editingExpenseCategoryName.unique' => __('settings.validation.category_unique'),
         ]);
 
         ExpenseCategory::query()
@@ -174,7 +174,7 @@ class Index extends Component
             ]);
 
         $this->cancelEditingExpenseCategory();
-        session()->flash('success', 'Categoría actualizada.');
+        session()->flash('success', __('settings.flash.category_updated'));
     }
 
     public function deleteExpenseCategory(int $categoryId): void
@@ -188,7 +188,7 @@ class Index extends Component
             $this->cancelEditingExpenseCategory();
         }
 
-        session()->flash('success', 'Categoría eliminada.');
+        session()->flash('success', __('settings.flash.category_deleted'));
     }
 
     public function confirmDeleteExpenseCategory(int $categoryId): void
@@ -240,7 +240,7 @@ class Index extends Component
             'penaltyRoundingScale' => OrganizationSettingsService::DEFAULT_PENALTY_ROUNDING_SCALE,
             'penaltyPolicy' => OrganizationSettingsService::DEFAULT_PENALTY_CALCULATION_POLICY,
         ])->layout('layouts.app', [
-            'title' => 'Configuración',
+            'title' => __('settings.title'),
         ]);
     }
 

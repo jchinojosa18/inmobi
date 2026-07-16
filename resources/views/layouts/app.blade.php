@@ -1,9 +1,11 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $title ?? 'Inmo Admin' }}</title>
+    <title>{{ config('app.name') }}</title>
+    <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
+    <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
@@ -26,7 +28,7 @@
         class="fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-slate-900
                -translate-x-full transition-transform duration-200 ease-in-out
                lg:translate-x-0"
-        aria-label="Navegación principal"
+        aria-label="{{ __('ui.nav.main') }}"
     >
         @include('layouts.partials.sidebar')
     </aside>
@@ -257,7 +259,7 @@
         style="display: none;"
         aria-live="polite"
     >
-        Egreso registrado correctamente.
+        {{ __('ui.toasts.expense_created') }}
     </div>
 
     {{-- Toast global: command palette actions --}}

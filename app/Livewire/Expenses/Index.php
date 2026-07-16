@@ -119,13 +119,13 @@ class Index extends Component
                 'meta' => [],
             ]);
         } catch (ValidationException $exception) {
-            $message = $exception->errors()['month_close'][0] ?? 'No se pudo registrar el egreso.';
+            $message = $exception->errors()['month_close'][0] ?? __('finance.validation.expense_failed');
             $this->addError('month_close', $message);
 
             return;
         }
 
-        session()->flash('success', 'Egreso registrado correctamente.');
+        session()->flash('success', __('finance.flash.expense_created'));
 
         $this->resetForm();
         $this->resetPage();
@@ -188,7 +188,7 @@ class Index extends Component
             'units' => $units,
             'categories' => $categories,
             'canCreateExpenses' => auth()->user()?->can('expenses.create') ?? false,
-        ])->layout('layouts.app', ['title' => 'Egresos']);
+        ])->layout('layouts.app', ['title' => __('finance.expenses.title')]);
     }
 
     /**
@@ -212,16 +212,16 @@ class Index extends Component
     private function messages(): array
     {
         return [
-            'category.required' => 'La categoría es obligatoria.',
-            'category.max' => 'La categoría no debe exceder 100 caracteres.',
-            'amount.required' => 'El monto es obligatorio.',
-            'amount.numeric' => 'El monto debe ser numérico.',
-            'amount.min' => 'El monto debe ser mayor a cero.',
-            'spent_at.required' => 'La fecha de gasto es obligatoria.',
-            'spent_at.date' => 'La fecha de gasto no es válida.',
-            'unit_id.exists' => 'La unidad seleccionada no es válida.',
-            'vendor.max' => 'El proveedor no debe exceder 150 caracteres.',
-            'notes.max' => 'Las notas no deben exceder 1000 caracteres.',
+            'category.required' => __('finance.validation.category_required'),
+            'category.max' => __('finance.validation.category_max'),
+            'amount.required' => __('finance.validation.amount_required'),
+            'amount.numeric' => __('finance.validation.amount_numeric'),
+            'amount.min' => __('finance.validation.amount_min'),
+            'spent_at.required' => __('finance.validation.spent_at_required'),
+            'spent_at.date' => __('finance.validation.spent_at_invalid'),
+            'unit_id.exists' => __('finance.validation.unit_invalid'),
+            'vendor.max' => __('finance.validation.vendor_max'),
+            'notes.max' => __('finance.validation.notes_max'),
         ];
     }
 

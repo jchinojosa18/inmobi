@@ -1,7 +1,7 @@
 <x-ui.card>
-    <h2 class="text-lg font-semibold text-slate-900">Depósito recibido</h2>
+    <h2 class="text-lg font-semibold text-slate-900">{{ __('contracts.deposit_received') }}</h2>
     <p class="mt-1 text-sm text-slate-600">
-        Registra el depósito como cargo <code>DEPOSIT_HOLD</code>. No se considera ingreso operativo.
+        {!! __('contracts.deposit_received_description', ['code' => '<code>DEPOSIT_HOLD</code>']) !!}
     </p>
 
     <form wire:submit="registerDeposit" class="mt-4 grid gap-4 md:grid-cols-3">
@@ -12,23 +12,23 @@
         @enderror
 
         <div>
-            <x-ui.input label="Fecha recepción *" type="date" wire:model.blur="deposit_received_at" />
+            <x-ui.input :label="__('contracts.deposit_received_at').' *'" type="date" wire:model.blur="deposit_received_at" />
             @error('deposit_received_at') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
         </div>
 
         <div>
-            <x-ui.input label="Monto *" type="number" step="0.01" min="0.01" wire:model.blur="deposit_amount" />
+            <x-ui.input :label="__('common.amount').' *'" type="number" step="0.01" min="0.01" wire:model.blur="deposit_amount" />
             @error('deposit_amount') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
         </div>
 
         <div>
-            <x-ui.input label="Notas" type="text" wire:model.blur="deposit_notes" />
+            <x-ui.input :label="__('contracts.notes')" type="text" wire:model.blur="deposit_notes" />
             @error('deposit_notes') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
         </div>
 
         <div class="md:col-span-3 flex justify-end">
             <x-ui.button type="submit">
-                Registrar depósito
+                {{ __('contracts.register_deposit') }}
             </x-ui.button>
         </div>
     </form>

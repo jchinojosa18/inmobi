@@ -4,7 +4,7 @@
         $plazas = collect();
         $showPlazaSelector = false;
         $currentPlazaId = \App\Support\TenantContext::currentPlazaId();
-        $currentPlazaLabel = 'Todas';
+        $currentPlazaLabel = __('ui.topbar.all_plazas');
 
         if ($organizationId > 0) {
             $plazas = \App\Models\Plaza::query()
@@ -28,7 +28,7 @@
         id="sidebar-open-btn"
         type="button"
         class="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 lg:hidden"
-        aria-label="Abrir menú de navegación"
+        aria-label="{{ __('ui.nav.open_menu') }}"
         aria-expanded="false"
         aria-controls="app-sidebar"
     >
@@ -37,7 +37,7 @@
             <path stroke-linecap="round" stroke-linejoin="round"
                   d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
         </svg>
-        <span class="sr-only">Abrir menú</span>
+        <span class="sr-only">{{ __('ui.nav.open_menu_short') }}</span>
     </button>
 
     {{-- ─── Trigger Command Palette ────────────────────────────────────────── --}}
@@ -46,14 +46,14 @@
             type="button"
             onclick="Livewire.dispatch('open-command-palette')"
             class="flex h-9 w-full max-w-xs items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 text-left transition hover:border-slate-300 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-            aria-label="Abrir búsqueda rápida (⌘K)"
+            aria-label="{{ __('ui.topbar.search_aria') }}"
         >
             <svg class="h-4 w-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none"
                  stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round"
                       d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
             </svg>
-            <span class="flex-1 text-sm text-slate-400">Buscar…</span>
+            <span class="flex-1 text-sm text-slate-400">{{ __('ui.topbar.search') }}</span>
             <kbd class="hidden shrink-0 rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[11px] font-medium text-slate-400 sm:inline-block">
                 ⌘K
             </kbd>
@@ -62,11 +62,13 @@
 
     {{-- ─── Acciones derecha ───────────────────────────────────────────────── --}}
     <div class="flex items-center gap-2">
+        <x-ui.locale-switcher />
+
         @if ($showPlazaSelector)
             <form method="POST" action="{{ route('tenant.current-plaza.update') }}" class="flex items-center gap-2">
                 @csrf
                 <label for="topbar-plaza-select" class="text-xs font-medium text-slate-600">
-                    Plaza: {{ $currentPlazaLabel }}
+                    {{ __('ui.topbar.plaza') }} {{ $currentPlazaLabel }}
                 </label>
                 <select
                     id="topbar-plaza-select"
@@ -74,7 +76,7 @@
                     onchange="this.form.submit()"
                     class="h-9 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-700 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
                 >
-                    <option value="" @selected($currentPlazaId === null)>Todas</option>
+                    <option value="" @selected($currentPlazaId === null)>{{ __('ui.topbar.all_plazas') }}</option>
                     @foreach ($plazas as $plaza)
                         <option value="{{ $plaza->id }}" @selected((int) $currentPlazaId === (int) $plaza->id)>{{ $plaza->nombre }}</option>
                     @endforeach
@@ -92,7 +94,7 @@
                      stroke="currentColor" stroke-width="2.5" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
                 </svg>
-                Nuevo contrato
+                {{ __('ui.nav.new_contract') }}
             </a>
         @endcan
 
@@ -157,7 +159,7 @@
                                          00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0
                                          002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/>
                             </svg>
-                            Salir
+                            {{ __('ui.topbar.logout') }}
                         </button>
                     </form>
                 </div>

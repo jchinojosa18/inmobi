@@ -90,7 +90,7 @@ class PlazasIndex extends Component
                     ->exists();
 
                 if (! $hasOtherDefault) {
-                    $this->addError('isDefault', 'Debes marcar otra plaza como default antes de quitar esta.');
+                    $this->addError('isDefault', __('settings.validation.default_plaza_required'));
 
                     return;
                 }
@@ -98,7 +98,7 @@ class PlazasIndex extends Component
 
             unset($payload['created_by_user_id']);
             $plaza->update($payload);
-            $message = 'Plaza actualizada correctamente.';
+            $message = __('settings.flash.plaza_updated');
         } else {
             $existingCount = Plaza::query()->count();
             if ($existingCount === 0) {
@@ -106,7 +106,7 @@ class PlazasIndex extends Component
             }
 
             Plaza::query()->create($payload);
-            $message = 'Plaza creada correctamente.';
+            $message = __('settings.flash.plaza_created');
         }
 
         $this->normalizeSingleDefault($organization);
@@ -134,7 +134,7 @@ class PlazasIndex extends Component
         $organization = Organization::query()->findOrFail((int) auth()->user()?->organization_id);
         $this->normalizeSingleDefault($organization);
 
-        session()->flash('success', "Plaza '{$plaza->nombre}' marcada como default.");
+        session()->flash('success', __('settings.flash.plaza_marked_default', ['name' => $plaza->nombre]));
     }
 
     public function delete(int $plazaId): void
@@ -148,7 +148,7 @@ class PlazasIndex extends Component
         $plazaCount = Plaza::query()->count();
 
         if ($plaza->is_default && $plazaCount <= 1) {
-            $this->addError('delete', 'No puedes eliminar la plaza default cuando es la única plaza.');
+            $this->addError('delete', __('settings.validation.cannot_delete_only_default'));
 
             return;
         }
@@ -160,7 +160,7 @@ class PlazasIndex extends Component
         }
 
         $this->normalizeSingleDefault($organization);
-        session()->flash('success', 'Plaza eliminada correctamente.');
+        session()->flash('success', __('settings.flash.plaza_deleted'));
     }
 
     public function confirmDelete(int $plazaId): void
@@ -202,7 +202,7 @@ class PlazasIndex extends Component
             'canManagePlazas' => $this->canManagePlazas(),
             'singlePlaza' => $plazas->count() === 1,
         ])->layout('layouts.app', [
-            'title' => 'Plazas',
+            'title' => __('settings.plazas_title'),
         ]);
     }
 
@@ -237,12 +237,12 @@ class PlazasIndex extends Component
     private function messages(): array
     {
         return [
-            'nombre.required' => 'El nombre de la plaza es obligatorio.',
-            'nombre.max' => 'El nombre no debe exceder 120 caracteres.',
-            'nombre.unique' => 'Ya existe una plaza con ese nombre en esta organización.',
-            'ciudad.max' => 'La ciudad no debe exceder 120 caracteres.',
-            'timezone.required' => 'La zona horaria es obligatoria.',
-            'timezone.timezone' => 'La zona horaria no es válida.',
+            'nombre.required' => __('settings.validation.plaza_name_required'),
+            'nombre.max' => __('settings.validation.plaza_name_max'),
+            'nombre.unique' => __('settings.validation.plaza_name_unique'),
+            'ciudad.max' => __('settings.validation.city_max'),
+            'timezone.required' => __('settings.validation.timezone_required'),
+            'timezone.timezone' => __('settings.validation.timezone_invalid'),
         ];
     }
 

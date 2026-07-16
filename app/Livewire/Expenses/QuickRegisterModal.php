@@ -155,7 +155,7 @@ class QuickRegisterModal extends Component
                 'meta' => [],
             ]);
         } catch (ValidationException $e) {
-            $this->addError('month_close', $e->errors()['month_close'][0] ?? 'No se pudo registrar el egreso.');
+            $this->addError('month_close', $e->errors()['month_close'][0] ?? __('finance.validation.expense_failed'));
 
             return;
         }
@@ -184,7 +184,10 @@ class QuickRegisterModal extends Component
         app(AuditLogger::class)->log(
             action: 'expense.created',
             auditable: $expense,
-            summary: sprintf('Egreso registrado $%s - %s', number_format((float) $expense->amount, 2), $expense->category),
+            summary: __('finance.expenses.audit_summary', [
+                'amount' => number_format((float) $expense->amount, 2),
+                'category' => $expense->category,
+            ]),
             meta: [
                 'amount' => (float) $expense->amount,
                 'category' => $expense->category,
@@ -250,19 +253,19 @@ class QuickRegisterModal extends Component
     private function messages(): array
     {
         return [
-            'spentAt.required' => 'La fecha es obligatoria.',
-            'spentAt.date' => 'La fecha no es válida.',
-            'amount.required' => 'El monto es obligatorio.',
-            'amount.numeric' => 'El monto debe ser numérico.',
-            'amount.min' => 'El monto debe ser mayor a cero.',
-            'category.required' => 'La categoría es obligatoria.',
-            'category.max' => 'La categoría no debe exceder 100 caracteres.',
-            'unitId.required' => 'Debes seleccionar una unidad.',
-            'unitId.exists' => 'La unidad seleccionada no es válida.',
-            'vendor.max' => 'El proveedor no debe exceder 150 caracteres.',
-            'notes.max' => 'Las notas no deben exceder 1000 caracteres.',
-            'evidenceFile.max' => 'La evidencia no debe exceder 5 MB.',
-            'evidenceFile.mimes' => 'La evidencia debe ser JPG, PNG o PDF.',
+            'spentAt.required' => __('finance.validation.date_required'),
+            'spentAt.date' => __('finance.validation.date_invalid'),
+            'amount.required' => __('finance.validation.amount_required'),
+            'amount.numeric' => __('finance.validation.amount_numeric'),
+            'amount.min' => __('finance.validation.amount_min'),
+            'category.required' => __('finance.validation.category_required'),
+            'category.max' => __('finance.validation.category_max'),
+            'unitId.required' => __('finance.validation.unit_required'),
+            'unitId.exists' => __('finance.validation.unit_invalid'),
+            'vendor.max' => __('finance.validation.vendor_max'),
+            'notes.max' => __('finance.validation.notes_max'),
+            'evidenceFile.max' => __('finance.validation.evidence_max'),
+            'evidenceFile.mimes' => __('finance.validation.evidence_mimes'),
         ];
     }
 }

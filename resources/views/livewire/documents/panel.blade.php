@@ -5,15 +5,15 @@
         <div class="lg:col-span-2">
             @if ($documents->isEmpty())
                 <p class="rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                    No hay documentos asociados aún.
+                    {{ __('documents.empty') }}
                 </p>
             @else
                 <x-ui.table>
                     <x-slot:head>
-                        <th class="px-4 py-3">Archivo</th>
-                        <th class="px-4 py-3">Tipo</th>
-                        <th class="px-4 py-3">Tamano</th>
-                        <th class="px-4 py-3">Fecha</th>
+                        <th class="px-4 py-3">{{ __('documents.file') }}</th>
+                        <th class="px-4 py-3">{{ __('common.type') }}</th>
+                        <th class="px-4 py-3">{{ __('documents.size') }}</th>
+                        <th class="px-4 py-3">{{ __('common.date') }}</th>
                     </x-slot:head>
                     <x-slot:body>
                         @foreach ($documents as $item)
@@ -39,8 +39,8 @@
         </div>
 
         <x-ui.card :padding="true" class="!p-4 bg-slate-50">
-            <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-700">Subir documento</h3>
-            <p class="mt-1 text-xs text-slate-500">Permitidos: JPG, PNG, PDF. Maximo 5 MB.</p>
+            <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-700">{{ __('documents.upload_title') }}</h3>
+            <p class="mt-1 text-xs text-slate-500">{{ __('documents.allowed_types') }}</p>
 
             @if ($canUploadDocuments)
                 <form wire:submit="save" class="mt-3 space-y-3" enctype="multipart/form-data">
@@ -62,14 +62,14 @@
                         wire:loading.attr="disabled"
                         class="w-full"
                     >
-                        Subir documento
+                        {{ __('documents.upload_button') }}
                     </x-ui.button>
 
-                    <p wire:loading wire:target="document,upload" class="text-xs text-slate-500">Subiendo archivo...</p>
+                    <p wire:loading wire:target="document,upload" class="text-xs text-slate-500">{{ __('documents.uploading') }}</p>
                 </form>
             @else
                 <p class="mt-3 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">
-                    No tienes permiso para subir documentos.
+                    {{ __('documents.no_upload_permission') }}
                 </p>
             @endif
         </x-ui.card>

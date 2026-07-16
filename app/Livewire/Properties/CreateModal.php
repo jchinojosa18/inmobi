@@ -131,23 +131,23 @@ class CreateModal extends Component
         return [
             [
                 'key' => self::TYPE_HOUSE,
-                'label' => 'Casa',
-                'description' => 'Vivienda independiente con una sola unidad.',
+                'label' => __('catalog.property_types.house.label'),
+                'description' => __('catalog.property_types.house.description'),
             ],
             [
                 'key' => self::TYPE_BUILDING,
-                'label' => 'Edificio',
-                'description' => 'Departamentos por piso; genera unidades después.',
+                'label' => __('catalog.property_types.building.label'),
+                'description' => __('catalog.property_types.building.description'),
             ],
             [
                 'key' => self::TYPE_LOCAL,
-                'label' => 'Local',
-                'description' => 'Espacio comercial único.',
+                'label' => __('catalog.property_types.local.label'),
+                'description' => __('catalog.property_types.local.description'),
             ],
             [
                 'key' => self::TYPE_LAND,
-                'label' => 'Terreno',
-                'description' => 'Lote único sin subdivisión inicial.',
+                'label' => __('catalog.property_types.land.label'),
+                'description' => __('catalog.property_types.land.description'),
             ],
         ];
     }
@@ -155,11 +155,11 @@ class CreateModal extends Component
     private function selectedTypeLabel(): string
     {
         return match ($this->selectedType) {
-            self::TYPE_HOUSE => 'Casa',
-            self::TYPE_BUILDING => 'Edificio',
-            self::TYPE_LOCAL => 'Local',
-            self::TYPE_LAND => 'Terreno',
-            default => 'Inmueble',
+            self::TYPE_HOUSE => __('catalog.property_kinds.house'),
+            self::TYPE_BUILDING => __('catalog.property_kinds.building'),
+            self::TYPE_LOCAL => __('catalog.property_kinds.local'),
+            self::TYPE_LAND => __('catalog.property_kinds.land'),
+            default => __('catalog.properties.property_default'),
         };
     }
 
@@ -196,7 +196,7 @@ class CreateModal extends Component
             ]);
         });
 
-        session()->flash('success', $this->selectedTypeLabel().' creado correctamente.');
+        session()->flash('success', __('catalog.flash.type_created', ['type' => $this->selectedTypeLabel()]));
         $this->close();
         $this->dispatch('property-created');
     }
@@ -217,7 +217,7 @@ class CreateModal extends Component
             'notes' => $validated['notes'] ?: null,
         ]);
 
-        session()->flash('success', 'Edificio creado correctamente. Genera las unidades a continuación.');
+        session()->flash('success', __('catalog.flash.building_created'));
         $this->close();
 
         $this->redirectRoute('properties.units.index', [
@@ -235,17 +235,17 @@ class CreateModal extends Component
             self::TYPE_LOCAL => [
                 'property_kind' => Property::KIND_LOCAL,
                 'unit_kind' => Unit::KIND_LOCAL,
-                'unit_name' => 'Local',
+                'unit_name' => __('catalog.units.unit_name_local'),
             ],
             self::TYPE_LAND => [
                 'property_kind' => Property::KIND_LAND,
                 'unit_kind' => Unit::KIND_LAND,
-                'unit_name' => 'Terreno',
+                'unit_name' => __('catalog.units.unit_name_land'),
             ],
             default => [
                 'property_kind' => Property::KIND_STANDALONE_HOUSE,
                 'unit_kind' => Unit::KIND_HOUSE,
-                'unit_name' => 'Casa',
+                'unit_name' => __('catalog.units.unit_name_house'),
             ],
         };
     }
@@ -305,10 +305,10 @@ class CreateModal extends Component
     private function standaloneMessages(): array
     {
         return [
-            'name.required' => 'El nombre es obligatorio.',
-            'name.max' => 'El nombre no debe exceder 150 caracteres.',
-            'address.max' => 'La dirección no debe exceder 255 caracteres.',
-            'notes.max' => 'Las notas no deben exceder 1000 caracteres.',
+            'name.required' => __('catalog.validation.standalone_name_required'),
+            'name.max' => __('catalog.validation.name_max'),
+            'address.max' => __('catalog.validation.address_max'),
+            'notes.max' => __('catalog.validation.notes_max'),
         ];
     }
 
@@ -318,14 +318,14 @@ class CreateModal extends Component
     private function buildingMessages(): array
     {
         return [
-            'name.required' => 'El nombre del edificio es obligatorio.',
-            'name.max' => 'El nombre no debe exceder 150 caracteres.',
-            'code.required' => 'El código es obligatorio para generar unidades.',
-            'code.unique' => 'El código ya existe en esta organización.',
-            'formStatus.required' => 'Selecciona un estado.',
-            'formStatus.in' => 'El estado seleccionado no es válido.',
-            'address.max' => 'La dirección no debe exceder 255 caracteres.',
-            'notes.max' => 'Las notas no deben exceder 1000 caracteres.',
+            'name.required' => __('catalog.validation.building_name_required'),
+            'name.max' => __('catalog.validation.name_max'),
+            'code.required' => __('catalog.validation.code_required'),
+            'code.unique' => __('catalog.validation.code_unique'),
+            'formStatus.required' => __('catalog.validation.status_required'),
+            'formStatus.in' => __('catalog.validation.status_invalid'),
+            'address.max' => __('catalog.validation.address_max'),
+            'notes.max' => __('catalog.validation.notes_max'),
         ];
     }
 

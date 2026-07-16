@@ -35,13 +35,13 @@ class Index extends Component
         $this->validate([
             'monthToClose' => ['required', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'],
         ], [
-            'monthToClose.required' => 'Selecciona un mes para cerrar.',
-            'monthToClose.regex' => 'El mes debe usar formato YYYY-MM.',
+            'monthToClose.required' => __('finance.validation.month_required'),
+            'monthToClose.regex' => __('finance.validation.month_format'),
         ]);
 
         if ($month !== null && preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month) !== 1) {
             throw ValidationException::withMessages([
-                'monthToClose' => 'El mes debe usar formato YYYY-MM.',
+                'monthToClose' => __('finance.validation.month_format'),
             ]);
         }
 
@@ -54,7 +54,7 @@ class Index extends Component
 
         $this->notes = null;
 
-        session()->flash('success', "Mes {$selectedMonth} cerrado correctamente.");
+        session()->flash('success', __('finance.flash.month_closed', ['month' => $selectedMonth]));
     }
 
     public function reopenMonth(ReopenMonthAction $action, string $month): void
@@ -65,7 +65,7 @@ class Index extends Component
 
         if (preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month) !== 1) {
             throw ValidationException::withMessages([
-                'monthToClose' => 'El mes debe usar formato YYYY-MM.',
+                'monthToClose' => __('finance.validation.month_format'),
             ]);
         }
 
@@ -77,8 +77,8 @@ class Index extends Component
         session()->flash(
             'success',
             $reopened
-                ? "Mes {$month} reabierto correctamente."
-                : "El mes {$month} ya estaba abierto."
+                ? __('finance.flash.month_reopened', ['month' => $month])
+                : __('finance.flash.month_already_open', ['month' => $month])
         );
     }
 
@@ -117,6 +117,6 @@ class Index extends Component
             'rows' => $rows,
             'canCloseMonth' => auth()->user()?->can('month_close.close') ?? false,
             'canReopenMonth' => auth()->user()?->can('month_close.reopen') ?? false,
-        ])->layout('layouts.app', ['title' => 'Cierres mensuales']);
+        ])->layout('layouts.app', ['title' => __('finance.month_closes.title')]);
     }
 }

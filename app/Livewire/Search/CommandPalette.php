@@ -174,7 +174,7 @@ class CommandPalette extends Component
             }
 
             $this->close();
-            $this->dispatch('cp-notify', message: (string) ($action['success_message'] ?? 'Acción ejecutada.'));
+            $this->dispatch('cp-notify', message: (string) ($action['success_message'] ?? __('command_palette.default_action_executed')));
 
             return;
         }
@@ -186,7 +186,7 @@ class CommandPalette extends Component
             }
 
             $this->close();
-            session()->flash('success', (string) ($action['success_message'] ?? 'Navegando...'));
+            session()->flash('success', (string) ($action['success_message'] ?? __('command_palette.navigating')));
             $this->redirect($href, navigate: true);
 
             return;
@@ -232,8 +232,8 @@ class CommandPalette extends Component
         return [
             [
                 'id' => 'register_payment',
-                'label' => 'Registrar pago',
-                'keywords' => ['pago', 'abono', 'cobranza', 'recibo'],
+                'label' => __('command_palette.actions.register_payment.label'),
+                'keywords' => ['pago', 'abono', 'cobranza', 'recibo', 'payment', 'receipt'],
                 'icon' => 'currency-dollar',
                 'kind' => 'modal',
                 'payload' => ['event' => 'open-quick-payment'],
@@ -241,12 +241,12 @@ class CommandPalette extends Component
                 'featured' => true,
                 'priority' => 10,
                 'requires_confirmation' => false,
-                'success_message' => 'Abriendo registro de pago...',
+                'success_message' => __('command_palette.actions.register_payment.success_message'),
             ],
             [
                 'id' => 'register_expense',
-                'label' => 'Registrar egreso',
-                'keywords' => ['egreso', 'gasto', 'salida'],
+                'label' => __('command_palette.actions.register_expense.label'),
+                'keywords' => ['egreso', 'gasto', 'salida', 'expense'],
                 'icon' => 'receipt-percent',
                 'kind' => 'modal',
                 'payload' => ['event' => 'open-quick-expense'],
@@ -254,12 +254,12 @@ class CommandPalette extends Component
                 'featured' => true,
                 'priority' => 20,
                 'requires_confirmation' => false,
-                'success_message' => 'Abriendo registro de egreso...',
+                'success_message' => __('command_palette.actions.register_expense.success_message'),
             ],
             [
                 'id' => 'new_contract',
-                'label' => 'Nuevo contrato',
-                'keywords' => ['contrato', 'alta', 'nuevo'],
+                'label' => __('command_palette.actions.new_contract.label'),
+                'keywords' => ['contrato', 'alta', 'nuevo', 'contract'],
                 'icon' => 'document-plus',
                 'kind' => 'route',
                 'payload' => ['href' => route('contracts.create')],
@@ -267,12 +267,12 @@ class CommandPalette extends Component
                 'featured' => true,
                 'priority' => 30,
                 'requires_confirmation' => false,
-                'success_message' => 'Navegando a Nuevo contrato...',
+                'success_message' => __('command_palette.actions.new_contract.success_message'),
             ],
             [
                 'id' => 'new_property',
-                'label' => 'Nuevo inmueble',
-                'keywords' => ['casa', 'local', 'terreno', 'edificio', 'propiedad', 'inmueble'],
+                'label' => __('command_palette.actions.new_property.label'),
+                'keywords' => ['casa', 'local', 'terreno', 'edificio', 'propiedad', 'inmueble', 'property'],
                 'icon' => 'home',
                 'kind' => 'route',
                 'payload' => ['href' => route('houses.create')],
@@ -280,12 +280,12 @@ class CommandPalette extends Component
                 'featured' => true,
                 'priority' => 40,
                 'requires_confirmation' => false,
-                'success_message' => 'Navegando a Nuevo inmueble...',
+                'success_message' => __('command_palette.actions.new_property.success_message'),
             ],
             [
                 'id' => 'go_cobranza',
-                'label' => 'Ir a Cobranza',
-                'keywords' => ['cobranza', 'vencidos', 'gracia', 'atraso'],
+                'label' => __('command_palette.actions.go_cobranza.label'),
+                'keywords' => ['cobranza', 'vencidos', 'gracia', 'atraso', 'collections'],
                 'icon' => 'banknotes',
                 'kind' => 'route',
                 'payload' => ['href' => route('cobranza.index')],
@@ -293,12 +293,12 @@ class CommandPalette extends Component
                 'featured' => true,
                 'priority' => 50,
                 'requires_confirmation' => false,
-                'success_message' => 'Navegando a Cobranza...',
+                'success_message' => __('command_palette.actions.go_cobranza.success_message'),
             ],
             [
                 'id' => 'go_contracts',
-                'label' => 'Ir a Contratos',
-                'keywords' => ['contratos', 'contrato', 'lista'],
+                'label' => __('command_palette.actions.go_contracts.label'),
+                'keywords' => ['contratos', 'contrato', 'lista', 'contracts'],
                 'icon' => 'document-text',
                 'kind' => 'route',
                 'payload' => ['href' => route('contracts.index')],
@@ -306,12 +306,12 @@ class CommandPalette extends Component
                 'featured' => false,
                 'priority' => 60,
                 'requires_confirmation' => false,
-                'success_message' => 'Navegando a Contratos...',
+                'success_message' => __('command_palette.actions.go_contracts.success_message'),
             ],
             [
                 'id' => 'go_flow_report',
-                'label' => 'Reporte de flujo',
-                'keywords' => ['reporte', 'flujo', 'ingresos', 'egresos'],
+                'label' => __('command_palette.actions.go_flow_report.label'),
+                'keywords' => ['reporte', 'flujo', 'ingresos', 'egresos', 'report', 'flow'],
                 'icon' => 'chart-bar',
                 'kind' => 'route',
                 'payload' => ['href' => route('reports.flow')],
@@ -319,12 +319,12 @@ class CommandPalette extends Component
                 'featured' => false,
                 'priority' => 70,
                 'requires_confirmation' => false,
-                'success_message' => 'Navegando a Reporte de flujo...',
+                'success_message' => __('command_palette.actions.go_flow_report.success_message'),
             ],
             [
                 'id' => 'generate_current_month_rent',
-                'label' => 'Generar rentas del mes',
-                'keywords' => ['rentas', 'generar', 'cargo', 'mes'],
+                'label' => __('command_palette.actions.generate_current_month_rent.label'),
+                'keywords' => ['rentas', 'generar', 'cargo', 'mes', 'rent'],
                 'icon' => 'calendar-days',
                 'kind' => 'command',
                 'payload' => [],
@@ -367,7 +367,7 @@ class CommandPalette extends Component
         $currentMonth = CarbonImmutable::now('America/Tijuana')->format('Y-m');
 
         if (MonthCloseGuard::isMonthClosed($organizationId, $currentMonth)) {
-            $message = "El mes {$currentMonth} está cerrado. No se pueden generar rentas.";
+            $message = __('command_palette.flash.month_closed', ['month' => $currentMonth]);
             session()->flash('error', $message);
             $this->dispatch('cp-notify', message: $message);
             $this->close();
@@ -376,7 +376,10 @@ class CommandPalette extends Component
         }
 
         $result = $action->executeForOrganization($currentMonth, $organizationId);
-        $message = "Rentas generadas: creadas {$result['created']}, omitidas {$result['skipped']}.";
+        $message = __('command_palette.flash.rents_generated', [
+            'created' => $result['created'],
+            'skipped' => $result['skipped'],
+        ]);
         session()->flash('success', $message);
         $this->dispatch('cp-notify', message: $message);
         $this->close();
@@ -426,9 +429,9 @@ class CommandPalette extends Component
 
             $results[] = [
                 'type' => 'contract',
-                'label' => "Contrato #{$c->id} · {$c->tenant_name}",
+                'label' => __('command_palette.contract_label', ['id' => $c->id, 'name' => $c->tenant_name]),
                 'sublabel' => $sublabel,
-                'badge' => $c->status === Contract::STATUS_ACTIVE ? 'Activo' : 'Finalizado',
+                'badge' => $c->status === Contract::STATUS_ACTIVE ? 'active' : 'finished',
                 'href' => route('contracts.show', $c->id),
                 'href2' => route('contracts.payments.create', $c->id),
             ];
@@ -457,7 +460,7 @@ class CommandPalette extends Component
             $results[] = [
                 'type' => 'tenant',
                 'label' => $t->full_name,
-                'sublabel' => $sublabel ?: 'Inquilino',
+                'sublabel' => $sublabel ?: __('common.tenant'),
                 'badge' => null,
                 'href' => route('tenants.index').'?'.http_build_query(['search' => $t->full_name]),
                 'href2' => null,

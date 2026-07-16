@@ -25,10 +25,14 @@ class DocumentUpload extends Component
         ];
     }
 
-    protected array $messages = [
-        'document.max' => 'El archivo excede el limite de 5 MB.',
-        'document.mimes' => 'Solo se permiten archivos JPG, PNG o PDF.',
-    ];
+    protected function messages(): array
+    {
+        return [
+            'document.required' => __('documents.validation.required'),
+            'document.max' => __('documents.validation.max'),
+            'document.mimes' => __('documents.validation.mimes'),
+        ];
+    }
 
     public function upload(): void
     {

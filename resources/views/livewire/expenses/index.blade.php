@@ -1,12 +1,12 @@
 <section class="space-y-6">
     <x-ui.page-header
-        title="Egresos"
-        description="Registro y control de gastos operativos."
+        :title="__('finance.expenses.title')"
+        :description="__('finance.expenses.description')"
     >
         <x-slot:actions>
             @if ($canCreateExpenses)
                 <x-ui.button type="button" onclick="Livewire.dispatch('open-quick-expense')">
-                    + Registrar egreso
+                    {{ __('finance.expenses.register') }}
                 </x-ui.button>
             @endif
         </x-slot:actions>
@@ -16,27 +16,27 @@
         <div class="grid gap-3 md:grid-cols-4">
             <x-ui.input
                 id="expenses-date-from"
-                label="Desde"
+                :label="__('common.from')"
                 type="date"
                 wire:model.live="dateFromFilter"
             />
 
             <x-ui.input
                 id="expenses-date-to"
-                label="Hasta"
+                :label="__('common.to')"
                 type="date"
                 wire:model.live="dateToFilter"
             />
 
-            <x-ui.select id="expenses-unit" label="Unidad" wire:model.live="unitFilter">
-                <option value="">Todas</option>
+            <x-ui.select id="expenses-unit" :label="__('common.unit')" wire:model.live="unitFilter">
+                <option value="">{{ __('common.all') }}</option>
                 @foreach ($units as $unit)
                     <option value="{{ $unit->id }}">{{ $unit->name }}</option>
                 @endforeach
             </x-ui.select>
 
-            <x-ui.select id="expenses-category" label="Categoría" wire:model.live="categoryFilter">
-                <option value="">Todas</option>
+            <x-ui.select id="expenses-category" :label="__('common.category')" wire:model.live="categoryFilter">
+                <option value="">{{ __('common.all') }}</option>
                 @foreach ($categories as $category)
                     <option value="{{ $category }}">{{ $category }}</option>
                 @endforeach
@@ -46,11 +46,11 @@
 
     <x-ui.table>
         <x-slot:head>
-            <th class="px-4 py-3">Fecha</th>
-            <th class="px-4 py-3">Categoría</th>
-            <th class="px-4 py-3">Unidad</th>
-            <th class="px-4 py-3">Proveedor</th>
-            <th class="px-4 py-3 text-right">Monto</th>
+            <th class="px-4 py-3">{{ __('common.date') }}</th>
+            <th class="px-4 py-3">{{ __('common.category') }}</th>
+            <th class="px-4 py-3">{{ __('common.unit') }}</th>
+            <th class="px-4 py-3">{{ __('common.vendor') }}</th>
+            <th class="px-4 py-3 text-right">{{ __('common.amount') }}</th>
         </x-slot:head>
         <x-slot:body>
             @forelse ($expenses as $expense)
@@ -58,13 +58,13 @@
                     <td class="px-4 py-3">{{ optional($expense->spent_at)->format('Y-m-d') }}</td>
                     <td class="px-4 py-3 font-medium text-slate-900">{{ $expense->category }}</td>
                     <td class="px-4 py-3 text-slate-700">
-                        {{ $expense->unit?->name ?: 'General' }}
+                        {{ $expense->unit?->name ?: __('finance.expenses.general') }}
                     </td>
-                    <td class="px-4 py-3 text-slate-700">{{ $expense->vendor ?: 'N/A' }}</td>
+                    <td class="px-4 py-3 text-slate-700">{{ $expense->vendor ?: __('common.n_a') }}</td>
                     <td class="px-4 py-3 text-right font-medium">${{ number_format((float) $expense->amount, 2) }}</td>
                 </tr>
             @empty
-                <x-ui.empty-state title="No hay egresos en los filtros seleccionados." :colspan="5" />
+                <x-ui.empty-state :title="__('finance.expenses.empty')" :colspan="5" />
             @endforelse
         </x-slot:body>
         <x-slot:footer>

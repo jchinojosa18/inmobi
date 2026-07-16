@@ -1,15 +1,15 @@
 <section class="space-y-6">
     <x-ui.page-header
         :title="$property->name"
-        :description="$entityLabel . '. Este inmueble usa una única unidad interna para contratos y cobranza.'"
+        :description="__('catalog.houses.description', ['type' => $entityLabel])"
     >
         <x-slot:actions>
             <x-ui.button href="{{ route('properties.index') }}" variant="secondary">
-                Volver a propiedades
+                {{ __('common.back_to_properties') }}
             </x-ui.button>
             @if ($canManageContracts)
                 <x-ui.button href="{{ route('contracts.index', ['create_contract' => 1, 'unit_id' => $unit->id]) }}">
-                    Nuevo contrato
+                    {{ __('common.new_contract') }}
                 </x-ui.button>
             @endif
         </x-slot:actions>
@@ -18,9 +18,9 @@
     <div class="grid gap-4 md:grid-cols-2">
         <div>
             <x-ui.stat-card
-                label="Propiedad"
+                :label="__('common.property')"
                 :value="$property->name"
-                :hint="$property->address ?: 'Sin dirección registrada'"
+                :hint="$property->address ?: __('common.no_address')"
             />
             @if ($property->notes)
                 <p class="mt-3 text-sm text-slate-600">{{ $property->notes }}</p>
@@ -28,9 +28,9 @@
         </div>
 
         <x-ui.stat-card
-            label="Unidad única"
+            :label="__('catalog.houses.single_unit')"
             :value="$unit->name"
-            :hint="'Tipo: ' . $unit->kind . ' · Código: ' . ($unit->code ?: 'Sin código')"
+            :hint="__('catalog.houses.type_code_hint', ['kind' => $unit->kind, 'code' => $unit->code ?: __('common.no_code')])"
         />
     </div>
 </section>

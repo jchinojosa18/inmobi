@@ -1,13 +1,13 @@
-@extends('layouts.guest', ['title' => 'Login | Inmo Admin'])
+@extends('layouts.guest', ['title' => __('auth.login.title')])
 
 @section('content')
     <div class="mx-4 w-full max-w-md sm:mx-auto">
         <div class="rounded-2xl border border-slate-200/60 bg-white/80 p-6 shadow-xl shadow-slate-900/10 backdrop-blur dark:border-slate-700/80 dark:bg-slate-900/85 dark:shadow-black/40 sm:p-8">
             <header class="mb-6 space-y-2">
                 <div class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300">
-                    LOGIN
+                    {{ __('auth.login.badge') }}
                 </div>
-                <h1 class="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Inmo Admin</h1>
+                <h1 class="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">AXIS</h1>
             </header>
 
             @if (session('status'))
@@ -24,7 +24,7 @@
 
             @if ($errors->any())
                 <div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200" role="alert">
-                    <p class="font-medium">Revisa los datos e intenta nuevamente.</p>
+                    <p class="font-medium">{{ __('auth.login.check_errors') }}</p>
                     <ul class="mt-2 list-disc space-y-1 pl-4">
                         @foreach ($errors->all() as $error)
                             <li>{{ $error }}</li>
@@ -38,7 +38,7 @@
 
                 {{-- Email --}}
                 <div>
-                    <label for="email" class="mb-2 block text-sm font-medium leading-5 text-slate-700 dark:text-slate-200">Email</label>
+                    <label for="email" class="mb-2 block text-sm font-medium leading-5 text-slate-700 dark:text-slate-200">{{ __('auth.email') }}</label>
                     <input
                         id="email"
                         name="email"
@@ -46,7 +46,7 @@
                         required
                         autofocus
                         autocomplete="username"
-                        placeholder="tu@email.com"
+                        placeholder="{{ __('auth.email_placeholder') }}"
                         value="{{ old('email') }}"
                         aria-invalid="@error('email') true @else false @enderror"
                         aria-describedby="@error('email') email-error @enderror"
@@ -59,7 +59,7 @@
 
                 {{-- Contraseña --}}
                 <div>
-                    <label for="password" class="mb-2 block text-sm font-medium leading-5 text-slate-700 dark:text-slate-200">Contraseña</label>
+                    <label for="password" class="mb-2 block text-sm font-medium leading-5 text-slate-700 dark:text-slate-200">{{ __('auth.login.password') }}</label>
                     <div class="relative h-11 w-full">
                         <input
                             id="password"
@@ -67,7 +67,7 @@
                             type="password"
                             required
                             autocomplete="current-password"
-                            placeholder="Ingresa tu contraseña"
+                            placeholder="{{ __('auth.login.password_placeholder') }}"
                             aria-invalid="@error('password') true @else false @enderror"
                             aria-describedby="@error('password') password-error @enderror"
                             class="block h-11 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 pr-12 leading-6 text-base text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none focus:ring-4 focus:ring-slate-900/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-slate-400 dark:focus:ring-slate-100/10"
@@ -76,7 +76,7 @@
                             type="button"
                             id="toggle-password"
                             class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-400 dark:text-slate-400 dark:hover:bg-slate-700/40 dark:hover:text-slate-200"
-                            aria-label="Mostrar contraseña"
+                            aria-label="{{ __('auth.login.show_password') }}"
                             aria-pressed="false"
                         >
                             <svg id="icon-eye" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
@@ -104,14 +104,14 @@
                             @checked(old('remember'))
                             class="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
                         >
-                        <span>Recordarme</span>
+                        <span>{{ __('auth.login.remember') }}</span>
                     </label>
 
                     <a
                         href="{{ route('password.request') }}"
                         class="whitespace-nowrap text-sm leading-5 text-slate-600 underline-offset-4 transition hover:text-slate-900 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 dark:text-slate-300 dark:hover:text-slate-100"
                     >
-                        ¿Olvidaste tu contraseña?
+                        {{ __('auth.login.forgot_password') }}
                     </a>
                 </div>
 
@@ -124,18 +124,18 @@
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
                         <path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
                     </svg>
-                    <span id="login-submit-label">Entrar</span>
+                    <span id="login-submit-label">{{ __('auth.login.submit') }}</span>
                 </button>
             </form>
 
             @if (Route::has('register'))
                 <p class="mt-4 text-center text-sm text-slate-600 dark:text-slate-200">
-                    ¿No tienes cuenta?
+                    {{ __('auth.login.no_account') }}
                     <a
                         href="{{ route('register') }}"
                         class="font-medium underline-offset-4 hover:text-slate-900 hover:underline dark:hover:text-white"
                     >
-                        Crear cuenta
+                        {{ __('auth.login.create_account') }}
                     </a>
                 </p>
             @endif
@@ -157,7 +157,7 @@
                 const showing = passwordInput.type === 'text';
                 passwordInput.type = showing ? 'password' : 'text';
                 toggleButton.setAttribute('aria-pressed', showing ? 'false' : 'true');
-                toggleButton.setAttribute('aria-label', showing ? 'Mostrar contraseña' : 'Ocultar contraseña');
+                toggleButton.setAttribute('aria-label', showing ? @json(__('auth.login.show_password')) : @json(__('auth.login.hide_password')));
                 iconEye.classList.toggle('hidden', !showing);
                 iconEyeOff.classList.toggle('hidden', showing);
             });
@@ -174,7 +174,7 @@
             loginForm.addEventListener('submit', function () {
                 submitButton.setAttribute('disabled', 'disabled');
                 submitSpinner.classList.remove('hidden');
-                submitLabel.textContent = 'Entrando...';
+                submitLabel.textContent = @json(__('auth.login.submitting'));
             });
         });
     </script>

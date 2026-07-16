@@ -125,7 +125,7 @@ class AuditIndex extends Component
             'actions' => $actions,
             'auditableTypes' => $auditableTypes,
         ])->layout('layouts.app', [
-            'title' => 'Auditoría',
+            'title' => __('settings.audit_title'),
         ]);
     }
 

@@ -36,12 +36,12 @@ class DepositHoldForm extends Component
             'deposit_amount' => ['required', 'numeric', 'min:0.01'],
             'deposit_notes' => ['nullable', 'string', 'max:500'],
         ], [
-            'deposit_received_at.required' => 'La fecha de recepción es obligatoria.',
-            'deposit_received_at.date' => 'La fecha de recepción no es válida.',
-            'deposit_amount.required' => 'El monto del depósito es obligatorio.',
-            'deposit_amount.numeric' => 'El monto del depósito debe ser numérico.',
-            'deposit_amount.min' => 'El monto del depósito debe ser mayor a cero.',
-            'deposit_notes.max' => 'Las notas no deben exceder 500 caracteres.',
+            'deposit_received_at.required' => __('contracts.validation.deposit_received_required'),
+            'deposit_received_at.date' => __('contracts.validation.deposit_received_invalid'),
+            'deposit_amount.required' => __('contracts.validation.deposit_amount_required'),
+            'deposit_amount.numeric' => __('contracts.validation.deposit_amount_numeric'),
+            'deposit_amount.min' => __('contracts.validation.deposit_amount_min'),
+            'deposit_notes.max' => __('contracts.validation.deposit_notes_max'),
         ]);
 
         try {
@@ -53,14 +53,14 @@ class DepositHoldForm extends Component
                 userId: auth()->id(),
             );
         } catch (ValidationException $exception) {
-            $message = $exception->errors()['month_close'][0] ?? $exception->errors()['deposit_amount'][0] ?? 'No se pudo registrar el depósito.';
+            $message = $exception->errors()['month_close'][0] ?? $exception->errors()['deposit_amount'][0] ?? __('contracts.validation.deposit_failed');
             $this->addError('deposit_general', $message);
 
             return;
         }
 
         $this->reset('deposit_notes');
-        session()->flash('success', 'Depósito en garantía registrado correctamente.');
+        session()->flash('success', __('contracts.flash.deposit_registered'));
         $this->dispatch('deposit-hold-registered');
     }
 

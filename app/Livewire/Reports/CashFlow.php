@@ -89,7 +89,7 @@ class CashFlow extends Component
             'closedMonthSnapshot' => $closedMonthSnapshot,
             'snapshotMatches' => $snapshotMatches,
             'exportUrl' => $exportUrl,
-        ])->layout('layouts.app', ['title' => 'Flujo por rango']);
+        ])->layout('layouts.app', ['title' => __('finance.cash_flow.title')]);
     }
 
     /**
@@ -109,11 +109,11 @@ class CashFlow extends Component
     private function messages(): array
     {
         return [
-            'date_from.required' => 'La fecha inicial es obligatoria.',
-            'date_from.date' => 'La fecha inicial no es válida.',
-            'date_to.required' => 'La fecha final es obligatoria.',
-            'date_to.date' => 'La fecha final no es válida.',
-            'date_to.after_or_equal' => 'La fecha final debe ser mayor o igual a la inicial.',
+            'date_from.required' => __('finance.validation.date_from_required'),
+            'date_from.date' => __('finance.validation.date_from_invalid'),
+            'date_to.required' => __('finance.validation.date_to_required'),
+            'date_to.date' => __('finance.validation.date_to_invalid'),
+            'date_to.after_or_equal' => __('finance.validation.date_to_after'),
         ];
     }
 

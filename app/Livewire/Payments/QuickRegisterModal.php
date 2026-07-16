@@ -154,7 +154,7 @@ class QuickRegisterModal extends Component
                 evidence: $this->evidence
             );
         } catch (ValidationException $e) {
-            $this->addError('month_close', $e->errors()['month_close'][0] ?? 'No se pudo registrar el pago.');
+            $this->addError('month_close', $e->errors()['month_close'][0] ?? __('finance.validation.payment_failed'));
 
             return;
         }
@@ -426,17 +426,17 @@ class QuickRegisterModal extends Component
     private function messages(): array
     {
         return [
-            'contractId.required' => 'Debes seleccionar un contrato.',
-            'paidAt.required' => 'La fecha de pago es obligatoria.',
-            'paidAt.date' => 'La fecha de pago no es válida.',
-            'amount.required' => 'El monto es obligatorio.',
-            'amount.numeric' => 'El monto debe ser numérico.',
-            'amount.min' => 'El monto debe ser mayor a cero.',
-            'method.required' => 'Selecciona un método de pago.',
-            'method.in' => 'El método de pago no es válido.',
-            'reference.max' => 'La referencia no debe exceder 120 caracteres.',
-            'evidence.max' => 'La evidencia no debe exceder 5 MB.',
-            'evidence.mimes' => 'La evidencia debe ser JPG, PNG o PDF.',
+            'contractId.required' => __('finance.validation.contract_required'),
+            'paidAt.required' => __('finance.validation.paid_at_required'),
+            'paidAt.date' => __('finance.validation.paid_at_invalid'),
+            'amount.required' => __('finance.validation.amount_required'),
+            'amount.numeric' => __('finance.validation.amount_numeric'),
+            'amount.min' => __('finance.validation.amount_min'),
+            'method.required' => __('finance.validation.method_required'),
+            'method.in' => __('finance.validation.method_invalid'),
+            'reference.max' => __('finance.validation.reference_max'),
+            'evidence.max' => __('finance.validation.evidence_max'),
+            'evidence.mimes' => __('finance.validation.evidence_mimes'),
         ];
     }
 }

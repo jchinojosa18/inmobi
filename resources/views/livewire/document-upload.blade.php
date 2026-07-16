@@ -1,7 +1,7 @@
 <x-ui.card>
-    <h2 class="mb-3 text-lg font-semibold">Subir evidencia/documento</h2>
+    <h2 class="mb-3 text-lg font-semibold">{{ __('documents.upload_demo_title') }}</h2>
     <p class="mb-4 text-sm text-slate-600">
-        Tipos permitidos: JPG, PNG, PDF. Tamano maximo: 5 MB.
+        {{ __('documents.upload_demo_hint') }}
     </p>
 
     <form wire:submit="upload" class="space-y-4" enctype="multipart/form-data">
@@ -21,26 +21,26 @@
             type="submit"
             wire:loading.attr="disabled"
         >
-            Subir documento
+            {{ __('documents.upload_button') }}
         </x-ui.button>
 
         <p wire:loading wire:target="document,upload" class="text-sm text-slate-500">
-            Procesando archivo...
+            {{ __('documents.processing') }}
         </p>
     </form>
 
     @if ($downloadUrl)
         <div class="mt-5 rounded-md bg-slate-50 p-4 text-sm">
-            <p class="mb-2 font-medium text-slate-700">Archivo guardado correctamente.</p>
-            <p class="mb-1 text-slate-600">Disk: <code>{{ $storedDisk }}</code></p>
-            <p class="mb-3 text-slate-600">Path: <code>{{ $storedPath }}</code></p>
+            <p class="mb-2 font-medium text-slate-700">{{ __('documents.saved_success') }}</p>
+            <p class="mb-1 text-slate-600">{{ __('documents.disk') }}: <code>{{ $storedDisk }}</code></p>
+            <p class="mb-3 text-slate-600">{{ __('documents.path') }}: <code>{{ $storedPath }}</code></p>
             <a
                 href="{{ $downloadUrl }}"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="text-blue-700 underline"
             >
-                Descargar archivo
+                {{ __('documents.download_file') }}
             </a>
         </div>
     @endif

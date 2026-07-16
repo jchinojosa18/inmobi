@@ -1,11 +1,11 @@
 <section class="space-y-6">
     <x-ui.page-header
-        title="Registrar pago"
-        :description="'Contrato #'.$contract->id.' · '.$contract->tenant->full_name.' · '.$contract->unit->name"
+        :title="__('finance.payments.title')"
+        :description="'#'. $contract->id .' · '. $contract->tenant->full_name .' · '. $contract->unit->name"
     >
         <x-slot:actions>
             <x-ui.button href="{{ route('contracts.show', $contract) }}" variant="secondary">
-                Volver al contrato
+                {{ __('common.back_to_contract') }}
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
@@ -21,7 +21,7 @@
             <div>
                 <x-ui.input
                     id="payment-amount"
-                    label="Monto *"
+                    :label="__('common.amount').' *'"
                     type="number"
                     step="0.01"
                     min="0.01"
@@ -31,9 +31,9 @@
             </div>
 
             <div>
-                <x-ui.select id="payment-method" label="Método *" wire:model="method">
-                    <option value="TRANSFER">Transferencia</option>
-                    <option value="CASH">Efectivo</option>
+                <x-ui.select id="payment-method" :label="__('common.method').' *'" wire:model="method">
+                    <option value="TRANSFER">{{ __('finance.payments.methods.TRANSFER') }}</option>
+                    <option value="CASH">{{ __('finance.payments.methods.CASH') }}</option>
                 </x-ui.select>
                 @error('method') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
             </div>
@@ -41,7 +41,7 @@
             <div>
                 <x-ui.input
                     id="payment-paid-at"
-                    label="Fecha y hora de pago *"
+                    :label="__('finance.payments.paid_at').' *'"
                     type="datetime-local"
                     wire:model.blur="paid_at"
                 />
@@ -51,7 +51,7 @@
             <div>
                 <x-ui.input
                     id="payment-reference"
-                    label="Referencia"
+                    :label="__('finance.payments.reference')"
                     type="text"
                     wire:model.blur="reference"
                 />
@@ -61,13 +61,13 @@
             <div class="md:col-span-2">
                 <x-ui.input
                     id="payment-evidence"
-                    label="Evidencia (opcional)"
+                    :label="__('finance.payments.evidence_optional')"
                     type="file"
                     wire:model="evidence"
                     accept=".jpg,.jpeg,.png,.pdf"
                 />
                 @error('evidence') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-                <p class="mt-1 text-xs text-slate-500">Tipos permitidos: JPG, PNG, PDF. Máx: 5 MB.</p>
+                <p class="mt-1 text-xs text-slate-500">{{ __('finance.payments.evidence_types') }}</p>
             </div>
 
             <div class="md:col-span-2 flex justify-end">
@@ -75,7 +75,7 @@
                     type="submit"
                     wire:loading.attr="disabled"
                 >
-                    Guardar pago
+                    {{ __('finance.payments.save_payment') }}
                 </x-ui.button>
             </div>
         </form>
