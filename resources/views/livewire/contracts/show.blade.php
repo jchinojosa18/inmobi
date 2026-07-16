@@ -178,7 +178,7 @@
             <x-slot:body>
                 @forelse ($payments as $payment)
                     <tr>
-                        <td class="px-4 py-3 font-medium text-slate-900">{{ $payment['folio'] }}</td>
+                        <td class="px-4 py-3 font-medium text-slate-900">{{ $payment['folio'] ?? __('common.n_a') }}</td>
                         <td class="px-4 py-3">{{ optional($payment['paid_at'])->format('Y-m-d H:i') }}</td>
                         <td class="px-4 py-3">{{ $payment['method'] }}</td>
                         <td class="px-4 py-3 text-right">${{ number_format($payment['amount'], 2) }}</td>
@@ -189,13 +189,15 @@
                                     <x-ui.button href="{{ $payment['show_url'] }}" variant="secondary" size="sm">
                                         {{ __('common.view_payment') }}
                                     </x-ui.button>
-                                    <x-ui.button href="{{ $payment['receipt_url'] }}" variant="secondary" size="sm" target="_blank" rel="noopener noreferrer">
-                                        {{ __('common.receipt_pdf') }}
-                                    </x-ui.button>
+                                    @if ($payment['folio'] !== null)
+                                        <x-ui.button href="{{ $payment['receipt_url'] }}" variant="secondary" size="sm" target="_blank" rel="noopener noreferrer">
+                                            {{ __('common.receipt_pdf') }}
+                                        </x-ui.button>
+                                        <x-ui.button href="{{ $payment['share_url'] }}" size="sm" target="_blank" rel="noopener noreferrer">
+                                            {{ __('contracts.shareable_link') }}
+                                        </x-ui.button>
+                                    @endif
                                 @endif
-                                <x-ui.button href="{{ $payment['share_url'] }}" size="sm" target="_blank" rel="noopener noreferrer">
-                                    {{ __('contracts.shareable_link') }}
-                                </x-ui.button>
                             </div>
                         </td>
                     </tr>

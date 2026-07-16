@@ -2,11 +2,15 @@
 
 namespace App\Livewire\Documents;
 
+use App\Models\Charge;
+use App\Models\Contract;
 use App\Models\Document;
+use App\Models\Expense;
+use App\Models\Payment;
+use App\Models\Unit;
 use App\Support\AuditLogger;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -14,6 +18,17 @@ use Livewire\WithFileUploads;
 class Panel extends Component
 {
     use WithFileUploads;
+
+    /**
+     * @var list<class-string<Model>>
+     */
+    private const ALLOWED_DOCUMENTABLE_TYPES = [
+        Contract::class,
+        Payment::class,
+        Expense::class,
+        Unit::class,
+        Charge::class,
+    ];
 
     public string $documentableType;
 
@@ -32,6 +47,8 @@ class Panel extends Component
         $this->documentableType = $documentableType;
         $this->documentableId = $documentableId;
         $this->title = $title ?? __('documents.title');
+
+        $this->resolveDocumentable();
     }
 
     public function save(): void
@@ -43,7 +60,7 @@ class Panel extends Component
         $this->validate();
 
         $documentable = $this->resolveDocumentable();
-        $disk = (string) config('filesystems.documents_disk', 'public');
+        $disk = (string) config('filesystems.documents_disk', 'local');
         $folder = 'documents/'.strtolower(class_basename($documentable)).'/'.$documentable->getAttribute('organization_id');
         $path = $this->document->store($folder, $disk);
 
@@ -109,12 +126,10 @@ class Panel extends Component
             ->latest('created_at')
             ->get()
             ->map(function (Document $document): array {
-                $disk = (string) data_get($document->meta, 'disk', config('filesystems.documents_disk', 'public'));
-
                 return [
                     'id' => $document->id,
                     'path' => $document->path,
-                    'url' => Storage::disk($disk)->url($document->path),
+                    'url' => route('documents.download', $document),
                     'mime' => $document->mime,
                     'size' => (int) $document->size,
                     'created_at' => $document->created_at,
@@ -129,14 +144,23 @@ class Panel extends Component
 
     private function resolveDocumentable(): Model
     {
-        if (! class_exists($this->documentableType) || ! is_subclass_of($this->documentableType, Model::class)) {
+        if (! in_array($this->documentableType, self::ALLOWED_DOCUMENTABLE_TYPES, true)) {
             abort(404);
         }
 
         /** @var class-string<Model> $documentableClass */
         $documentableClass = $this->documentableType;
 
-        return $documentableClass::query()->findOrFail($this->documentableId);
+        /** @var Model $model */
+        $model = $documentableClass::query()->withoutOrganizationScope()->findOrFail($this->documentableId);
+
+        $organizationId = (int) auth()->user()?->organization_id;
+
+        if ((int) $model->getAttribute('organization_id') !== $organizationId) {
+            abort(403);
+        }
+
+        return $model;
     }
 
     public function formatFileSize(int $size): string

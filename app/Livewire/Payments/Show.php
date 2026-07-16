@@ -8,7 +8,6 @@ use App\Support\OrganizationSettingsService;
 use App\Support\PaymentReceiptDataBuilder;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Livewire\Component;
 
@@ -16,17 +15,14 @@ class Show extends Component
 {
     public Payment $payment;
 
-    public ?string $emailRecipient = null;
-
     public function mount(Payment $payment): void
     {
         $this->payment = $payment;
-        $this->emailRecipient = $payment->contract?->tenant?->email;
     }
 
     public function sendEmail(): void
     {
-        $recipient = $this->emailRecipient ?: $this->payment->contract?->tenant?->email;
+        $recipient = $this->payment->contract?->tenant?->email;
 
         if (! is_string($recipient) || trim($recipient) === '') {
             $this->addError('emailRecipient', __('finance.validation.email_unavailable'));
@@ -73,13 +69,10 @@ class Show extends Component
         );
 
         $documents = $payment->documents->map(function ($document) {
-            $disk = (string) data_get($document->meta, 'disk', config('filesystems.documents_disk', 'public'));
-            $url = Storage::disk($disk)->url($document->path);
-
             return [
                 'id' => $document->id,
                 'path' => $document->path,
-                'url' => $url,
+                'url' => route('documents.download', $document),
             ];
         });
 

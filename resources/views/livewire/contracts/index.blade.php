@@ -108,7 +108,7 @@
                         default => 'success',
                     };
                 @endphp
-                <tr class="transition hover:bg-slate-50/80">
+                <tr wire:key="contract-row-{{ $contract->id }}" class="transition hover:bg-slate-50/80">
                     <td class="px-4 py-3 align-top">
                         <p class="font-medium text-slate-900">#{{ $contract->id }}</p>
                         <x-ui.badge :variant="$contract->status === 'active' ? 'success' : 'neutral'" class="mt-1">

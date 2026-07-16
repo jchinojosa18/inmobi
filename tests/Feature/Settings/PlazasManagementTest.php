@@ -95,4 +95,29 @@ class PlazasManagementTest extends TestCase
         $this->assertTrue($newPlaza->fresh()->is_default);
         $this->assertFalse((bool) $defaultPlaza->fresh()->is_default);
     }
+
+    public function test_delete_confirmation_escapes_plaza_name(): void
+    {
+        Role::findOrCreate('Admin', 'web');
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->create([
+            'organization_id' => $organization->id,
+        ]);
+        $admin->assignRole('Admin');
+
+        $plaza = Plaza::query()->create([
+            'organization_id' => $organization->id,
+            'nombre' => '<script>alert(1)</script>',
+            'ciudad' => 'Tijuana',
+            'timezone' => 'America/Tijuana',
+            'is_default' => false,
+            'created_by_user_id' => $admin->id,
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(PlazasIndex::class)
+            ->call('confirmDelete', $plaza->id)
+            ->assertDontSee('<script>alert(1)</script>', false)
+            ->assertSee('&lt;script&gt;alert(1)&lt;/script&gt;', false);
+    }
 }

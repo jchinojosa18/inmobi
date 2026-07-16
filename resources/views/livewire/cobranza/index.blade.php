@@ -83,7 +83,7 @@
         </x-slot:head>
         <x-slot:body>
             @forelse ($contracts as $row)
-                <tr class="transition hover:bg-slate-50/80">
+                <tr wire:key="cobranza-row-{{ $row->contract_id }}" class="transition hover:bg-slate-50/80">
                     <td class="px-4 py-3 font-medium text-slate-900">#{{ $row->contract_id }}</td>
                     <td class="px-4 py-3 text-slate-700">
                         {{ $row->tenant_name }}

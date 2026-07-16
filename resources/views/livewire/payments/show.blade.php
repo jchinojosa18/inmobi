@@ -1,23 +1,25 @@
 <section class="space-y-6">
     <x-ui.page-header
-        :title="__('finance.payments.show_title', ['folio' => $payment->receipt_folio])"
+        :title="__('finance.payments.show_title', ['folio' => $payment->receipt_folio ?? __('common.n_a')])"
         :description="'#'. $payment->contract_id .' · '. $payment->contract->tenant->full_name"
     >
         <x-slot:actions>
             <x-ui.button href="{{ route('contracts.show', $payment->contract_id) }}" variant="secondary">
                 {{ __('common.back_to_contract') }}
             </x-ui.button>
-            <x-ui.button href="{{ $receiptUrl }}" variant="secondary" target="_blank" rel="noopener noreferrer">
-                {{ __('finance.payments.view_pdf') }}
-            </x-ui.button>
-            <x-ui.button
-                href="{{ $whatsAppUrl }}"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="!border-0 !bg-emerald-600 !text-white hover:!bg-emerald-500"
-            >
-                {{ __('finance.payments.open_whatsapp') }}
-            </x-ui.button>
+            @if ($payment->receipt_folio !== null)
+                <x-ui.button href="{{ $receiptUrl }}" variant="secondary" target="_blank" rel="noopener noreferrer">
+                    {{ __('finance.payments.view_pdf') }}
+                </x-ui.button>
+                <x-ui.button
+                    href="{{ $whatsAppUrl }}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="!border-0 !bg-emerald-600 !text-white hover:!bg-emerald-500"
+                >
+                    {{ __('finance.payments.open_whatsapp') }}
+                </x-ui.button>
+            @endif
         </x-slot:actions>
     </x-ui.page-header>
 
@@ -64,6 +66,7 @@
         </x-slot:body>
     </x-ui.table>
 
+    @if ($payment->receipt_folio !== null)
     <x-ui.card>
         <h2 class="text-lg font-semibold text-slate-900">{{ __('finance.payments.share_receipt') }}</h2>
         <p class="mt-1 text-sm text-slate-600">{{ __('finance.payments.share_mvp') }}</p>
@@ -74,10 +77,16 @@
                     id="payment-email-recipient"
                     :label="__('finance.payments.email_recipient')"
                     type="email"
-                    wire:model.blur="emailRecipient"
+                    :value="$payment->contract?->tenant?->email"
+                    disabled
                 />
                 @error('emailRecipient') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-                <x-ui.button type="button" wire:click="sendEmail" class="mt-3">
+                <x-ui.button
+                    type="button"
+                    wire:click="sendEmail"
+                    class="mt-3"
+                    :disabled="! $payment->contract?->tenant?->email"
+                >
                     {{ __('finance.payments.send_email') }}
                 </x-ui.button>
                 <p class="mt-2 text-xs text-slate-500">{{ __('finance.payments.mailpit_hint') }}</p>
@@ -88,6 +97,7 @@
             </div>
         </div>
     </x-ui.card>
+    @endif
 
     @if ($documents->isNotEmpty())
         <x-ui.card>

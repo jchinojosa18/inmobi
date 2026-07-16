@@ -98,4 +98,25 @@ class AuditIndexTest extends TestCase
             ->get(route('settings.audit.export'))
             ->assertForbidden();
     }
+
+    public function test_admin_cannot_view_audit_event_from_another_organization(): void
+    {
+        $org = Organization::factory()->create();
+        $otherOrg = Organization::factory()->create();
+        Role::findOrCreate('Admin', 'web');
+        $admin = User::factory()->create(['organization_id' => $org->id]);
+        $admin->assignRole('Admin');
+
+        $foreignEvent = AuditEvent::create([
+            'organization_id' => $otherOrg->id,
+            'action' => 'payment.created',
+            'summary' => 'Pago de otra organización',
+            'occurred_at' => now(),
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(AuditIndex::class)
+            ->call('viewEvent', $foreignEvent->id)
+            ->assertStatus(404);
+    }
 }

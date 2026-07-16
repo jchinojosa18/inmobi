@@ -4,8 +4,9 @@
         id="quick-payment-modal"
         role="dialog"
         aria-modal="true"
-        aria-label="{{ __('finance.payments.register_modal') }}"
+        aria-labelledby="quick-payment-modal-title"
         class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        @include('components.ui.partials.modal-focus-trap')
     >
         <div
             class="absolute inset-0 bg-black/50"
@@ -13,9 +14,13 @@
             aria-hidden="true"
         ></div>
 
-        <div class="relative z-10 w-full max-w-xl rounded-2xl bg-white shadow-xl">
+        <div
+            data-modal-panel
+            tabindex="-1"
+            class="relative z-10 w-full max-w-xl rounded-2xl bg-white shadow-xl outline-none"
+        >
             <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-                <h2 class="text-base font-semibold text-slate-900">{{ __('finance.payments.register_modal') }}</h2>
+                <h2 id="quick-payment-modal-title" class="text-base font-semibold text-slate-900">{{ __('finance.payments.register_modal') }}</h2>
                 <button
                     type="button"
                     wire:click="close"

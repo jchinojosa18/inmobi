@@ -2,22 +2,26 @@
 
 namespace App\Actions\Contracts;
 
+use App\Actions\Payments\ApplyCreditBalanceAction;
 use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\Document;
 use App\Models\Expense;
 use App\Support\AuditLogger;
 use App\Support\DepositBalanceService;
+use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 class ProcessContractSettlementAction
 {
     public function __construct(
         private readonly DepositBalanceService $depositBalanceService,
         private readonly AuditLogger $auditLogger,
+        private readonly ApplyCreditBalanceAction $applyCreditBalanceAction,
     ) {}
 
     /**
@@ -35,6 +39,16 @@ class ProcessContractSettlementAction
                 ->with('tenant:id,full_name')
                 ->lockForUpdate()
                 ->findOrFail($contract->id);
+
+            if ($lockedContract->status === Contract::STATUS_ENDED) {
+                throw new RuntimeException('El contrato ya fue finiquitado.');
+            }
+
+            if (data_get($lockedContract->meta, 'settlement_batch_id')) {
+                throw new RuntimeException('Ya existe un finiquito registrado para este contrato.');
+            }
+
+            $this->applyCreditBalance($lockedContract);
 
             $moveoutTotal = 0.0;
             $moveoutChargeIds = [];
@@ -135,6 +149,7 @@ class ProcessContractSettlementAction
             $lockedContract->ends_at = $exitDate->toDateString();
 
             $meta = is_array($lockedContract->meta) ? $lockedContract->meta : [];
+            $meta['settlement_batch_id'] = $batchId;
             $settlements = is_array(data_get($meta, 'settlements')) ? $meta['settlements'] : [];
             $settlements[$batchId] = [
                 'batch_id' => $batchId,
@@ -204,6 +219,18 @@ class ProcessContractSettlementAction
         );
 
         return $result;
+    }
+
+    private function applyCreditBalance(Contract $contract): void
+    {
+        $previousOrganizationId = TenantContext::currentOrganizationId();
+        TenantContext::setOrganizationId($contract->organization_id);
+
+        try {
+            $this->applyCreditBalanceAction->execute($contract);
+        } finally {
+            TenantContext::setOrganizationId($previousOrganizationId);
+        }
     }
 
     private function storeMoveoutEvidence(Contract $contract, int $chargeId, string $batchId, UploadedFile $evidence): void

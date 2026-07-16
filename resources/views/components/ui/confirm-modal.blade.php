@@ -22,18 +22,23 @@
 @if ($open)
     <div
         {{ $attributes->class('fixed inset-0 z-[70] flex items-center justify-center p-4 sm:p-6') }}
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="confirm-modal-title"
-            @if ($ariaLabel) aria-label="{{ $ariaLabel }}" @endif
-        >
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="confirm-modal-title"
+        @if ($ariaLabel) aria-label="{{ $ariaLabel }}" @endif
+        @include('components.ui.partials.modal-focus-trap')
+    >
             <div
                 class="absolute inset-0 bg-slate-900/60 backdrop-blur-[1px]"
                 wire:click="{{ $cancelAction }}"
                 aria-hidden="true"
             ></div>
 
-            <div class="relative z-10 flex w-full {{ $maxWidthClass }} max-h-[calc(100vh-2rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            <div
+                data-modal-panel
+                tabindex="-1"
+                class="relative z-10 flex w-full {{ $maxWidthClass }} max-h-[calc(100vh-2rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl outline-none"
+            >
                 <div class="flex shrink-0 items-start gap-3 border-b border-slate-200 px-5 py-4">
                     <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600 ring-1 ring-red-100">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">

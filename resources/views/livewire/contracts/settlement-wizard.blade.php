@@ -15,13 +15,18 @@
         </div>
     </div>
 
-    <form wire:submit="process" class="mt-4 space-y-4" enctype="multipart/form-data">
-        @error('settlement_general')
-            <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                {{ $message }}
-            </div>
-        @enderror
+    @error('settlement_general')
+        <div class="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {{ $message }}
+        </div>
+    @enderror
 
+    @if ($isEnded)
+        <div class="mt-4 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            {{ __('contracts.settlement_ended_blocked') }}
+        </div>
+    @else
+    <form wire:submit="process" class="mt-4 space-y-4" enctype="multipart/form-data">
         <div class="grid gap-4 md:grid-cols-3">
             <div>
                 <x-ui.input :label="__('contracts.move_out_date').' *'" type="date" wire:model.blur="move_out_date" />
@@ -40,7 +45,7 @@
             @error('concepts') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
 
             @foreach ($concepts as $index => $concept)
-                <div class="grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 md:grid-cols-12">
+                <div wire:key="settlement-concept-{{ $index }}" class="grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 md:grid-cols-12">
                     <div class="md:col-span-5">
                         <x-ui.input :label="__('contracts.concept').' *'" type="text" wire:model.blur="concepts.{{ $index }}.description" />
                         @error('concepts.'.$index.'.description') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
@@ -50,8 +55,9 @@
                         @error('concepts.'.$index.'.amount') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
                     <div class="md:col-span-3">
-                        <label class="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">{{ __('contracts.evidence_photo') }}</label>
-                        <input type="file" wire:model="evidenceFiles.{{ $index }}" accept=".jpg,.jpeg,.png,.webp" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                        @php $evidenceInputId = 'settlement-evidence-'.$index; @endphp
+                        <label for="{{ $evidenceInputId }}" class="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">{{ __('contracts.evidence_photo') }}</label>
+                        <input id="{{ $evidenceInputId }}" type="file" wire:model="evidenceFiles.{{ $index }}" accept=".jpg,.jpeg,.png,.webp" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
                         @error('evidenceFiles.'.$index) <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
                     <div class="flex items-end justify-end md:col-span-1">
@@ -69,6 +75,7 @@
             </x-ui.button>
         </div>
     </form>
+    @endif
 
     @if ($lastSettlementPdfUrl)
         <div class="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">

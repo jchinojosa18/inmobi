@@ -94,7 +94,7 @@
         </x-slot:head>
         <x-slot:body>
             @forelse ($tenants as $tenant)
-                <tr class="transition hover:bg-slate-50/80">
+                <tr wire:key="tenant-row-{{ $tenant->id }}" class="transition hover:bg-slate-50/80">
                     <td class="px-4 py-3">
                         <p class="font-medium text-slate-900">{{ $tenant->full_name }}</p>
                         <p class="text-xs text-slate-500">

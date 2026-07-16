@@ -69,6 +69,8 @@ class Charge extends OrganizationScopedModel
     protected static function booted(): void
     {
         static::saving(function (self $charge): void {
+            $charge->rent_period_key = $charge->type === self::TYPE_RENT ? $charge->period : null;
+
             if ($charge->type !== self::TYPE_PENALTY) {
                 $charge->penalty_date = null;
 

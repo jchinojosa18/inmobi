@@ -2,17 +2,14 @@
 
 namespace App\Livewire\Cobranza;
 
-use App\Models\Charge;
 use App\Models\Contract;
-use App\Models\Payment;
-use App\Models\PaymentAllocation;
 use App\Models\Property;
 use App\Models\Unit;
+use App\Support\ContractOverdueQuery;
 use App\Support\OrganizationSettingsService;
 use App\Support\TenantContext;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
 use Livewire\Attributes\On;
@@ -22,8 +19,6 @@ use Livewire\WithPagination;
 class Index extends Component
 {
     use WithPagination;
-
-    private ?string $databaseDriver = null;
 
     #[On('payment-registered')]
     public function onPaymentRegistered(): void {}
@@ -90,7 +85,7 @@ class Index extends Component
         $this->resetPage();
     }
 
-    public function render(): View
+    public function render(ContractOverdueQuery $overdueQuery): View
     {
         if (! in_array($this->tab, ['overdue', 'grace', 'current'], true)) {
             $this->tab = 'overdue';
@@ -117,7 +112,7 @@ class Index extends Component
             $units = $unitsQuery->get();
         }
 
-        $contracts = $this->buildQuery()->paginate(12);
+        $contracts = $this->buildQuery($overdueQuery)->paginate(12);
         $settingsService = app(OrganizationSettingsService::class);
         $settings = $settingsService->current();
 
@@ -169,15 +164,15 @@ class Index extends Component
         ]);
     }
 
-    private function buildQuery(): Builder
+    private function buildQuery(ContractOverdueQuery $overdueQuery): Builder
     {
         $today = now('America/Tijuana')->toDateString();
-        $balanceSubquery = $this->balanceByContractSubquery();
-        $oldestPendingRentSubquery = $this->oldestPendingRentSubquery();
-        $latestPaymentSubquery = $this->latestPaymentByContractSubquery();
+        $balanceSubquery = $overdueQuery->balanceByContractSubquery();
+        $oldestPendingRentSubquery = $overdueQuery->oldestPendingRentSubquery(includePeriod: true);
+        $latestPaymentSubquery = $overdueQuery->latestPaymentByContractSubquery();
 
-        $overdueStatusSql = $this->overdueStatusSql($today);
-        $overdueDaysSql = $this->overdueDaysSql($today);
+        $overdueStatusSql = $overdueQuery->statusSql($today);
+        $overdueDaysSql = $overdueQuery->daysSql($today);
 
         $query = Contract::query()
             ->select([
@@ -275,165 +270,5 @@ class Index extends Component
 
         $query->orderBy('tenants.full_name')
             ->orderBy('contracts.id');
-    }
-
-    private function balanceByContractSubquery(): Builder
-    {
-        $allocationSubquery = PaymentAllocation::query()
-            ->selectRaw('payment_allocations.charge_id, SUM(payment_allocations.amount) as allocated_total')
-            ->groupBy('payment_allocations.charge_id');
-
-        $includedBalanceTypes = [
-            Charge::TYPE_RENT,
-            Charge::TYPE_PENALTY,
-            Charge::TYPE_SERVICE,
-            Charge::TYPE_DAMAGE,
-            Charge::TYPE_CLEANING,
-            Charge::TYPE_OTHER,
-            Charge::TYPE_ADJUSTMENT,
-            Charge::TYPE_MOVEOUT,
-            Charge::TYPE_DEPOSIT_APPLY,
-        ];
-
-        $pendingExpression = $this->contractPendingAmountExpression();
-
-        return Charge::query()
-            ->selectRaw("charges.contract_id, {$pendingExpression} as pending_balance")
-            ->leftJoinSub($allocationSubquery, 'alloc', function ($join): void {
-                $join->on('alloc.charge_id', '=', 'charges.id');
-            })
-            ->whereIn('charges.type', $includedBalanceTypes)
-            ->groupBy('charges.contract_id');
-    }
-
-    private function oldestPendingRentSubquery(): QueryBuilder
-    {
-        $allocationSubquery = PaymentAllocation::query()
-            ->selectRaw('payment_allocations.charge_id, SUM(payment_allocations.amount) as allocated_total')
-            ->groupBy('payment_allocations.charge_id');
-
-        $dueDateExpression = $this->dueDateExpression();
-        $graceUntilExpression = $this->graceUntilExpression($dueDateExpression);
-        $pendingExpression = $this->pendingAmountExpression();
-
-        $rankedSubquery = Charge::query()
-            ->from('charges')
-            ->leftJoinSub($allocationSubquery, 'alloc', function ($join): void {
-                $join->on('alloc.charge_id', '=', 'charges.id');
-            })
-            ->where('charges.type', Charge::TYPE_RENT)
-            ->whereRaw("{$pendingExpression} > 0")
-            ->selectRaw("
-                charges.contract_id,
-                charges.period as period,
-                {$dueDateExpression} as due_date,
-                {$graceUntilExpression} as grace_until,
-                ROW_NUMBER() OVER (
-                    PARTITION BY charges.contract_id
-                    ORDER BY {$dueDateExpression} asc, charges.id asc
-                ) as row_num
-            ");
-
-        return DB::query()
-            ->fromSub($rankedSubquery, 'rent_rows')
-            ->selectRaw('rent_rows.contract_id, rent_rows.period, rent_rows.due_date, rent_rows.grace_until')
-            ->where('rent_rows.row_num', 1);
-    }
-
-    private function latestPaymentByContractSubquery(): QueryBuilder
-    {
-        $rankedPayments = Payment::query()
-            ->selectRaw('
-                payments.contract_id,
-                payments.id as payment_id,
-                ROW_NUMBER() OVER (
-                    PARTITION BY payments.contract_id
-                    ORDER BY payments.paid_at desc, payments.id desc
-                ) as row_num
-            ');
-
-        return DB::query()
-            ->fromSub($rankedPayments, 'payment_rows')
-            ->selectRaw('payment_rows.contract_id, payment_rows.payment_id')
-            ->where('payment_rows.row_num', 1);
-    }
-
-    private function overdueStatusSql(string $todayDate): string
-    {
-        $todayLiteral = "'{$todayDate}'";
-
-        return "CASE
-            WHEN rent_status.contract_id IS NULL THEN 'current'
-            WHEN {$todayLiteral} > rent_status.grace_until THEN 'overdue'
-            WHEN {$todayLiteral} >= rent_status.due_date AND {$todayLiteral} <= rent_status.grace_until THEN 'grace'
-            ELSE 'current'
-        END";
-    }
-
-    private function overdueDaysSql(string $todayDate): string
-    {
-        $todayLiteral = "'{$todayDate}'";
-        $diffExpression = $this->overdueDiffExpression($todayDate);
-
-        return "CASE
-            WHEN rent_status.contract_id IS NULL THEN 0
-            WHEN {$todayLiteral} > rent_status.grace_until THEN {$diffExpression}
-            ELSE 0
-        END";
-    }
-
-    private function overdueDiffExpression(string $todayDate): string
-    {
-        if ($this->databaseDriver() === 'sqlite') {
-            return "CAST(julianday('{$todayDate}') - julianday(rent_status.grace_until) AS INTEGER)";
-        }
-
-        return "DATEDIFF('{$todayDate}', rent_status.grace_until)";
-    }
-
-    private function dueDateExpression(): string
-    {
-        return 'COALESCE(charges.due_date, charges.charge_date)';
-    }
-
-    private function graceUntilExpression(string $dueDateExpression): string
-    {
-        return "COALESCE(charges.grace_until, {$dueDateExpression})";
-    }
-
-    private function pendingAmountExpression(): string
-    {
-        $rawPending = $this->rawPendingAmountExpression();
-
-        if ($this->databaseDriver() === 'sqlite') {
-            return "MAX({$rawPending}, 0)";
-        }
-
-        return "GREATEST({$rawPending}, 0)";
-    }
-
-    private function rawPendingAmountExpression(): string
-    {
-        return 'charges.amount - COALESCE(alloc.allocated_total, 0)';
-    }
-
-    private function contractPendingAmountExpression(): string
-    {
-        $rawPending = $this->rawPendingAmountExpression();
-
-        if ($this->databaseDriver() === 'sqlite') {
-            return "MAX(SUM({$rawPending}), 0)";
-        }
-
-        return "GREATEST(SUM({$rawPending}), 0)";
-    }
-
-    private function databaseDriver(): string
-    {
-        if ($this->databaseDriver === null) {
-            $this->databaseDriver = DB::connection()->getDriverName();
-        }
-
-        return $this->databaseDriver;
     }
 }
