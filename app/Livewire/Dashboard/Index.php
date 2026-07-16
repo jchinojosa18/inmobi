@@ -52,7 +52,9 @@ class Index extends Component
 
         session()->flash(
             'success',
-            'Checklist oculto hasta '.$dismissedUntil->timezone('America/Tijuana')->format('Y-m-d').'.'
+            __('dashboard.flash.checklist_hidden', [
+                'date' => $dismissedUntil->timezone('America/Tijuana')->format('Y-m-d'),
+            ])
         );
     }
 
@@ -71,7 +73,7 @@ class Index extends Component
         $currentMonth = CarbonImmutable::now('America/Tijuana')->format('Y-m');
 
         if (MonthCloseGuard::isMonthClosed($organizationId, $currentMonth)) {
-            session()->flash('error', "El mes {$currentMonth} está cerrado. No se pueden generar rentas.");
+            session()->flash('error', __('dashboard.flash.month_closed', ['month' => $currentMonth]));
 
             return;
         }
@@ -80,7 +82,11 @@ class Index extends Component
 
         session()->flash(
             'success',
-            "Rentas del {$currentMonth}: creadas={$result['created']} omitidas={$result['skipped']}."
+            __('dashboard.flash.rents_generated', [
+                'month' => $currentMonth,
+                'created' => $result['created'],
+                'skipped' => $result['skipped'],
+            ])
         );
     }
 
@@ -173,7 +179,7 @@ class Index extends Component
             'canManageContracts' => auth()->user()?->can('contracts.manage') ?? false,
             'canGenerateRents' => auth()->user()?->can('rents.generate') ?? false,
         ])->layout('layouts.app', [
-            'title' => 'Dashboard operativo',
+            'title' => __('dashboard.title'),
         ]);
     }
 
@@ -224,48 +230,48 @@ class Index extends Component
         $criticalSteps = [
             [
                 'key' => 'properties',
-                'title' => 'Crear inmueble',
-                'description' => 'Registra tu primer inmueble para empezar a operar.',
+                'title' => __('dashboard.onboarding.properties.title'),
+                'description' => __('dashboard.onboarding.properties.description'),
                 'complete' => $propertiesCount > 0,
                 'ctas' => [
-                    ['type' => 'route', 'label' => 'Ir a propiedades', 'route' => 'properties.index'],
-                    ['type' => 'route', 'label' => 'Nuevo inmueble', 'route' => 'houses.create'],
+                    ['type' => 'route', 'label' => __('dashboard.onboarding.properties.cta_properties'), 'route' => 'properties.index'],
+                    ['type' => 'route', 'label' => __('dashboard.onboarding.properties.cta_new_property'), 'route' => 'houses.create'],
                 ],
             ],
             [
                 'key' => 'units',
-                'title' => 'Crear unidades',
-                'description' => 'Define unidades ocupables para poder contratar.',
+                'title' => __('dashboard.onboarding.units.title'),
+                'description' => __('dashboard.onboarding.units.description'),
                 'complete' => $unitsCount > 0,
                 'ctas' => [
-                    ['type' => 'route', 'label' => 'Gestionar unidades', 'route' => 'properties.index'],
+                    ['type' => 'route', 'label' => __('dashboard.onboarding.units.cta_manage'), 'route' => 'properties.index'],
                 ],
             ],
             [
                 'key' => 'tenants',
-                'title' => 'Crear inquilinos',
-                'description' => 'Captura al menos un inquilino activo.',
+                'title' => __('dashboard.onboarding.tenants.title'),
+                'description' => __('dashboard.onboarding.tenants.description'),
                 'complete' => $tenantsCount > 0,
                 'ctas' => [
-                    ['type' => 'route', 'label' => 'Ir a inquilinos', 'route' => 'tenants.index'],
+                    ['type' => 'route', 'label' => __('dashboard.onboarding.tenants.cta_tenants'), 'route' => 'tenants.index'],
                 ],
             ],
             [
                 'key' => 'contracts',
-                'title' => 'Crear contratos activos',
-                'description' => 'Necesitas un contrato activo para generar rentas y cobranza.',
+                'title' => __('dashboard.onboarding.contracts.title'),
+                'description' => __('dashboard.onboarding.contracts.description'),
                 'complete' => $activeContractsCount > 0,
                 'ctas' => [
-                    ['type' => 'route', 'label' => 'Nuevo contrato', 'route' => 'contracts.create'],
+                    ['type' => 'route', 'label' => __('common.new_contract'), 'route' => 'contracts.create'],
                 ],
             ],
             [
                 'key' => 'rent_charges',
-                'title' => 'Generar o confirmar rentas del mes',
-                'description' => "Valida que existan cargos RENT para {$currentMonth}.",
+                'title' => __('dashboard.onboarding.rent_charges.title'),
+                'description' => __('dashboard.onboarding.rent_charges.description', ['month' => $currentMonth]),
                 'complete' => $rentChargesCurrentMonthCount > 0,
                 'ctas' => [
-                    ['type' => 'action_generate_rent', 'label' => 'Generar rentas del mes'],
+                    ['type' => 'action_generate_rent', 'label' => __('dashboard.onboarding.rent_charges.cta_generate')],
                 ],
             ],
         ];
@@ -273,20 +279,20 @@ class Index extends Component
         $recommendedSteps = [
             [
                 'key' => 'payments',
-                'title' => 'Registrar primer pago',
-                'description' => 'Recomendado para validar recibo, allocation y cobranza.',
+                'title' => __('dashboard.onboarding.payments.title'),
+                'description' => __('dashboard.onboarding.payments.description'),
                 'complete' => $paymentsCount > 0,
                 'ctas' => [
-                    ['type' => 'action_open_quick_payment', 'label' => 'Registrar pago'],
+                    ['type' => 'action_open_quick_payment', 'label' => __('common.register_payment')],
                 ],
             ],
             [
                 'key' => 'expenses',
-                'title' => 'Registrar primer egreso',
-                'description' => 'Recomendado para validar reporte de flujo y neto.',
+                'title' => __('dashboard.onboarding.expenses.title'),
+                'description' => __('dashboard.onboarding.expenses.description'),
                 'complete' => $expensesCount > 0,
                 'ctas' => [
-                    ['type' => 'action_open_quick_expense', 'label' => 'Registrar egreso'],
+                    ['type' => 'action_open_quick_expense', 'label' => __('common.register_expense')],
                 ],
             ],
         ];

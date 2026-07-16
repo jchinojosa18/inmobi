@@ -29,14 +29,14 @@ class Show extends Component
         $recipient = $this->emailRecipient ?: $this->payment->contract?->tenant?->email;
 
         if (! is_string($recipient) || trim($recipient) === '') {
-            $this->addError('emailRecipient', 'No hay correo disponible para el envío.');
+            $this->addError('emailRecipient', __('finance.validation.email_unavailable'));
 
             return;
         }
 
         Mail::to($recipient)->send(new PaymentReceiptMail($this->payment));
 
-        session()->flash('success', 'Recibo enviado por correo (revisa Mailpit en desarrollo).');
+        session()->flash('success', __('finance.flash.receipt_sent'));
     }
 
     public function render(
@@ -90,7 +90,7 @@ class Show extends Component
             'whatsAppUrl' => $whatsAppUrl,
             'shareUrl' => $shareUrl,
             'documents' => $documents,
-        ])->layout('layouts.app', ['title' => 'Detalle de pago']);
+        ])->layout('layouts.app', ['title' => __('finance.payments.show_page_title')]);
     }
 
     private function buildWhatsAppUrl(?string $phone, string $message): string

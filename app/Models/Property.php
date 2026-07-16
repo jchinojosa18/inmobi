@@ -119,11 +119,11 @@ class Property extends OrganizationScopedModel
     public function kindLabel(): string
     {
         return match ($this->kind) {
-            self::KIND_STANDALONE_HOUSE => 'Casa',
-            self::KIND_BUILDING => 'Edificio',
-            self::KIND_LOCAL => 'Local',
-            self::KIND_LAND => 'Terreno',
-            default => 'Propiedad',
+            self::KIND_STANDALONE_HOUSE => __('catalog.property_kinds.house'),
+            self::KIND_BUILDING => __('catalog.property_kinds.building'),
+            self::KIND_LOCAL => __('catalog.property_kinds.local'),
+            self::KIND_LAND => __('catalog.property_kinds.land'),
+            default => __('catalog.property_kinds.property'),
         };
     }
 

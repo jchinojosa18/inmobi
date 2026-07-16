@@ -56,13 +56,13 @@ class RolePreview extends Component
                             ->map(function (string $label, string $permission) use ($granted): array {
                                 return [
                                     'permission' => $permission,
-                                    'label' => $label,
+                                    'label' => $this->translatePermissionLabel($permission, $label),
                                     'allowed' => $granted->has($permission),
                                 ];
                             });
 
                         if ($search !== '') {
-                            $moduleText = mb_strtolower((string) ($module['label'] ?? ''));
+                            $moduleText = mb_strtolower($this->translateModuleLabel((string) ($module['key'] ?? ''), (string) ($module['label'] ?? '')));
                             $rows = $rows->filter(function (array $row) use ($search, $moduleText): bool {
                                 return str_contains(mb_strtolower($row['label']), $search)
                                     || str_contains(mb_strtolower($row['permission']), $search)
@@ -76,7 +76,7 @@ class RolePreview extends Component
 
                         return [
                             'key' => (string) ($module['key'] ?? ''),
-                            'label' => (string) ($module['label'] ?? ''),
+                            'label' => $this->translateModuleLabel((string) ($module['key'] ?? ''), (string) ($module['label'] ?? '')),
                             'permissions' => $rows->values()->all(),
                         ];
                     })
@@ -86,20 +86,20 @@ class RolePreview extends Component
                 $otherRows = $otherPermissions
                     ->map(fn (string $permission): array => [
                         'permission' => $permission,
-                        'label' => $permission,
+                        'label' => $this->translatePermissionLabel($permission, $permission),
                         'allowed' => $granted->has($permission),
                     ])
                     ->when($search !== '', fn (Collection $collection): Collection => $collection->filter(
                         fn (array $row): bool => str_contains(mb_strtolower($row['permission']), $search)
                             || str_contains(mb_strtolower($row['label']), $search)
-                            || str_contains('otros permisos', $search)
+                            || str_contains(mb_strtolower(__('settings.other_permissions')), $search)
                     ))
                     ->values();
 
                 if ($otherRows->isNotEmpty()) {
                     $modules->push([
                         'key' => 'other',
-                        'label' => 'Otros permisos',
+                        'label' => __('settings.other_permissions'),
                         'permissions' => $otherRows->all(),
                     ]);
                 }
@@ -116,8 +116,12 @@ class RolePreview extends Component
 
                 return [
                     'name' => $roleName,
-                    'label' => (string) ($roleMeta['label'] ?? $roleName),
-                    'description' => (string) ($roleMeta['description'] ?? ''),
+                    'label' => (string) (__('settings.role_labels.'.$roleName) !== 'settings.role_labels.'.$roleName
+                        ? __('settings.role_labels.'.$roleName)
+                        : ($roleMeta['label'] ?? $roleName)),
+                    'description' => (string) (__('settings.role_descriptions.'.$roleName) !== 'settings.role_descriptions.'.$roleName
+                        ? __('settings.role_descriptions.'.$roleName)
+                        : ($roleMeta['description'] ?? '')),
                     'modules' => $modules->all(),
                     'allowed_permissions' => $allowedPermissions,
                     'total_permissions' => $totalPermissions,
@@ -128,7 +132,25 @@ class RolePreview extends Component
         return view('livewire.settings.role-preview', [
             'roles' => $roles,
         ])->layout('layouts.app', [
-            'title' => 'Roles y permisos',
+            'title' => __('settings.roles_title'),
         ]);
+    }
+
+    private function translateModuleLabel(string $key, string $fallback): string
+    {
+        if ($key === '') {
+            return $fallback;
+        }
+
+        $translated = __('settings.permission_modules.'.$key);
+
+        return $translated !== 'settings.permission_modules.'.$key ? $translated : $fallback;
+    }
+
+    private function translatePermissionLabel(string $permission, string $fallback): string
+    {
+        $translated = __('settings.permission_labels.'.$permission);
+
+        return $translated !== 'settings.permission_labels.'.$permission ? $translated : $fallback;
     }
 }

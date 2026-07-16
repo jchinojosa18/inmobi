@@ -10,6 +10,10 @@
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100">
     <div class="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+        <div class="absolute right-4 top-4 z-10 sm:right-6 sm:top-6">
+            <x-ui.locale-switcher />
+        </div>
+
         <div
             aria-hidden="true"
             class="pointer-events-none absolute inset-0 opacity-30 [background-image:radial-gradient(circle_at_1px_1px,rgb(148_163_184)_1px,transparent_0)] [background-size:22px_22px] dark:opacity-20"

@@ -22,15 +22,15 @@ class PasswordResetController extends Controller
         $request->validate([
             'email' => ['required', 'email'],
         ], [
-            'email.required' => 'El email es obligatorio.',
-            'email.email' => 'El email no es válido.',
+            'email.required' => __('messages.validation.email_required'),
+            'email.email' => __('messages.validation.email_invalid'),
         ]);
 
         Password::sendResetLink($request->only('email'));
 
         return back()->with(
             'status',
-            'Si el email está registrado, recibirás un enlace para restablecer tu contraseña.'
+            __('messages.password_reset_link_sent')
         );
     }
 
@@ -49,11 +49,11 @@ class PasswordResetController extends Controller
             'email' => ['required', 'email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ], [
-            'email.required' => 'El email es obligatorio.',
-            'email.email' => 'El email no es válido.',
-            'password.required' => 'La contraseña es obligatoria.',
-            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
-            'password.confirmed' => 'La confirmación de contraseña no coincide.',
+            'email.required' => __('messages.validation.email_required'),
+            'email.email' => __('messages.validation.email_invalid'),
+            'password.required' => __('messages.validation.password_required'),
+            'password.min' => __('messages.validation.password_min'),
+            'password.confirmed' => __('messages.validation.password_confirmed'),
         ]);
 
         $status = Password::reset(
@@ -69,14 +69,14 @@ class PasswordResetController extends Controller
         if ($status === Password::PASSWORD_RESET) {
             return redirect()
                 ->route('login')
-                ->with('status', 'Tu contraseña fue actualizada. Ya puedes iniciar sesión.');
+                ->with('status', __('messages.password_updated'));
         }
 
         return back()->withErrors([
             'email' => match ($status) {
-                Password::INVALID_TOKEN => 'El enlace de recuperación no es válido o expiró.',
-                Password::INVALID_USER => 'No encontramos un usuario con ese email.',
-                default => 'No pudimos restablecer tu contraseña. Intenta solicitar un enlace nuevo.',
+                Password::INVALID_TOKEN => __('messages.password_reset_invalid_token'),
+                Password::INVALID_USER => __('messages.password_reset_invalid_user'),
+                default => __('messages.password_reset_failed'),
             },
         ]);
     }

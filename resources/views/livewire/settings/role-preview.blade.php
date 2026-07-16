@@ -1,24 +1,24 @@
 <section class="space-y-6">
     <x-ui.page-header
-        title="Roles y permisos"
-        description="Vista de solo lectura. Los permisos se sincronizan por código desde el seeder."
+        :title="__('settings.roles_title')"
+        :description="__('settings.roles_description')"
     >
         <x-slot:actions>
             <div class="w-full sm:w-72">
                 <x-ui.input
                     id="role-preview-search"
-                    label="Buscar permiso o acción"
+                    :label="__('settings.search_permission')"
                     type="text"
                     wire:model.live.debounce.300ms="q"
-                    placeholder="Ej. pagos.create, auditoría"
+                    :placeholder="__('settings.search_permission_placeholder')"
                 />
             </div>
         </x-slot:actions>
     </x-ui.page-header>
 
     <div class="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-        Esta pantalla no permite edición. Si necesitas cambiar permisos, actualiza el seeder
-        <span class="font-semibold">SyncRolesAndPermissionsSeeder</span> y vuelve a sincronizar.
+        {{ __('settings.roles_readonly_notice') }}
+        <span class="font-semibold">SyncRolesAndPermissionsSeeder</span> {{ __('settings.roles_readonly_notice_suffix') }}
     </div>
 
     <div class="grid gap-4 xl:grid-cols-3">
@@ -36,7 +36,7 @@
 
                 @if (count($role['modules']) === 0)
                     <p class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-                        Sin resultados para "{{ $q }}".
+                        {{ __('settings.no_results_for', ['query' => $q]) }}
                     </p>
                 @else
                     <div class="space-y-4">
@@ -55,12 +55,12 @@
                                             @if ($permission['allowed'])
                                                 <x-ui.badge variant="success">
                                                     <span aria-hidden="true">✅</span>
-                                                    Permitido
+                                                    {{ __('settings.allowed') }}
                                                 </x-ui.badge>
                                             @else
                                                 <x-ui.badge variant="danger">
                                                     <span aria-hidden="true">❌</span>
-                                                    No permitido
+                                                    {{ __('settings.not_allowed') }}
                                                 </x-ui.badge>
                                             @endif
                                         </li>

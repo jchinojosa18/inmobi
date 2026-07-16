@@ -136,7 +136,7 @@ class Index extends Component
             'canManageContracts' => auth()->user()?->can('contracts.manage') ?? false,
             'canCreatePayments' => auth()->user()?->can('payments.create') ?? false,
         ])->layout('layouts.app', [
-            'title' => 'Contratos',
+            'title' => __('contracts.title'),
         ]);
     }
 

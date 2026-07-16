@@ -28,8 +28,8 @@ class UnitNumberingService
     public function label(string $scheme): string
     {
         return match ($scheme) {
-            self::SCHEME_FLOOR_BASED => 'Por piso (101, 102…)',
-            self::SCHEME_SEQUENTIAL => 'Consecutivos (1, 2, 3…)',
+            self::SCHEME_FLOOR_BASED => __('catalog.units.numbering_floor_based'),
+            self::SCHEME_SEQUENTIAL => __('catalog.units.numbering_sequential'),
             default => $scheme,
         };
     }

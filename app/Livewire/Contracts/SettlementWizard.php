@@ -72,17 +72,17 @@ class SettlementWizard extends Component
             'concepts.*.amount' => ['required', 'numeric', 'min:0.01'],
             'evidenceFiles.*' => ['nullable', 'file', 'max:5120', 'mimes:jpg,jpeg,png,webp'],
         ], [
-            'move_out_date.required' => 'La fecha de salida es obligatoria.',
-            'move_out_date.date' => 'La fecha de salida no es válida.',
-            'concepts.required' => 'Agrega al menos un concepto de finiquito.',
-            'concepts.min' => 'Agrega al menos un concepto de finiquito.',
-            'concepts.*.description.required' => 'El concepto es obligatorio.',
-            'concepts.*.description.max' => 'El concepto no debe exceder 150 caracteres.',
-            'concepts.*.amount.required' => 'El monto del concepto es obligatorio.',
-            'concepts.*.amount.numeric' => 'El monto del concepto debe ser numérico.',
-            'concepts.*.amount.min' => 'El monto del concepto debe ser mayor a cero.',
-            'evidenceFiles.*.max' => 'Cada evidencia debe pesar máximo 5 MB.',
-            'evidenceFiles.*.mimes' => 'Las evidencias deben ser JPG, PNG o WEBP.',
+            'move_out_date.required' => __('contracts.validation.move_out_required'),
+            'move_out_date.date' => __('contracts.validation.move_out_invalid'),
+            'concepts.required' => __('contracts.validation.concepts_required'),
+            'concepts.min' => __('contracts.validation.concepts_required'),
+            'concepts.*.description.required' => __('contracts.validation.concept_required'),
+            'concepts.*.description.max' => __('contracts.validation.concept_max'),
+            'concepts.*.amount.required' => __('contracts.validation.concept_amount_required'),
+            'concepts.*.amount.numeric' => __('contracts.validation.concept_amount_numeric'),
+            'concepts.*.amount.min' => __('contracts.validation.concept_amount_min'),
+            'evidenceFiles.*.max' => __('contracts.validation.evidence_max'),
+            'evidenceFiles.*.mimes' => __('contracts.validation.evidence_mimes'),
         ]);
 
         $concepts = collect($this->concepts)
@@ -98,7 +98,7 @@ class SettlementWizard extends Component
             ->all();
 
         if ($concepts === []) {
-            $this->addError('concepts', 'Agrega al menos un concepto válido.');
+            $this->addError('concepts', __('contracts.validation.concept_valid_required'));
 
             return;
         }
@@ -111,7 +111,7 @@ class SettlementWizard extends Component
                 userId: auth()->id(),
             );
         } catch (ValidationException $exception) {
-            $message = $exception->errors()['month_close'][0] ?? 'No se pudo procesar el finiquito.';
+            $message = $exception->errors()['month_close'][0] ?? __('contracts.validation.settlement_failed');
             $this->addError('settlement_general', $message);
 
             return;
@@ -122,15 +122,14 @@ class SettlementWizard extends Component
             'batch' => $result->batchId,
         ]);
 
-        $this->lastSettlementSummary = sprintf(
-            'Adeudo previo: $%s | Depósito aplicado: $%s | Devolución: $%s | Saldo por cobrar: $%s',
-            number_format($result->outstandingBeforeDeposit, 2),
-            number_format($result->depositApplied, 2),
-            number_format($result->depositRefund, 2),
-            number_format($result->balanceToCollect, 2),
-        );
+        $this->lastSettlementSummary = __('contracts.settlement.summary', [
+            'outstanding' => number_format($result->outstandingBeforeDeposit, 2),
+            'applied' => number_format($result->depositApplied, 2),
+            'refund' => number_format($result->depositRefund, 2),
+            'balance' => number_format($result->balanceToCollect, 2),
+        ]);
 
-        session()->flash('success', 'Finiquito procesado correctamente.');
+        session()->flash('success', __('contracts.flash.settlement_processed'));
         $this->dispatch('settlement-processed');
     }
 

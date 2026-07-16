@@ -4,27 +4,23 @@
         id="quick-payment-modal"
         role="dialog"
         aria-modal="true"
-        aria-label="Registrar pago"
+        aria-label="{{ __('finance.payments.register_modal') }}"
         class="fixed inset-0 z-50 flex items-center justify-center p-4"
     >
-        {{-- Overlay --}}
         <div
             class="absolute inset-0 bg-black/50"
             wire:click="close"
             aria-hidden="true"
         ></div>
 
-        {{-- Card --}}
         <div class="relative z-10 w-full max-w-xl rounded-2xl bg-white shadow-xl">
-
-            {{-- Header --}}
             <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-                <h2 class="text-base font-semibold text-slate-900">Registrar pago</h2>
+                <h2 class="text-base font-semibold text-slate-900">{{ __('finance.payments.register_modal') }}</h2>
                 <button
                     type="button"
                     wire:click="close"
                     class="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                    aria-label="Cerrar"
+                    aria-label="{{ __('common.close') }}"
                 >
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -32,20 +28,17 @@
                 </button>
             </div>
 
-            {{-- Body --}}
             <div class="px-5 py-4">
-
                 @if($step === 'search')
-                    {{-- Step: Search --}}
                     <div class="space-y-3">
-                        <p class="text-sm text-slate-600">Busca un contrato por nombre, email, teléfono, unidad o número de contrato.</p>
+                        <p class="text-sm text-slate-600">{{ __('finance.payments.search_description') }}</p>
 
                         <x-ui.input
                             id="qpm-input"
                             type="text"
                             wire:model.live.debounce.200ms="q"
                             wire:keydown.escape="close"
-                            placeholder="Ej: Juan García, Unidad 101, #42…"
+                            :placeholder="__('finance.payments.search_placeholder')"
                             autocomplete="off"
                         />
 
@@ -65,63 +58,58 @@
                                                     #{{ $result['id'] }} · {{ $result['tenant_name'] }}
                                                 </span>
                                                 <span class="text-slate-500">
-                                                    — {{ $result['property_name'] }} / {{ $result['unit_name'] ?: ($result['unit_code'] ?: 'N/D') }}
+                                                    — {{ $result['property_name'] }} / {{ $result['unit_name'] ?: ($result['unit_code'] ?: __('common.n_a')) }}
                                                 </span>
                                                 <span class="ml-auto text-slate-500">
-                                                    | Saldo: ${{ number_format($result['pending_balance'], 2) }}
+                                                    | {{ __('common.balance') }}: ${{ number_format($result['pending_balance'], 2) }}
                                                 </span>
                                             </button>
                                         </li>
                                     @endforeach
                                 </ul>
                             @else
-                                <p class="text-sm text-slate-500 py-2">Sin coincidencias para "{{ $q }}".</p>
+                                <p class="text-sm text-slate-500 py-2">{{ __('finance.payments.no_matches', ['query' => $q]) }}</p>
                             @endif
                         @else
-                            <p class="text-xs text-slate-400">Escribe al menos 2 caracteres para buscar.</p>
+                            <p class="text-xs text-slate-400">{{ __('finance.payments.search_min_chars') }}</p>
                         @endif
                     </div>
 
                 @elseif($step === 'form')
-                    {{-- Step: Form --}}
                     <div class="space-y-4">
-
-                        {{-- Contract summary --}}
                         @if($contractSummary)
                         <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm space-y-1">
                             <div class="flex items-center justify-between">
                                 <span class="font-medium text-slate-900">#{{ $contractSummary['id'] }} · {{ $contractSummary['tenant_name'] }}</span>
                                 @if($contractSummary['overdue_status'] === 'overdue')
-                                    <span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">Vencido {{ $contractSummary['overdue_days'] }}d</span>
+                                    <span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">{{ __('finance.payments.overdue_days', ['days' => $contractSummary['overdue_days']]) }}</span>
                                 @elseif($contractSummary['overdue_status'] === 'grace')
-                                    <span class="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800">En gracia</span>
+                                    <span class="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800">{{ __('finance.payments.in_grace') }}</span>
                                 @else
-                                    <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">Al corriente</span>
+                                    <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">{{ __('finance.payments.current') }}</span>
                                 @endif
                             </div>
                             <p class="text-slate-600">{{ $contractSummary['unit_label'] }}</p>
                             <div class="flex gap-4 text-xs text-slate-500">
-                                <span>Saldo pendiente: <strong class="text-slate-700">${{ number_format($contractSummary['pending_balance'], 2) }}</strong></span>
+                                <span>{{ __('finance.payments.pending_balance') }}: <strong class="text-slate-700">${{ number_format($contractSummary['pending_balance'], 2) }}</strong></span>
                                 @if($contractSummary['credit_balance'] > 0)
-                                    <span>Saldo a favor: <strong class="text-emerald-700">${{ number_format($contractSummary['credit_balance'], 2) }}</strong></span>
+                                    <span>{{ __('common.credit_balance') }}: <strong class="text-emerald-700">${{ number_format($contractSummary['credit_balance'], 2) }}</strong></span>
                                 @endif
                             </div>
                         </div>
                         @endif
 
-                        {{-- Month close error --}}
                         @error('month_close')
                             <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
                                 {{ $message }}
                             </div>
                         @enderror
 
-                        {{-- Form fields --}}
                         <div class="grid gap-3 sm:grid-cols-2">
                             <div>
                                 <x-ui.input
                                     id="qpm-paid-at"
-                                    label="Fecha y hora de pago"
+                                    :label="__('finance.payments.paid_at')"
                                     type="datetime-local"
                                     wire:model.blur="paidAt"
                                 />
@@ -131,7 +119,7 @@
                             <div>
                                 <x-ui.input
                                     id="qpm-amount"
-                                    label="Monto"
+                                    :label="__('common.amount')"
                                     type="number"
                                     step="0.01"
                                     min="0.01"
@@ -142,40 +130,37 @@
                             </div>
                         </div>
 
-                        {{-- Method --}}
                         <div>
-                            <label class="mb-1 block text-xs font-medium text-slate-700">Método de pago</label>
+                            <label class="mb-1 block text-xs font-medium text-slate-700">{{ __('finance.payments.payment_method') }}</label>
                             <div class="flex gap-4">
                                 <label class="flex items-center gap-2 text-sm cursor-pointer">
                                     <input type="radio" wire:model.live="method" value="{{ \App\Models\Payment::METHOD_CASH }}" class="accent-slate-700">
-                                    Efectivo
+                                    {{ __('finance.payments.cash') }}
                                 </label>
                                 <label class="flex items-center gap-2 text-sm cursor-pointer">
                                     <input type="radio" wire:model.live="method" value="{{ \App\Models\Payment::METHOD_TRANSFER }}" class="accent-slate-700">
-                                    Transferencia
+                                    {{ __('finance.payments.transfer') }}
                                 </label>
                             </div>
                             @error('method') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                         </div>
 
-                        {{-- Reference (only for transfer) --}}
                         @if($method === \App\Models\Payment::METHOD_TRANSFER)
                         <div>
                             <x-ui.input
                                 id="qpm-reference"
-                                label="Referencia (opcional)"
+                                :label="__('finance.payments.reference_optional')"
                                 type="text"
                                 wire:model.blur="reference"
                                 maxlength="120"
-                                placeholder="Número de transferencia, CLABE, etc."
+                                :placeholder="__('finance.payments.reference_placeholder')"
                             />
                             @error('reference') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                         </div>
                         @endif
 
-                        {{-- Evidence --}}
                         <div>
-                            <label class="mb-1 block text-xs font-medium text-slate-700">Comprobante <span class="text-slate-400">(JPG, PNG, PDF — máx. 5 MB)</span></label>
+                            <label class="mb-1 block text-xs font-medium text-slate-700">{{ __('finance.payments.evidence_label') }} <span class="text-slate-400">{{ __('finance.expenses.evidence_hint') }}</span></label>
                             <input
                                 type="file"
                                 wire:model="evidence"
@@ -185,20 +170,17 @@
                             @error('evidence') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                         </div>
 
-                        {{-- Send email toggle --}}
                         @if(isset($contractSummary['tenant_email']) && $contractSummary['tenant_email'])
                         <label class="flex items-center gap-2 text-sm cursor-pointer select-none">
                             <input type="checkbox" wire:model.live="sendEmail" class="rounded accent-slate-700">
-                            <span>Enviar recibo por correo a <strong>{{ $contractSummary['tenant_email'] }}</strong></span>
+                            <span>{!! __('finance.payments.send_receipt_email', ['email' => '<strong>'.$contractSummary['tenant_email'].'</strong>']) !!}</span>
                         </label>
                         @endif
-
                     </div>
 
-                    {{-- Footer --}}
                     <div class="mt-5 flex items-center justify-between gap-3">
                         <x-ui.button type="button" variant="secondary" wire:click="backToSearch">
-                            Cambiar contrato
+                            {{ __('finance.payments.change_contract') }}
                         </x-ui.button>
                         <x-ui.button
                             type="button"
@@ -206,13 +188,12 @@
                             wire:loading.attr="disabled"
                             wire:loading.class="opacity-60 cursor-not-allowed"
                         >
-                            <span wire:loading.remove wire:target="save">Registrar pago</span>
-                            <span wire:loading wire:target="save">Guardando…</span>
+                            <span wire:loading.remove wire:target="save">{{ __('common.register_payment') }}</span>
+                            <span wire:loading wire:target="save">{{ __('common.saving') }}</span>
                         </x-ui.button>
                     </div>
 
                 @elseif($step === 'done')
-                    {{-- Step: Done --}}
                     <div class="space-y-4 text-center">
                         <div class="flex justify-center">
                             <div class="rounded-full bg-emerald-100 p-3">
@@ -223,10 +204,10 @@
                         </div>
 
                         <div>
-                            <h3 class="text-lg font-semibold text-slate-900">Pago registrado</h3>
+                            <h3 class="text-lg font-semibold text-slate-900">{{ __('finance.payments.payment_registered') }}</h3>
                             @if($receiptFolio)
                                 <p class="mt-1 text-sm text-slate-600">
-                                    Folio: <span class="font-mono font-medium text-slate-900">{{ $receiptFolio }}</span>
+                                    {{ __('finance.payments.folio_label') }} <span class="font-mono font-medium text-slate-900">{{ $receiptFolio }}</span>
                                 </p>
                             @endif
                             @if($contractSummary)
@@ -237,7 +218,6 @@
                             @endif
                         </div>
 
-                        {{-- Action buttons --}}
                         <div
                             x-data="{ copied: false }"
                             class="flex flex-wrap justify-center gap-2"
@@ -251,7 +231,7 @@
                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                                 </svg>
-                                <span x-text="copied ? '¡Copiado!' : 'Copiar link'"></span>
+                                <span x-text="copied ? @js(__('finance.payments.copied')) : @js(__('finance.payments.copy_link'))"></span>
                             </button>
                             @endif
 
@@ -274,23 +254,21 @@
                                 href="{{ route('payments.show', $savedPaymentId) }}"
                                 class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                             >
-                                Ver pago
+                                {{ __('common.view_payment') }}
                             </a>
                             @endif
                         </div>
 
-                        {{-- Footer --}}
                         <div class="flex justify-center gap-3 pt-2 border-t border-slate-100">
                             <x-ui.button type="button" variant="secondary" wire:click="resetForm">
-                                Nuevo pago
+                                {{ __('finance.payments.new_payment') }}
                             </x-ui.button>
                             <x-ui.button type="button" wire:click="close">
-                                Cerrar
+                                {{ __('common.close') }}
                             </x-ui.button>
                         </div>
                     </div>
                 @endif
-
             </div>
         </div>
     </div>

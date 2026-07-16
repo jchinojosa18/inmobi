@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AcceptOrganizationInvitationController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\ContractSettlementPdfController;
+use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\PaymentReceiptPdfController;
 use App\Http\Controllers\Reports\CashFlowCsvExportController;
 use App\Http\Controllers\Settings\AuditExportController;
@@ -38,6 +39,8 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::post('/locale', LocaleController::class)->name('locale.update');
+
 Route::middleware('guest')->group(function (): void {
     Route::view('/login', 'auth.login')->name('login');
     Route::get('/register', [RegisterController::class, 'show'])->name('register');
@@ -50,11 +53,15 @@ Route::middleware('guest')->group(function (): void {
 
         if (! Auth::attempt($credentials, $request->boolean('remember'))) {
             return back()->withErrors([
-                'email' => 'Las credenciales proporcionadas no son validas.',
+                'email' => __('messages.invalid_credentials'),
             ])->onlyInput('email');
         }
 
         $request->session()->regenerate();
+
+        if ($locale = Auth::user()?->locale) {
+            $request->session()->put('locale', $locale);
+        }
 
         return redirect()->intended(route('dashboard'));
     })->middleware(['throttle:login-email', 'throttle:login-ip'])->name('login.store');
@@ -100,7 +107,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
         $request->fulfill();
 
-        return redirect()->route('dashboard')->with('success', 'Correo verificado correctamente.');
+        return redirect()->route('dashboard')->with('success', __('messages.email_verified'));
     })->middleware('signed')->name('verification.verify');
 });
 

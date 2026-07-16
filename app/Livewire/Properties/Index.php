@@ -126,7 +126,7 @@ class Index extends Component
 
         $property = Property::query()->findOrFail($this->editingId);
         $property->update($payload);
-        session()->flash('success', 'Propiedad actualizada correctamente.');
+        session()->flash('success', __('catalog.flash.property_updated'));
 
         $this->resetForm();
         $this->resetPage();
@@ -152,7 +152,7 @@ class Index extends Component
             'properties' => $properties,
             'canManageProperties' => auth()->user()?->can('properties.manage') ?? false,
         ])->layout('layouts.app', [
-            'title' => 'Propiedades',
+            'title' => __('catalog.properties.title'),
         ]);
     }
 
@@ -193,13 +193,13 @@ class Index extends Component
     private function messages(): array
     {
         return [
-            'name.required' => 'El nombre de la propiedad es obligatorio.',
-            'name.max' => 'El nombre no debe exceder 150 caracteres.',
-            'code.unique' => 'El código ya existe en esta organización.',
-            'formStatus.required' => 'Selecciona un estado.',
-            'formStatus.in' => 'El estado seleccionado no es válido.',
-            'address.max' => 'La dirección no debe exceder 255 caracteres.',
-            'notes.max' => 'Las notas no deben exceder 1000 caracteres.',
+            'name.required' => __('catalog.validation.name_required'),
+            'name.max' => __('catalog.validation.name_max'),
+            'code.unique' => __('catalog.validation.code_unique'),
+            'formStatus.required' => __('catalog.validation.status_required'),
+            'formStatus.in' => __('catalog.validation.status_invalid'),
+            'address.max' => __('catalog.validation.address_max'),
+            'notes.max' => __('catalog.validation.notes_max'),
         ];
     }
 

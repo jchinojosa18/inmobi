@@ -24,6 +24,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'organization_id',
         'name',
         'email',
+        'locale',
         'password',
     ];
 
@@ -58,6 +59,7 @@ class User extends Authenticatable implements MustVerifyEmail
         return [
             'name',
             'email',
+            'locale',
         ];
     }
 

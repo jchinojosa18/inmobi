@@ -134,13 +134,13 @@ class Index extends Component
 
         $lockedScheme = $numberingService->resolveScheme($this->property);
         if ($lockedScheme === $this->bulkNumberingScheme) {
-            $this->addError('bulkNumberingScheme', 'Selecciona una nomenclatura distinta a la actual del edificio.');
+            $this->addError('bulkNumberingScheme', __('catalog.validation.numbering_distinct'));
 
             return;
         }
 
         if (! in_array($this->bulkNumberingScheme, UnitNumberingService::schemes(), true)) {
-            $this->addError('bulkNumberingScheme', 'La nomenclatura seleccionada no es válida.');
+            $this->addError('bulkNumberingScheme', __('catalog.validation.numbering_invalid'));
 
             return;
         }
@@ -157,7 +157,7 @@ class Index extends Component
         $this->editingBuildingNumberingScheme = false;
         $this->showBulkForm = false;
         $this->resetBulkForm();
-        session()->flash('success', 'Nomenclatura actualizada en '.$updatedCount.' unidades.');
+        session()->flash('success', __('catalog.flash.numbering_updated', ['count' => $updatedCount]));
         $this->resetPage();
     }
 
@@ -190,7 +190,7 @@ class Index extends Component
 
         $propertyCode = trim((string) $this->property->code);
         if ($propertyCode === '') {
-            $this->addError('floorRows', 'La propiedad debe tener un código para generar unidades.');
+            $this->addError('floorRows', __('catalog.validation.property_code_required'));
 
             return;
         }
@@ -199,7 +199,7 @@ class Index extends Component
         if ($lockedScheme !== null && $lockedScheme !== $this->bulkNumberingScheme) {
             $this->addError(
                 'bulkNumberingScheme',
-                'Este edificio ya usa la nomenclatura «'.$numberingService->label($lockedScheme).'». Elimina todas las unidades o cambia la nomenclatura del edificio para usar otra.'
+                __('catalog.validation.numbering_locked', ['scheme' => $numberingService->label($lockedScheme)])
             );
 
             return;
@@ -210,14 +210,14 @@ class Index extends Component
         $definitions = $this->buildBulkUnitDefinitions();
 
         if ($definitions === []) {
-            $this->addError('floorRows', 'Agrega al menos un piso con unidades válidas.');
+            $this->addError('floorRows', __('catalog.validation.floor_rows_min'));
 
             return;
         }
 
         $numbers = array_column($definitions, 'number');
         if (count($numbers) !== count(array_unique($numbers))) {
-            $this->addError('floorRows', 'Hay números de unidad duplicados en la configuración.');
+            $this->addError('floorRows', __('catalog.validation.duplicate_unit_numbers'));
 
             return;
         }
@@ -226,7 +226,7 @@ class Index extends Component
         $newDefinitions = $this->filterNewBulkDefinitions($definitions);
 
         if ($newDefinitions === []) {
-            $this->addError('floorRows', 'Todas las unidades de esta configuración ya existen.');
+            $this->addError('floorRows', __('catalog.validation.all_units_exist'));
 
             return;
         }
@@ -249,9 +249,12 @@ class Index extends Component
         });
 
         $skippedCount = count($definitions) - count($newDefinitions);
-        $message = count($newDefinitions).' unidades generadas correctamente.';
+        $message = __('catalog.flash.units_generated', ['count' => count($newDefinitions)]);
         if ($skippedCount > 0) {
-            $message .= ' Se omitieron '.$skippedCount.' que ya existían.';
+            $message = __('catalog.flash.units_generated_skipped', [
+                'count' => count($newDefinitions),
+                'skipped' => $skippedCount,
+            ]);
         }
 
         if ($lockedScheme === null) {
@@ -275,14 +278,14 @@ class Index extends Component
             ->findOrFail($unitId);
 
         if ($this->unitHasOperationalHistory($unit)) {
-            $this->addError('delete', 'No puedes eliminar una unidad con contratos, cargos, gastos o documentos asociados.');
+            $this->addError('delete', __('catalog.validation.delete_blocked'));
 
             return;
         }
 
         DB::transaction(fn () => $this->softDeleteUnit($unit));
 
-        session()->flash('success', 'Unidad eliminada correctamente.');
+        session()->flash('success', __('catalog.flash.unit_deleted'));
         $this->resetPage();
     }
 
@@ -309,7 +312,7 @@ class Index extends Component
         }
 
         if ($this->selectedUnitIds === []) {
-            $this->addError('delete', 'Selecciona al menos una unidad para eliminar.');
+            $this->addError('delete', __('catalog.validation.delete_select_one'));
 
             return;
         }
@@ -402,7 +405,7 @@ class Index extends Component
             ->all();
 
         if ($ids === []) {
-            $this->addError('delete', 'Selecciona al menos una unidad para eliminar.');
+            $this->addError('delete', __('catalog.validation.delete_select_one'));
 
             return;
         }
@@ -413,14 +416,14 @@ class Index extends Component
             ->get();
 
         if ($units->count() !== count($ids)) {
-            $this->addError('delete', 'Algunas unidades seleccionadas no son válidas.');
+            $this->addError('delete', __('catalog.validation.delete_invalid_selection'));
 
             return;
         }
 
         foreach ($units as $unit) {
             if ($this->unitHasOperationalHistory($unit)) {
-                $this->addError('delete', 'No puedes eliminar unidades con contratos, cargos, gastos o documentos asociados.');
+                $this->addError('delete', __('catalog.validation.delete_bulk_blocked'));
 
                 return;
             }
@@ -434,7 +437,7 @@ class Index extends Component
 
         $deletedCount = $units->count();
         $this->selectedUnitIds = [];
-        session()->flash('success', $deletedCount.' unidades eliminadas correctamente.');
+        session()->flash('success', __('catalog.flash.units_deleted', ['count' => $deletedCount]));
         $this->resetPage();
     }
 
@@ -467,7 +470,7 @@ class Index extends Component
                 : null,
             'hasPropertyUnits' => $this->property->units()->exists(),
         ])->layout('layouts.app', [
-            'title' => 'Unidades',
+            'title' => __('catalog.units.title'),
         ]);
     }
 
@@ -505,7 +508,7 @@ class Index extends Component
                 $definitions[] = [
                     'number' => $number,
                     'code' => $this->buildUnitCode($number),
-                    'name' => 'Departamento '.$number,
+                    'name' => __('catalog.units.apartment_name', ['number' => $number]),
                     'floor' => (string) $floor,
                 ];
             }
@@ -559,15 +562,15 @@ class Index extends Component
     private function bulkMessages(): array
     {
         return [
-            'bulkNumberingScheme.required' => 'Selecciona una nomenclatura para los números.',
-            'bulkNumberingScheme.in' => 'La nomenclatura seleccionada no es válida.',
-            'floorRows.required' => 'Agrega al menos un piso.',
-            'floorRows.*.floor.required' => 'El número de piso es obligatorio.',
-            'floorRows.*.floor.integer' => 'El piso debe ser un número entero.',
-            'floorRows.*.floor.min' => 'El piso debe ser al menos 1.',
-            'floorRows.*.units.required' => 'La cantidad de unidades es obligatoria.',
-            'floorRows.*.units.integer' => 'La cantidad de unidades debe ser un número entero.',
-            'floorRows.*.units.min' => 'Debe haber al menos 1 unidad por piso.',
+            'bulkNumberingScheme.required' => __('catalog.validation.numbering_required'),
+            'bulkNumberingScheme.in' => __('catalog.validation.numbering_invalid'),
+            'floorRows.required' => __('catalog.validation.floor_rows_required'),
+            'floorRows.*.floor.required' => __('catalog.validation.floor_required'),
+            'floorRows.*.floor.integer' => __('catalog.validation.floor_integer'),
+            'floorRows.*.floor.min' => __('catalog.validation.floor_min'),
+            'floorRows.*.units.required' => __('catalog.validation.units_count_required'),
+            'floorRows.*.units.integer' => __('catalog.validation.units_count_integer'),
+            'floorRows.*.units.min' => __('catalog.validation.units_count_min'),
         ];
     }
 

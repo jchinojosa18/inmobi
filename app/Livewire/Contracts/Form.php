@@ -88,13 +88,13 @@ class Form extends Component
         $normalizedPenaltyRate = $this->normalizePenaltyRateDaily((float) $validated['penalty_rate_daily']);
 
         if ($normalizedPenaltyRate <= 0 || $normalizedPenaltyRate > 1) {
-            $this->addError('penalty_rate_daily', 'La tasa diaria de multa normalizada debe ser mayor a 0% y menor o igual a 100%.');
+            $this->addError('penalty_rate_daily', __('contracts.validation.penalty_rate_normalized'));
 
             return null;
         }
 
         if ($normalizedPenaltyRate > self::MAX_DAILY_RATE_DECIMAL) {
-            $this->addError('penalty_rate_daily', 'Por seguridad, la tasa diaria de multa no puede exceder 50%.');
+            $this->addError('penalty_rate_daily', __('contracts.validation.penalty_rate_security'));
 
             return null;
         }
@@ -131,7 +131,7 @@ class Form extends Component
             });
         } catch (QueryException $exception) {
             if ($exception->getCode() === '23000') {
-                $this->addError('unit_id', 'La unidad ya cuenta con un contrato activo.');
+                $this->addError('unit_id', __('contracts.validation.unit_active_contract'));
 
                 return null;
             }
@@ -141,7 +141,7 @@ class Form extends Component
 
         $isNew = $this->contractId === null;
         $action = $isNew ? 'contract.created' : 'contract.updated';
-        $message = $isNew ? 'Contrato creado correctamente.' : 'Contrato actualizado correctamente.';
+        $message = $isNew ? __('contracts.flash.contract_created') : __('contracts.flash.contract_updated');
 
         app(AuditLogger::class)->log(
             action: $action,
@@ -186,7 +186,7 @@ class Form extends Component
             'tenants' => $tenants,
             'isEdit' => $this->contractId !== null,
         ])->layout('layouts.app', [
-            'title' => $this->contractId !== null ? 'Editar contrato' : 'Nuevo contrato',
+            'title' => $this->contractId !== null ? __('contracts.edit_contract_title') : __('contracts.new_contract'),
         ]);
     }
 
@@ -213,7 +213,7 @@ class Form extends Component
                     }
 
                     if ($query->exists()) {
-                        $fail('La unidad ya cuenta con un contrato activo.');
+                        $fail(__('contracts.validation.unit_active_contract'));
                     }
                 },
             ],
@@ -236,33 +236,33 @@ class Form extends Component
     private function messages(): array
     {
         return [
-            'unit_id.required' => 'Selecciona una unidad.',
-            'tenant_id.required' => 'Selecciona un inquilino.',
-            'rent_amount.required' => 'La renta mensual es obligatoria.',
-            'rent_amount.numeric' => 'La renta mensual debe ser numérica.',
-            'rent_amount.min' => 'La renta mensual no puede ser negativa.',
-            'deposit_amount.required' => 'El depósito es obligatorio.',
-            'deposit_amount.numeric' => 'El depósito debe ser numérico.',
-            'deposit_amount.min' => 'El depósito no puede ser negativo.',
-            'due_day.required' => 'El día de vencimiento es obligatorio.',
-            'due_day.integer' => 'El día de vencimiento debe ser un número entero.',
-            'due_day.min' => 'El día de vencimiento debe ser mayor o igual a 1.',
-            'due_day.max' => 'El día de vencimiento debe ser menor o igual a 31.',
-            'grace_days.required' => 'Los días de gracia son obligatorios.',
-            'grace_days.integer' => 'Los días de gracia deben ser un número entero.',
-            'grace_days.min' => 'Los días de gracia no pueden ser negativos.',
-            'grace_days.max' => 'Los días de gracia no deben exceder 31.',
-            'penalty_rate_daily.required' => 'La tasa diaria de multa es obligatoria.',
-            'penalty_rate_daily.numeric' => 'La tasa diaria de multa debe ser numérica.',
-            'penalty_rate_daily.min' => 'La tasa diaria de multa debe ser mayor a 0.',
-            'penalty_rate_daily.max' => 'La tasa diaria de multa no debe exceder 100.',
-            'status.required' => 'Selecciona el estado del contrato.',
-            'status.in' => 'El estado seleccionado no es válido.',
-            'starts_at.required' => 'La fecha de inicio es obligatoria.',
-            'starts_at.date' => 'La fecha de inicio no es válida.',
-            'ends_at.date' => 'La fecha de fin no es válida.',
-            'ends_at.after_or_equal' => 'La fecha de fin debe ser igual o posterior al inicio.',
-            'meta_notes.max' => 'Las notas no deben exceder 1000 caracteres.',
+            'unit_id.required' => __('contracts.validation.unit_required'),
+            'tenant_id.required' => __('contracts.validation.tenant_required'),
+            'rent_amount.required' => __('contracts.validation.rent_required'),
+            'rent_amount.numeric' => __('contracts.validation.rent_numeric'),
+            'rent_amount.min' => __('contracts.validation.rent_min'),
+            'deposit_amount.required' => __('contracts.validation.deposit_required'),
+            'deposit_amount.numeric' => __('contracts.validation.deposit_numeric'),
+            'deposit_amount.min' => __('contracts.validation.deposit_min'),
+            'due_day.required' => __('contracts.validation.due_day_required'),
+            'due_day.integer' => __('contracts.validation.due_day_integer'),
+            'due_day.min' => __('contracts.validation.due_day_min'),
+            'due_day.max' => __('contracts.validation.due_day_max'),
+            'grace_days.required' => __('contracts.validation.grace_days_required'),
+            'grace_days.integer' => __('contracts.validation.grace_days_integer'),
+            'grace_days.min' => __('contracts.validation.grace_days_min'),
+            'grace_days.max' => __('contracts.validation.grace_days_max'),
+            'penalty_rate_daily.required' => __('contracts.validation.penalty_rate_required'),
+            'penalty_rate_daily.numeric' => __('contracts.validation.penalty_rate_numeric'),
+            'penalty_rate_daily.min' => __('contracts.validation.penalty_rate_min'),
+            'penalty_rate_daily.max' => __('contracts.validation.penalty_rate_max'),
+            'status.required' => __('contracts.validation.status_required'),
+            'status.in' => __('contracts.validation.status_invalid'),
+            'starts_at.required' => __('contracts.validation.starts_at_required'),
+            'starts_at.date' => __('contracts.validation.starts_at_invalid'),
+            'ends_at.date' => __('contracts.validation.ends_at_invalid'),
+            'ends_at.after_or_equal' => __('contracts.validation.ends_at_after_start'),
+            'meta_notes.max' => __('contracts.validation.notes_max'),
         ];
     }
 

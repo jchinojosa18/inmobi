@@ -50,14 +50,14 @@ class InvitationsIndex extends Component
             'role' => ['required', 'in:Admin,Capturista,Lectura'],
             'expiresInDays' => ['required', 'integer', 'min:1', 'max:30'],
         ], [
-            'email.required' => 'El email es obligatorio.',
-            'email.email' => 'El email no es válido.',
-            'role.required' => 'Selecciona un rol.',
-            'role.in' => 'El rol seleccionado no es válido.',
-            'expiresInDays.required' => 'Define los días de expiración.',
-            'expiresInDays.integer' => 'La expiración debe ser un número.',
-            'expiresInDays.min' => 'La expiración mínima es 1 día.',
-            'expiresInDays.max' => 'La expiración máxima es 30 días.',
+            'email.required' => __('settings.validation.invitation_email_required'),
+            'email.email' => __('settings.validation.invitation_email_invalid'),
+            'role.required' => __('settings.validation.role_required'),
+            'role.in' => __('settings.validation.role_invalid'),
+            'expiresInDays.required' => __('settings.validation.expires_required'),
+            'expiresInDays.integer' => __('settings.validation.expires_integer'),
+            'expiresInDays.min' => __('settings.validation.expires_min'),
+            'expiresInDays.max' => __('settings.validation.expires_max'),
         ]);
 
         $expiresAt = CarbonImmutable::now('America/Tijuana')->addDays((int) $validated['expiresInDays']);
@@ -71,7 +71,7 @@ class InvitationsIndex extends Component
                 invitedByUserId: auth()->id() !== null ? (int) auth()->id() : null,
             );
         } catch (ValidationException $exception) {
-            $message = (string) ($exception->errors()['email'][0] ?? 'No se pudo crear la invitación.');
+            $message = (string) ($exception->errors()['email'][0] ?? __('settings.validation.invitation_create_failed'));
             $this->addError('email', $message);
 
             return;
@@ -82,7 +82,7 @@ class InvitationsIndex extends Component
         $this->reset(['email', 'role', 'expiresInDays']);
         $this->role = 'Capturista';
         $this->expiresInDays = '7';
-        session()->flash('success', 'Invitación creada correctamente.');
+        session()->flash('success', __('settings.flash.invitation_created'));
     }
 
     public function revokeInvitation(int $invitationId): void
@@ -101,7 +101,7 @@ class InvitationsIndex extends Component
         $invitation->revoked_at = now();
         $invitation->save();
 
-        session()->flash('success', 'Invitación revocada.');
+        session()->flash('success', __('settings.flash.invitation_revoked'));
     }
 
     public function updateUserRole(int $userId): void
@@ -111,7 +111,7 @@ class InvitationsIndex extends Component
         $organization = $this->currentOrganization();
         $targetRole = $this->userRoles[$userId] ?? '';
         if (! in_array($targetRole, $this->allowedRoles, true)) {
-            $this->addError("userRoles.{$userId}", 'Rol inválido.');
+            $this->addError("userRoles.{$userId}", __('settings.validation.user_role_invalid'));
 
             return;
         }
@@ -121,13 +121,13 @@ class InvitationsIndex extends Component
             ->findOrFail($userId);
 
         if ((int) $organization->owner_user_id === (int) $user->id && $targetRole !== 'Admin') {
-            $this->addError("userRoles.{$userId}", 'El owner siempre debe conservar rol Admin.');
+            $this->addError("userRoles.{$userId}", __('settings.validation.owner_must_stay_admin'));
 
             return;
         }
 
         if ($user->hasRole('Admin') && $targetRole !== 'Admin' && $organization->adminsCount() <= 1) {
-            $this->addError("userRoles.{$userId}", 'No puedes quitar al último Admin de la organización.');
+            $this->addError("userRoles.{$userId}", __('settings.validation.cannot_remove_last_admin'));
 
             return;
         }
@@ -153,7 +153,7 @@ class InvitationsIndex extends Component
             );
         }
 
-        session()->flash('success', 'Rol actualizado.');
+        session()->flash('success', __('settings.flash.role_updated'));
     }
 
     public function removeUser(int $userId): void
@@ -167,13 +167,13 @@ class InvitationsIndex extends Component
             ->findOrFail($userId);
 
         if ((int) $organization->owner_user_id === (int) $user->id) {
-            $this->addError('remove_user', 'No puedes quitar al usuario owner de la organización.');
+            $this->addError('remove_user', __('settings.validation.cannot_remove_owner'));
 
             return;
         }
 
         if ($user->hasRole('Admin') && $organization->adminsCount() <= 1) {
-            $this->addError('remove_user', 'No puedes quitar al último Admin de la organización.');
+            $this->addError('remove_user', __('settings.validation.cannot_remove_last_admin'));
 
             return;
         }
@@ -182,7 +182,7 @@ class InvitationsIndex extends Component
         $user->save();
         $user->syncRoles([]);
 
-        session()->flash('success', 'Usuario removido de la organización.');
+        session()->flash('success', __('settings.flash.user_removed'));
     }
 
     public function transferOwnership(): void
@@ -198,7 +198,7 @@ class InvitationsIndex extends Component
 
         $targetUserId = (int) $this->transferOwnerUserId;
         if ($targetUserId <= 0) {
-            $this->addError('transferOwnerUserId', 'Selecciona un usuario para transferir ownership.');
+            $this->addError('transferOwnerUserId', __('settings.validation.transfer_user_required'));
 
             return;
         }
@@ -208,13 +208,13 @@ class InvitationsIndex extends Component
             ->find($targetUserId);
 
         if ($target === null) {
-            $this->addError('transferOwnerUserId', 'El usuario seleccionado no pertenece a esta organización.');
+            $this->addError('transferOwnerUserId', __('settings.validation.transfer_user_invalid'));
 
             return;
         }
 
         if ((int) $target->id === (int) $organization->owner_user_id) {
-            session()->flash('success', 'Ese usuario ya es el owner actual.');
+            session()->flash('success', __('settings.flash.already_owner'));
 
             return;
         }
@@ -247,7 +247,7 @@ class InvitationsIndex extends Component
         );
 
         $this->transferOwnerUserId = (string) $target->id;
-        session()->flash('success', 'Ownership transferido correctamente.');
+        session()->flash('success', __('settings.flash.ownership_transferred'));
     }
 
     public function render(): View
@@ -286,7 +286,7 @@ class InvitationsIndex extends Component
             'allowedRoles' => $this->allowedRoles,
             'canTransferOwnership' => (int) auth()->id() === (int) $organization->owner_user_id,
         ])->layout('layouts.app', [
-            'title' => 'Usuarios e invitaciones',
+            'title' => __('settings.invitations_title'),
         ]);
     }
 

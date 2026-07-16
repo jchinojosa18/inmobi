@@ -45,7 +45,7 @@ class Show extends Component
             'entityLabel' => $entityLabel,
             'canManageContracts' => auth()->user()?->can('contracts.manage') ?? false,
         ])->layout('layouts.app', [
-            'title' => 'Detalle de '.strtolower($entityLabel),
+            'title' => __('catalog.houses.show_title', ['type' => strtolower($entityLabel)]),
         ]);
     }
 }

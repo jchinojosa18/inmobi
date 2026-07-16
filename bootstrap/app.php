@@ -11,6 +11,15 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->web(prepend: [
+            \App\Http\Middleware\SetLocale::class,
+        ]);
+
+        $middleware->appendToPriorityList(
+            \Illuminate\Session\Middleware\StartSession::class,
+            \App\Http\Middleware\SetLocale::class,
+        );
+
         $middleware->web(append: [
             \App\Http\Middleware\SetTenantOrganization::class,
             \App\Http\Middleware\CaptureAuditReason::class,

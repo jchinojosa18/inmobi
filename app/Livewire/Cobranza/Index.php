@@ -134,8 +134,12 @@ class Index extends Component
 
             $unitLabel = trim((string) ($row->property_name.' / '.($row->unit_name ?: ($row->unit_code ?: 'N/D'))));
             $pendingBalance = round((float) ($row->pending_balance ?? 0), 2);
-            $dueDate = $row->due_date ? \Carbon\Carbon::parse((string) $row->due_date)->format('Y-m-d') : 'Sin vencimiento';
-            $graceUntil = $row->grace_until ? \Carbon\Carbon::parse((string) $row->grace_until)->format('Y-m-d') : 'Sin gracia';
+            $dueDate = $row->due_date
+                ? \Carbon\Carbon::parse((string) $row->due_date)->format('Y-m-d')
+                : __('cobranza.whatsapp.no_due_date');
+            $graceUntil = $row->grace_until
+                ? \Carbon\Carbon::parse((string) $row->grace_until)->format('Y-m-d')
+                : __('cobranza.whatsapp.no_grace');
             $message = $settingsService->renderTemplate(
                 (string) $settings['whatsapp_template'],
                 [
@@ -146,7 +150,8 @@ class Index extends Component
                 ]
             );
 
-            $message .= " Vence: {$dueDate}. Gracia: {$graceUntil}.";
+            $message .= ' '.__('cobranza.whatsapp.due_line', ['date' => $dueDate])
+                .' '.__('cobranza.whatsapp.grace_line', ['date' => $graceUntil]);
 
             $row->shareable_link = $shareableLink;
             $row->whatsapp_message = $message;
@@ -160,7 +165,7 @@ class Index extends Component
             'units' => $units,
             'canCreatePayments' => auth()->user()?->can('payments.create') ?? false,
         ])->layout('layouts.app', [
-            'title' => 'Cobranza',
+            'title' => __('cobranza.title'),
         ]);
     }
 

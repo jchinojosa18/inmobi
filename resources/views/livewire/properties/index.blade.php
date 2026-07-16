@@ -1,12 +1,12 @@
 <section class="space-y-6">
     <x-ui.page-header
-        title="Propiedades"
-        description="Catálogo base de inmuebles por organización."
+        :title="__('catalog.properties.title')"
+        :description="__('catalog.properties.description')"
     >
         <x-slot:actions>
             @if ($canManageProperties)
                 <x-ui.button type="button" wire:click="$dispatch('open-property-create')">
-                    Nuevo inmueble
+                    {{ __('catalog.properties.new_property') }}
                 </x-ui.button>
             @endif
         </x-slot:actions>
@@ -17,17 +17,17 @@
             <div class="md:col-span-2">
                 <x-ui.input
                     id="property-search"
-                    label="Buscar"
+                    :label="__('common.search')"
                     type="text"
                     wire:model.live.debounce.300ms="search"
-                    placeholder="Nombre, código o dirección..."
+                    :placeholder="__('catalog.properties.search_placeholder')"
                 />
             </div>
 
-            <x-ui.select id="property-status-filter" label="Estado" wire:model.live="statusFilter">
-                <option value="">Todos</option>
-                <option value="active">Activo</option>
-                <option value="inactive">Inactivo</option>
+            <x-ui.select id="property-status-filter" :label="__('common.status')" wire:model.live="statusFilter">
+                <option value="">{{ __('common.all') }}</option>
+                <option value="active">{{ __('common.active') }}</option>
+                <option value="inactive">{{ __('common.inactive') }}</option>
             </x-ui.select>
         </div>
     </x-ui.card>
@@ -35,50 +35,50 @@
     @if ($canManageProperties)
         <x-ui.modal
             :open="$showForm"
-            :title="'Editar propiedad'"
-            aria-label="Editar propiedad"
+            :title="__('catalog.properties.edit_property')"
+            :aria-label="__('catalog.properties.edit_property')"
             max-width="2xl"
         >
             <form wire:submit="save" class="grid gap-4 md:grid-cols-2">
                 <div class="md:col-span-2">
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Nombre *</label>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">{{ __('common.name') }} *</label>
                     <input type="text" wire:model.live="name" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm uppercase">
                     @error('name') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Código</label>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">{{ __('common.code') }}</label>
                     <input type="text" wire:model.live="code" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm uppercase">
                     @error('code') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Estado *</label>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">{{ __('common.status') }} *</label>
                     <select wire:model="formStatus" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                        <option value="active">Activo</option>
-                        <option value="inactive">Inactivo</option>
+                        <option value="active">{{ __('common.active') }}</option>
+                        <option value="inactive">{{ __('common.inactive') }}</option>
                     </select>
                     @error('formStatus') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div class="md:col-span-2">
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Dirección</label>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">{{ __('common.address') }}</label>
                     <input type="text" wire:model.live="address" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm uppercase">
                     @error('address') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div class="md:col-span-2">
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Notas</label>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">{{ __('common.notes') }}</label>
                     <textarea wire:model.blur="notes" rows="3" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"></textarea>
                     @error('notes') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div class="md:col-span-2 flex flex-wrap items-center justify-end gap-2">
                     <x-ui.button type="button" variant="secondary" wire:click="cancelForm">
-                        Cancelar
+                        {{ __('common.cancel') }}
                     </x-ui.button>
                     <x-ui.button type="submit">
-                        Guardar
+                        {{ __('common.save') }}
                     </x-ui.button>
                 </div>
             </form>
@@ -87,10 +87,10 @@
 
     <x-ui.table>
         <x-slot:head>
-            <th class="px-4 py-3">Propiedad</th>
-            <th class="px-4 py-3">Estado</th>
-            <th class="px-4 py-3 text-right">Unidades</th>
-            <th class="px-4 py-3 text-right">Acciones</th>
+            <th class="px-4 py-3">{{ __('common.property') }}</th>
+            <th class="px-4 py-3">{{ __('common.status') }}</th>
+            <th class="px-4 py-3 text-right">{{ __('common.units') }}</th>
+            <th class="px-4 py-3 text-right">{{ __('common.actions') }}</th>
         </x-slot:head>
         <x-slot:body>
             @forelse ($properties as $property)
@@ -98,7 +98,7 @@
                     <td class="px-4 py-3">
                         <p class="font-medium text-slate-900">{{ $property->name }}</p>
                         <p class="text-xs text-slate-500">
-                            {{ $property->code ?: 'Sin código' }}
+                            {{ $property->code ?: __('common.no_code') }}
                             @if ($property->address)
                                 · {{ $property->address }}
                             @endif
@@ -109,7 +109,7 @@
                     </td>
                     <td class="px-4 py-3">
                         <x-ui.badge :variant="$property->status === 'active' ? 'success' : 'neutral'">
-                            {{ $property->status === 'active' ? 'Activo' : 'Inactivo' }}
+                            {{ $property->status === 'active' ? __('common.active') : __('common.inactive') }}
                         </x-ui.badge>
                     </td>
                     <td class="px-4 py-3 text-right font-medium text-slate-700">{{ $property->units_count }}</td>
@@ -117,23 +117,23 @@
                         <div class="flex justify-end gap-2">
                             @if ($property->isStandaloneEntity())
                                 <x-ui.button href="{{ route('houses.show', $property) }}" variant="secondary" size="sm">
-                                    Ver
+                                    {{ __('common.view') }}
                                 </x-ui.button>
                             @else
                                 <x-ui.button href="{{ route('properties.units.index', $property) }}" variant="secondary" size="sm">
-                                    Unidades
+                                    {{ __('common.units') }}
                                 </x-ui.button>
                             @endif
                             @if ($canManageProperties)
                                 <x-ui.button type="button" variant="secondary" size="sm" wire:click="startEdit({{ $property->id }})">
-                                    Editar
+                                    {{ __('common.edit') }}
                                 </x-ui.button>
                             @endif
                         </div>
                     </td>
                 </tr>
             @empty
-                <x-ui.empty-state title="No hay propiedades con los filtros actuales." :colspan="4" />
+                <x-ui.empty-state :title="__('catalog.properties.empty')" :colspan="4" />
             @endforelse
         </x-slot:body>
         <x-slot:footer>

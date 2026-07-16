@@ -1,22 +1,22 @@
 <section class="space-y-6">
     <x-ui.page-header
-        title="Dashboard operativo"
-        description="Centro de control operativo para administración diaria."
+        :title="__('dashboard.title')"
+        :description="__('dashboard.description')"
     >
         <x-slot:actions>
             @if ($canCreatePayments)
                 <x-ui.button type="button" onclick="Livewire.dispatch('open-quick-payment')">
-                    Registrar pago
+                    {{ __('common.register_payment') }}
                 </x-ui.button>
             @endif
             @if ($canCreateExpenses)
                 <x-ui.button type="button" variant="secondary" onclick="Livewire.dispatch('open-quick-expense')">
-                    Registrar egreso
+                    {{ __('common.register_expense') }}
                 </x-ui.button>
             @endif
             @if ($canManageContracts)
                 <x-ui.button href="{{ route('contracts.create') }}" variant="secondary">
-                    Nuevo contrato
+                    {{ __('common.new_contract') }}
                 </x-ui.button>
             @endif
         </x-slot:actions>
@@ -27,14 +27,17 @@
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <h2 class="text-lg font-semibold text-slate-900">
-                        Configura tu sistema ({{ $onboardingChecklist['critical_completed'] }}/{{ $onboardingChecklist['critical_total'] }})
+                        {{ __('dashboard.setup_title', [
+                            'completed' => $onboardingChecklist['critical_completed'],
+                            'total' => $onboardingChecklist['critical_total'],
+                        ]) }}
                     </h2>
                     <p class="mt-1 text-sm text-slate-600">
-                        Completa estos pasos para evitar un dashboard vacío y activar operación diaria.
+                        {{ __('dashboard.setup_description') }}
                     </p>
                 </div>
                 <x-ui.button type="button" variant="secondary" size="sm" wire:click="dismissOnboarding">
-                    Ocultar por ahora
+                    {{ __('dashboard.dismiss_onboarding') }}
                 </x-ui.button>
             </div>
 
@@ -46,7 +49,7 @@
                     aria-valuemin="0"
                     aria-valuemax="100"
                     aria-valuenow="{{ $onboardingChecklist['critical_progress_percent'] }}"
-                    aria-label="Progreso del checklist inicial"
+                    aria-label="{{ __('dashboard.progress_aria') }}"
                 ></div>
             </div>
 
@@ -72,7 +75,7 @@
 
                             <div class="flex flex-wrap items-center gap-2">
                                 @if ($step['complete'])
-                                    <x-ui.badge variant="success">Completo</x-ui.badge>
+                                    <x-ui.badge variant="success">{{ __('common.complete') }}</x-ui.badge>
                                 @else
                                     @foreach ($step['ctas'] as $cta)
                                         @if (($cta['type'] ?? '') === 'route' && isset($cta['route']))
@@ -95,7 +98,7 @@
             </div>
 
             <div class="mt-5 border-t border-slate-200 pt-4">
-                <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-500">Recomendados</h3>
+                <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('dashboard.recommended') }}</h3>
                 <div class="mt-3 space-y-3">
                     @foreach ($onboardingChecklist['recommended_steps'] as $step)
                         <article class="rounded-lg border border-slate-200 px-4 py-3">
@@ -118,7 +121,7 @@
 
                                 <div class="flex flex-wrap items-center gap-2">
                                     @if ($step['complete'])
-                                        <x-ui.badge variant="success">Completo</x-ui.badge>
+                                        <x-ui.badge variant="success">{{ __('common.complete') }}</x-ui.badge>
                                     @else
                                         @foreach ($step['ctas'] as $cta)
                                             @if (($cta['type'] ?? '') === 'action_open_quick_payment')
@@ -145,49 +148,49 @@
 
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <x-ui.stat-card
-            label="Ingresos operativos del mes"
+            :label="__('dashboard.income_month')"
             value="${{ number_format($incomeMonth, 2) }}"
-            hint="Allocations (sin depósitos)"
+            :hint="__('dashboard.income_hint')"
             tone="success"
         />
         <x-ui.stat-card
-            label="Egresos del mes"
+            :label="__('dashboard.expense_month')"
             value="${{ number_format($expenseMonth, 2) }}"
             tone="danger"
         />
         <x-ui.stat-card
-            label="Neto"
+            :label="__('common.net')"
             value="${{ number_format($netMonth, 2) }}"
             :value-class="$netMonth >= 0 ? 'text-emerald-700' : 'text-rose-700'"
         />
         <x-ui.stat-card
-            label="Cartera vencida total"
+            :label="__('dashboard.overdue_portfolio')"
             value="${{ number_format($overduePortfolioTotal, 2) }}"
-            hint="Contratos con renta vencida"
+            :hint="__('dashboard.overdue_hint')"
             tone="warning"
         />
         <x-ui.stat-card
-            label="Contratos activos"
+            :label="__('dashboard.active_contracts')"
             :value="(string) $activeContracts"
         />
         <x-ui.stat-card
-            label="Unidades"
-            value="{{ $occupiedUnits }} ocupadas / {{ $availableUnits }} disponibles"
+            :label="__('dashboard.units')"
+            :value="__('dashboard.occupied_available', ['occupied' => $occupiedUnits, 'available' => $availableUnits])"
         />
     </div>
 
     <div class="grid gap-6 xl:grid-cols-2">
         <x-ui.table>
             <x-slot:header>
-                <h2 class="text-sm font-semibold text-slate-900">Vencidos (top 10)</h2>
+                <h2 class="text-sm font-semibold text-slate-900">{{ __('dashboard.overdue_top10') }}</h2>
             </x-slot:header>
             <x-slot:head>
-                <th class="px-4 py-3">Contrato</th>
-                <th class="px-4 py-3">Unidad</th>
-                <th class="px-4 py-3">Inquilino</th>
-                <th class="px-4 py-3 text-right">Días atraso</th>
-                <th class="px-4 py-3 text-right">Saldo</th>
-                <th class="px-4 py-3 text-right">Acción</th>
+                <th class="px-4 py-3">{{ __('common.contract') }}</th>
+                <th class="px-4 py-3">{{ __('common.unit') }}</th>
+                <th class="px-4 py-3">{{ __('common.tenant') }}</th>
+                <th class="px-4 py-3 text-right">{{ __('dashboard.overdue_days') }}</th>
+                <th class="px-4 py-3 text-right">{{ __('common.balance') }}</th>
+                <th class="px-4 py-3 text-right">{{ __('common.action') }}</th>
             </x-slot:head>
             <x-slot:body>
                 @forelse ($overdueContracts as $row)
@@ -198,36 +201,36 @@
                         </td>
                         <td class="px-4 py-3 text-slate-700">
                             {{ $row->tenant_name }}
-                            <p class="text-xs text-slate-500">{{ $row->tenant_phone ?: ($row->tenant_email ?: 'Sin contacto') }}</p>
+                            <p class="text-xs text-slate-500">{{ $row->tenant_phone ?: ($row->tenant_email ?: __('common.no_contact')) }}</p>
                         </td>
                         <td class="px-4 py-3 text-right">
-                            <x-ui.badge variant="warning">{{ (int) $row->overdue_days }} días</x-ui.badge>
+                            <x-ui.badge variant="warning">{{ (int) $row->overdue_days }} {{ __('common.days') }}</x-ui.badge>
                         </td>
                         <td class="px-4 py-3 text-right font-medium text-slate-900">${{ number_format((float) $row->pending_balance, 2) }}</td>
                         <td class="px-4 py-3 text-right">
                             @if ($canCreatePayments)
                                 <x-ui.button type="button" variant="secondary" size="sm" onclick="Livewire.dispatch('open-quick-payment', { contractId: {{ $row->contract_id }} })">
-                                    Registrar pago
+                                    {{ __('common.register_payment') }}
                                 </x-ui.button>
                             @endif
                         </td>
                     </tr>
                 @empty
-                    <x-ui.empty-state title="Sin contratos vencidos." :colspan="6" />
+                    <x-ui.empty-state :title="__('dashboard.no_overdue')" :colspan="6" />
                 @endforelse
             </x-slot:body>
         </x-ui.table>
 
         <x-ui.table>
             <x-slot:header>
-                <h2 class="text-sm font-semibold text-slate-900">En gracia (top 10)</h2>
+                <h2 class="text-sm font-semibold text-slate-900">{{ __('dashboard.grace_top10') }}</h2>
             </x-slot:header>
             <x-slot:head>
-                <th class="px-4 py-3">Contrato</th>
-                <th class="px-4 py-3">Unidad</th>
-                <th class="px-4 py-3">Vence / gracia</th>
-                <th class="px-4 py-3 text-right">Saldo</th>
-                <th class="px-4 py-3 text-right">Acción</th>
+                <th class="px-4 py-3">{{ __('common.contract') }}</th>
+                <th class="px-4 py-3">{{ __('common.unit') }}</th>
+                <th class="px-4 py-3">{{ __('dashboard.due_grace') }}</th>
+                <th class="px-4 py-3 text-right">{{ __('common.balance') }}</th>
+                <th class="px-4 py-3 text-right">{{ __('common.action') }}</th>
             </x-slot:head>
             <x-slot:body>
                 @forelse ($graceContracts as $row)
@@ -236,19 +239,19 @@
                         <td class="px-4 py-3 text-slate-700">{{ $row->property_name }} / {{ $row->unit_name ?? ($row->unit_code ?? '-') }}</td>
                         <td class="px-4 py-3 text-slate-700">
                             {{ \Carbon\Carbon::parse($row->due_date)->format('Y-m-d') }}
-                            <p class="text-xs text-slate-500">Gracia: {{ \Carbon\Carbon::parse($row->grace_until)->format('Y-m-d') }}</p>
+                            <p class="text-xs text-slate-500">{{ __('dashboard.grace_until', ['date' => \Carbon\Carbon::parse($row->grace_until)->format('Y-m-d')]) }}</p>
                         </td>
                         <td class="px-4 py-3 text-right font-medium text-slate-900">${{ number_format((float) $row->pending_balance, 2) }}</td>
                         <td class="px-4 py-3 text-right">
                             @if ($canCreatePayments)
                                 <x-ui.button type="button" variant="secondary" size="sm" onclick="Livewire.dispatch('open-quick-payment', { contractId: {{ $row->contract_id }} })">
-                                    Registrar pago
+                                    {{ __('common.register_payment') }}
                                 </x-ui.button>
                             @endif
                         </td>
                     </tr>
                 @empty
-                    <x-ui.empty-state title="Sin contratos en gracia." :colspan="5" />
+                    <x-ui.empty-state :title="__('dashboard.no_grace')" :colspan="5" />
                 @endforelse
             </x-slot:body>
         </x-ui.table>
@@ -256,14 +259,14 @@
 
     <x-ui.table>
         <x-slot:header>
-            <h2 class="text-sm font-semibold text-slate-900">Pagos recientes (top 10)</h2>
+            <h2 class="text-sm font-semibold text-slate-900">{{ __('dashboard.recent_payments') }}</h2>
         </x-slot:header>
         <x-slot:head>
-            <th class="px-4 py-3">Folio</th>
-            <th class="px-4 py-3">Fecha</th>
-            <th class="px-4 py-3">Contrato</th>
-            <th class="px-4 py-3 text-right">Monto</th>
-            <th class="px-4 py-3 text-right">Acciones</th>
+            <th class="px-4 py-3">{{ __('common.folio') }}</th>
+            <th class="px-4 py-3">{{ __('common.date') }}</th>
+            <th class="px-4 py-3">{{ __('common.contract') }}</th>
+            <th class="px-4 py-3 text-right">{{ __('common.amount') }}</th>
+            <th class="px-4 py-3 text-right">{{ __('common.actions') }}</th>
         </x-slot:head>
         <x-slot:body>
             @forelse ($recentPayments as $payment)
@@ -277,13 +280,13 @@
                     <td class="px-4 py-3 text-right font-medium text-slate-900">${{ number_format((float) $payment->amount, 2) }}</td>
                     <td class="px-4 py-3 text-right">
                         <div class="inline-flex items-center gap-2">
-                            <x-ui.button href="{{ route('payments.show', $payment->payment_id) }}" variant="secondary" size="sm">Ver pago</x-ui.button>
-                            <x-ui.button href="{{ route('payments.receipt.pdf', ['paymentId' => $payment->payment_id]) }}" variant="secondary" size="sm">Recibo PDF</x-ui.button>
+                            <x-ui.button href="{{ route('payments.show', $payment->payment_id) }}" variant="secondary" size="sm">{{ __('common.view_payment') }}</x-ui.button>
+                            <x-ui.button href="{{ route('payments.receipt.pdf', ['paymentId' => $payment->payment_id]) }}" variant="secondary" size="sm">{{ __('common.receipt_pdf') }}</x-ui.button>
                         </div>
                     </td>
                 </tr>
             @empty
-                <x-ui.empty-state title="Sin pagos recientes." :colspan="5" />
+                <x-ui.empty-state :title="__('dashboard.no_recent_payments')" :colspan="5" />
             @endforelse
         </x-slot:body>
     </x-ui.table>

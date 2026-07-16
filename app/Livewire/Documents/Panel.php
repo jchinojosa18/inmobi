@@ -19,11 +19,11 @@ class Panel extends Component
 
     public int $documentableId;
 
-    public string $title = 'Documentos';
+    public string $title = '';
 
     public $document;
 
-    public function mount(string $documentableType, int $documentableId, string $title = 'Documentos'): void
+    public function mount(string $documentableType, int $documentableId, ?string $title = null): void
     {
         if (! (auth()->user()?->can('documents.view') ?? false)) {
             abort(403);
@@ -31,7 +31,7 @@ class Panel extends Component
 
         $this->documentableType = $documentableType;
         $this->documentableId = $documentableId;
-        $this->title = $title;
+        $this->title = $title ?? __('documents.title');
     }
 
     public function save(): void
@@ -70,7 +70,10 @@ class Panel extends Component
         app(AuditLogger::class)->log(
             action: 'document.uploaded',
             auditable: $documentable,
-            summary: sprintf('Documento subido en %s #%d', class_basename($documentable), $documentable->getKey()),
+            summary: __('documents.audit_uploaded', [
+                'type' => class_basename($documentable),
+                'id' => $documentable->getKey(),
+            ]),
             meta: [
                 'documentable_type' => $this->documentableType,
                 'documentable_id' => $this->documentableId,
@@ -79,7 +82,7 @@ class Panel extends Component
         );
 
         $this->reset('document');
-        session()->flash('success', 'Documento subido correctamente.');
+        session()->flash('success', __('documents.uploaded_success'));
     }
 
     protected function rules(): array
@@ -92,9 +95,9 @@ class Panel extends Component
     protected function messages(): array
     {
         return [
-            'document.required' => 'Selecciona un archivo para subir.',
-            'document.max' => 'El archivo excede el limite de 5 MB.',
-            'document.mimes' => 'Solo se permiten archivos JPG, PNG o PDF.',
+            'document.required' => __('documents.validation.required'),
+            'document.max' => __('documents.validation.max'),
+            'document.mimes' => __('documents.validation.mimes'),
         ];
     }
 

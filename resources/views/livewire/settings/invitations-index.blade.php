@@ -1,7 +1,7 @@
 <section class="space-y-6">
     <x-ui.page-header
-        title="Usuarios e invitaciones"
-        description="Invita usuarios a tu empresa sin duplicar organización."
+        :title="__('settings.invitations_title')"
+        :description="__('settings.invitations_description')"
     />
 
     @if (session('success'))
@@ -17,11 +17,11 @@
     @enderror
 
     <x-ui.card :padding="true" class="!p-4">
-        <h2 class="text-sm font-semibold text-slate-900">Gobernanza de organización</h2>
+        <h2 class="text-sm font-semibold text-slate-900">{{ __('settings.org_governance') }}</h2>
         <p class="mt-1 text-xs text-slate-500">
-            Owner actual:
+            {{ __('settings.current_owner') }}
             <span class="font-medium text-slate-700">
-                {{ $organization->ownerUser?->name ?? 'Sin owner' }}
+                {{ $organization->ownerUser?->name ?? __('settings.no_owner') }}
                 @if ($organization->ownerUser?->email)
                     ({{ $organization->ownerUser?->email }})
                 @endif
@@ -31,8 +31,8 @@
         @if ($canTransferOwnership)
             <form wire:submit="transferOwnership" class="mt-3 flex flex-col gap-3 md:flex-row md:items-end">
                 <div class="w-full md:max-w-sm">
-                    <x-ui.select label="Transferir ownership a" wire:model="transferOwnerUserId">
-                        <option value="">Selecciona usuario</option>
+                    <x-ui.select :label="__('settings.transfer_ownership_to')" wire:model="transferOwnerUserId">
+                        <option value="">{{ __('settings.select_user') }}</option>
                         @foreach ($users as $user)
                             <option value="{{ $user->id }}">{{ $user->name }} ({{ $user->email }})</option>
                         @endforeach
@@ -40,31 +40,31 @@
                     @error('transferOwnerUserId') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
                 <x-ui.button type="submit" variant="secondary">
-                    Transferir ownership
+                    {{ __('settings.transfer_ownership') }}
                 </x-ui.button>
             </form>
         @else
             <p class="mt-2 text-xs text-slate-500">
-                Solo el owner actual puede transferir ownership.
+                {{ __('settings.only_owner_can_transfer') }}
             </p>
         @endif
     </x-ui.card>
 
     <x-ui.card :padding="true" class="!p-4">
-        <h2 class="text-sm font-semibold text-slate-900">Crear invitación</h2>
+        <h2 class="text-sm font-semibold text-slate-900">{{ __('settings.create_invitation') }}</h2>
 
         <form wire:submit="createInvitation" class="mt-4 grid gap-3 md:grid-cols-4">
             <div class="md:col-span-2">
                 <x-ui.input
-                    label="Email"
+                    :label="__('common.email')"
                     type="email"
                     wire:model="email"
-                    placeholder="usuario@empresa.com"
+                    :placeholder="__('settings.email_placeholder')"
                 />
                 @error('email') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
             </div>
             <div>
-                <x-ui.select label="Rol" wire:model="role">
+                <x-ui.select :label="__('settings.role')" wire:model="role">
                     @foreach ($allowedRoles as $allowedRole)
                         <option value="{{ $allowedRole }}">{{ $allowedRole }}</option>
                     @endforeach
@@ -73,7 +73,7 @@
             </div>
             <div>
                 <x-ui.input
-                    label="Expira (días)"
+                    :label="__('settings.expires_days')"
                     type="number"
                     min="1"
                     max="30"
@@ -84,14 +84,14 @@
 
             <div class="md:col-span-4">
                 <x-ui.button type="submit">
-                    Crear invitación
+                    {{ __('settings.create_invitation_button') }}
                 </x-ui.button>
             </div>
         </form>
 
         @if ($lastInvitationLink)
             <div class="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Link de invitación</p>
+                <p class="text-xs font-medium uppercase tracking-wide text-slate-500">{{ __('settings.invitation_link') }}</p>
                 <div class="mt-2 flex flex-col gap-2 md:flex-row md:items-center">
                     <x-ui.input type="text" readonly value="{{ $lastInvitationLink }}" class="text-xs" />
                     <x-ui.button
@@ -100,7 +100,7 @@
                         size="sm"
                         onclick="navigator.clipboard.writeText(@js($lastInvitationLink))"
                     >
-                        Copiar
+                        {{ __('settings.copy') }}
                     </x-ui.button>
                 </div>
             </div>
@@ -109,13 +109,13 @@
 
     <x-ui.table>
         <x-slot:header>
-            <h2 class="text-sm font-semibold text-slate-900">Invitaciones pendientes</h2>
+            <h2 class="text-sm font-semibold text-slate-900">{{ __('settings.pending_invitations') }}</h2>
         </x-slot:header>
         <x-slot:head>
-            <th class="px-4 py-2">Email</th>
-            <th class="px-4 py-2">Rol</th>
-            <th class="px-4 py-2">Expira</th>
-            <th class="px-4 py-2 text-right">Acción</th>
+            <th class="px-4 py-2">{{ __('common.email') }}</th>
+            <th class="px-4 py-2">{{ __('settings.role') }}</th>
+            <th class="px-4 py-2">{{ __('settings.expires') }}</th>
+            <th class="px-4 py-2 text-right">{{ __('common.action') }}</th>
         </x-slot:head>
         <x-slot:body>
             @forelse ($pendingInvitations as $invitation)
@@ -125,25 +125,25 @@
                     <td class="px-4 py-2">{{ optional($invitation->expires_at)->timezone('America/Tijuana')->format('Y-m-d H:i') }}</td>
                     <td class="px-4 py-2 text-right">
                         <x-ui.button type="button" wire:click="revokeInvitation({{ $invitation->id }})" variant="secondary" size="sm">
-                            Revocar
+                            {{ __('settings.revoke') }}
                         </x-ui.button>
                     </td>
                 </tr>
             @empty
-                <x-ui.empty-state title="Sin invitaciones pendientes." :colspan="4" />
+                <x-ui.empty-state :title="__('settings.empty_pending_invitations')" :colspan="4" />
             @endforelse
         </x-slot:body>
     </x-ui.table>
 
     <x-ui.table>
         <x-slot:header>
-            <h2 class="text-sm font-semibold text-slate-900">Usuarios de la organización</h2>
+            <h2 class="text-sm font-semibold text-slate-900">{{ __('settings.organization_users') }}</h2>
         </x-slot:header>
         <x-slot:head>
-            <th class="px-4 py-2">Nombre</th>
-            <th class="px-4 py-2">Email</th>
-            <th class="px-4 py-2">Rol</th>
-            <th class="px-4 py-2 text-right">Acciones</th>
+            <th class="px-4 py-2">{{ __('common.name') }}</th>
+            <th class="px-4 py-2">{{ __('common.email') }}</th>
+            <th class="px-4 py-2">{{ __('settings.role') }}</th>
+            <th class="px-4 py-2 text-right">{{ __('common.actions') }}</th>
         </x-slot:head>
         <x-slot:body>
             @foreach ($users as $user)
@@ -152,7 +152,7 @@
                     <td class="px-4 py-2">{{ $user->email }}</td>
                     <td class="px-4 py-2">
                         @if ((int) $organization->owner_user_id === (int) $user->id)
-                            <p class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-indigo-600">Owner</p>
+                            <p class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-indigo-600">{{ __('settings.owner') }}</p>
                         @endif
                         <x-ui.select wire:model="userRoles.{{ $user->id }}">
                             @foreach ($allowedRoles as $allowedRole)
@@ -164,10 +164,10 @@
                     <td class="px-4 py-2 text-right">
                         <div class="inline-flex items-center gap-2">
                             <x-ui.button type="button" wire:click="updateUserRole({{ $user->id }})" variant="secondary" size="sm">
-                                Guardar rol
+                                {{ __('settings.save_role') }}
                             </x-ui.button>
                             <x-ui.button type="button" wire:click="removeUser({{ $user->id }})" variant="danger" size="sm">
-                                Quitar
+                                {{ __('common.remove') }}
                             </x-ui.button>
                         </div>
                     </td>

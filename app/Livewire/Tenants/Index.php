@@ -107,10 +107,10 @@ class Index extends Component
         if ($this->editingId !== null) {
             $tenant = Tenant::query()->findOrFail($this->editingId);
             $tenant->update($payload);
-            session()->flash('success', 'Inquilino actualizado correctamente.');
+            session()->flash('success', __('catalog.flash.tenant_updated'));
         } else {
             Tenant::query()->create($payload);
-            session()->flash('success', 'Inquilino creado correctamente.');
+            session()->flash('success', __('catalog.flash.tenant_created'));
         }
 
         $this->resetForm();
@@ -137,7 +137,7 @@ class Index extends Component
             'tenants' => $tenants,
             'canManageTenants' => auth()->user()?->can('tenants.manage') ?? false,
         ])->layout('layouts.app', [
-            'title' => 'Inquilinos',
+            'title' => __('catalog.tenants.title'),
         ]);
     }
 
@@ -161,14 +161,14 @@ class Index extends Component
     private function messages(): array
     {
         return [
-            'full_name.required' => 'El nombre del inquilino es obligatorio.',
-            'full_name.max' => 'El nombre no debe exceder 160 caracteres.',
-            'email.email' => 'Ingresa un correo electrónico válido.',
-            'email.max' => 'El correo no debe exceder 160 caracteres.',
-            'phone.max' => 'El teléfono no debe exceder 50 caracteres.',
-            'formStatus.required' => 'Selecciona un estado.',
-            'formStatus.in' => 'El estado seleccionado no es válido.',
-            'notes.max' => 'Las notas no deben exceder 1000 caracteres.',
+            'full_name.required' => __('catalog.validation.full_name_required'),
+            'full_name.max' => __('catalog.validation.full_name_max'),
+            'email.email' => __('catalog.validation.email_invalid'),
+            'email.max' => __('catalog.validation.email_max'),
+            'phone.max' => __('catalog.validation.phone_max'),
+            'formStatus.required' => __('catalog.validation.status_required'),
+            'formStatus.in' => __('catalog.validation.status_invalid'),
+            'notes.max' => __('catalog.validation.notes_max'),
         ];
     }
 

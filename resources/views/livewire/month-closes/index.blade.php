@@ -1,16 +1,16 @@
 <section class="space-y-6">
     <x-ui.page-header
-        title="Cierres mensuales"
-        description="Congela números por mes y bloquea modificaciones retroactivas."
+        :title="__('finance.month_closes.title')"
+        :description="__('finance.month_closes.description')"
     />
 
     <x-ui.card>
-        <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-700">Cerrar mes</h2>
+        <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-700">{{ __('finance.month_closes.close_month') }}</h2>
         <form wire:submit="closeMonth" class="mt-3 grid gap-3 md:grid-cols-4">
             <div>
                 <x-ui.input
                     id="month-to-close"
-                    label="Mes (YYYY-MM)"
+                    :label="__('finance.month_closes.month_label')"
                     type="month"
                     wire:model="monthToClose"
                     :disabled="! $canCloseMonth"
@@ -20,21 +20,21 @@
             <div class="md:col-span-2">
                 <x-ui.input
                     id="month-close-notes"
-                    label="Notas (opcional)"
+                    :label="__('common.notes').' ('.__('common.optional').')'"
                     type="text"
                     wire:model.blur="notes"
                     maxlength="500"
-                    placeholder="Comentario del cierre"
+                    :placeholder="__('finance.month_closes.notes_placeholder')"
                     :disabled="! $canCloseMonth"
                 />
             </div>
             <div class="flex items-end justify-end">
                 @if ($canCloseMonth)
                     <x-ui.button type="submit">
-                        Cerrar mes
+                        {{ __('finance.month_closes.close_month_action') }}
                     </x-ui.button>
                 @else
-                    <span class="text-xs text-slate-500">Sin permiso para cerrar</span>
+                    <span class="text-xs text-slate-500">{{ __('finance.month_closes.no_close_permission') }}</span>
                 @endif
             </div>
         </form>
@@ -42,11 +42,11 @@
 
     <x-ui.table>
         <x-slot:head>
-            <th class="px-4 py-3">Mes</th>
-            <th class="px-4 py-3">Estado</th>
-            <th class="px-4 py-3">Cerrado por</th>
-            <th class="px-4 py-3">Fecha cierre</th>
-            <th class="px-4 py-3 text-right">Acciones</th>
+            <th class="px-4 py-3">{{ __('common.month') }}</th>
+            <th class="px-4 py-3">{{ __('common.status') }}</th>
+            <th class="px-4 py-3">{{ __('finance.month_closes.closed_by') }}</th>
+            <th class="px-4 py-3">{{ __('finance.month_closes.closed_at') }}</th>
+            <th class="px-4 py-3 text-right">{{ __('common.actions') }}</th>
         </x-slot:head>
         <x-slot:body>
             @foreach ($rows as $row)
@@ -54,9 +54,9 @@
                     <td class="px-4 py-3 font-medium text-slate-900">{{ $row['month'] }}</td>
                     <td class="px-4 py-3">
                         @if ($row['is_closed'])
-                            <x-ui.badge variant="danger">Cerrado</x-ui.badge>
+                            <x-ui.badge variant="danger">{{ __('finance.month_closes.closed') }}</x-ui.badge>
                         @else
-                            <x-ui.badge variant="success">Abierto</x-ui.badge>
+                            <x-ui.badge variant="success">{{ __('finance.month_closes.open') }}</x-ui.badge>
                         @endif
                     </td>
                     <td class="px-4 py-3 text-slate-700">{{ $row['closed_by'] ?? '-' }}</td>
@@ -70,7 +70,7 @@
                                     size="sm"
                                     wire:click="closeMonth('{{ $row['month'] }}')"
                                 >
-                                    Cerrar mes
+                                    {{ __('finance.month_closes.close_month_action') }}
                                 </x-ui.button>
                             @elseif ($canReopenMonth)
                                 <x-ui.button
@@ -79,10 +79,10 @@
                                     size="sm"
                                     wire:click="reopenMonth('{{ $row['month'] }}')"
                                 >
-                                    Reabrir mes
+                                    {{ __('finance.month_closes.reopen_month') }}
                                 </x-ui.button>
                             @else
-                                <span class="text-xs text-slate-500">Sin permiso para reabrir</span>
+                                <span class="text-xs text-slate-500">{{ __('finance.month_closes.no_reopen_permission') }}</span>
                             @endif
                         </div>
                     </td>

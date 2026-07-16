@@ -43,7 +43,7 @@ class SystemStatus extends Component
             'queueStatus' => $queueStatus,
             'backupStatus' => $backupStatus,
         ])->layout('layouts.app', [
-            'title' => 'Admin System',
+            'title' => __('admin.system_title'),
         ]);
     }
 
@@ -58,12 +58,12 @@ class SystemStatus extends Component
 
             return [
                 'ok' => true,
-                'message' => 'Conexión DB operativa ('.config('database.default').').',
+                'message' => __('admin.db_ok', ['driver' => config('database.default')]),
             ];
         } catch (\Throwable $exception) {
             return [
                 'ok' => false,
-                'message' => 'DB error: '.$exception->getMessage(),
+                'message' => __('admin.db_error', ['message' => $exception->getMessage()]),
             ];
         }
     }
@@ -80,18 +80,18 @@ class SystemStatus extends Component
             if ($normalized === 'pong' || $normalized === '1') {
                 return [
                     'ok' => true,
-                    'message' => 'Redis responde ping correctamente.',
+                    'message' => __('admin.redis_ok'),
                 ];
             }
 
             return [
                 'ok' => false,
-                'message' => 'Redis respondió inesperado: '.(string) $response,
+                'message' => __('admin.redis_unexpected', ['response' => (string) $response]),
             ];
         } catch (\Throwable $exception) {
             return [
                 'ok' => false,
-                'message' => 'Redis error: '.$exception->getMessage(),
+                'message' => __('admin.redis_error', ['message' => $exception->getMessage()]),
             ];
         }
     }
@@ -104,7 +104,7 @@ class SystemStatus extends Component
         $disk = (string) config('filesystems.documents_disk', 'public');
         $writable = false;
         $publicLinkOk = false;
-        $message = 'OK';
+        $message = __('admin.status_ok');
 
         try {
             $probeFile = 'healthchecks/system-'.Str::uuid().'.txt';
@@ -113,10 +113,10 @@ class SystemStatus extends Component
             Storage::disk($disk)->delete($probeFile);
 
             if (! $writable) {
-                $message = "No fue posible confirmar escritura en disk {$disk}.";
+                $message = __('admin.storage_write_failed', ['disk' => $disk]);
             }
         } catch (\Throwable $exception) {
-            $message = 'Storage error: '.$exception->getMessage();
+            $message = __('admin.storage_error', ['message' => $exception->getMessage()]);
         }
 
         $publicStoragePath = public_path('storage');
@@ -147,17 +147,17 @@ class SystemStatus extends Component
         if ($heartbeatService->isFresh($heartbeat, 5)) {
             return [
                 'ok' => true,
-                'message' => 'Scheduler heartbeat reciente (<= 5 min).',
+                'message' => __('admin.scheduler_ok'),
                 'last_run' => $lastRun,
-                'source' => 'system_heartbeats',
+                'source' => __('admin.heartbeat_source'),
             ];
         }
 
         return [
             'ok' => false,
-            'message' => 'Sin corrida reciente del scheduler.',
+            'message' => __('admin.scheduler_stale'),
             'last_run' => $lastRun,
-            'source' => 'system_heartbeats',
+            'source' => __('admin.heartbeat_source'),
         ];
     }
 
@@ -172,26 +172,26 @@ class SystemStatus extends Component
         if ($heartbeatService->isFresh($heartbeat, 30) && $heartbeat?->status === 'ok') {
             return [
                 'ok' => true,
-                'message' => 'Queue worker activo (heartbeat <= 30 min).',
+                'message' => __('admin.queue_ok'),
                 'last_run' => $lastRun,
-                'source' => 'system_heartbeats',
+                'source' => __('admin.heartbeat_source'),
             ];
         }
 
         if ($heartbeat?->status === 'failed') {
             return [
                 'ok' => false,
-                'message' => 'Último heartbeat de queue reportó failure.',
+                'message' => __('admin.queue_failed'),
                 'last_run' => $lastRun,
-                'source' => 'system_heartbeats',
+                'source' => __('admin.heartbeat_source'),
             ];
         }
 
         return [
             'ok' => false,
-            'message' => 'Sin actividad reciente de queue worker.',
+            'message' => __('admin.queue_stale'),
             'last_run' => $lastRun,
-            'source' => 'system_heartbeats',
+            'source' => __('admin.heartbeat_source'),
         ];
     }
 
@@ -206,18 +206,18 @@ class SystemStatus extends Component
         if ($heartbeat !== null && $heartbeat->status === 'ok') {
             return [
                 'ok' => true,
-                'message' => 'Último backup ejecutado correctamente.',
+                'message' => __('admin.backup_ok'),
                 'last_run' => $lastRun,
-                'source' => 'system_heartbeats',
+                'source' => __('admin.heartbeat_source'),
             ];
         }
 
         if ($heartbeat !== null) {
             return [
                 'ok' => false,
-                'message' => 'Último backup con warning/error.',
+                'message' => __('admin.backup_warning'),
                 'last_run' => $lastRun,
-                'source' => 'system_heartbeats',
+                'source' => __('admin.heartbeat_source'),
             ];
         }
 
@@ -226,9 +226,9 @@ class SystemStatus extends Component
 
         return [
             'ok' => false,
-            'message' => 'Sin heartbeat de backup; revisa logs para detalle.',
+            'message' => __('admin.backup_no_heartbeat'),
             'last_run' => $logLastRun,
-            'source' => 'log',
+            'source' => __('admin.log_source'),
         ];
     }
 }
