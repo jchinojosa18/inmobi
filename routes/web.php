@@ -12,7 +12,6 @@ use App\Http\Controllers\Settings\AuditExportController;
 use App\Http\Controllers\Tenant\UpdateCurrentPlazaController;
 use App\Livewire\Admin\SystemStatus as AdminSystemStatus;
 use App\Livewire\Cobranza\Index as CobranzaIndex;
-use App\Livewire\Contracts\Form as ContractForm;
 use App\Livewire\Contracts\Index as ContractsIndex;
 use App\Livewire\Contracts\Show as ContractShow;
 use App\Livewire\Dashboard\Index as DashboardIndex;
@@ -183,9 +182,6 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     })
         ->middleware('permission:contracts.manage')
         ->name('contracts.create');
-    Route::get('/contracts/{contract}/edit', ContractForm::class)
-        ->middleware('permission:contracts.manage')
-        ->name('contracts.edit');
     Route::get('/contracts/{contract}', ContractShow::class)
         ->middleware('permission:contracts.view')
         ->name('contracts.show');

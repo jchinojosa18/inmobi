@@ -1,8 +1,8 @@
 <div>
     <x-ui.modal
         :open="$open"
-        :title="__('contracts.new_contract')"
-        :aria-label="__('contracts.new_contract')"
+        :title="$isEdit ? __('contracts.edit_contract_title') : __('contracts.new_contract')"
+        :aria-label="$isEdit ? __('contracts.edit_contract_title') : __('contracts.new_contract')"
         max-width="2xl"
     >
         <p class="mb-4 text-sm text-slate-600">
