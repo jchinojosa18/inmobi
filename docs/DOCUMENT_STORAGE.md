@@ -10,10 +10,8 @@ Definir una base de almacenamiento de evidencias/documentos desde el inicio:
 
 ### Desarrollo (local)
 - `FILESYSTEM_DISK=local` para uso general de la app.
-- `DOCUMENTS_DISK=public` para demo de carga y descarga directa.
-- Requiere crear enlace simbolico:
-  - `php artisan storage:link`
-  - o con Sail: `./vendor/bin/sail artisan storage:link`
+- `DOCUMENTS_DISK=local` (privado, sin acceso público). Descarga vía ruta autenticada
+  `GET /documents/{document}/download` (permiso `documents.view`, valida organización).
 
 ### Produccion (S3 compatible)
 - Mantener app en `FILESYSTEM_DISK=local` si se desea.
@@ -28,11 +26,13 @@ Definir una base de almacenamiento de evidencias/documentos desde el inicio:
   - `AWS_URL` (opcional para URL publica custom)
   - `AWS_USE_PATH_STYLE_ENDPOINT` (segun proveedor)
 
-## Demo actual
-- Ruta: `/demo/document-upload`
+## Flujo actual
+- Subida vía `App\Livewire\Documents\Panel`, ligado a un morph allowlist
+  (`Contract`, `Payment`, `Expense`, `Unit`, `Charge`) validado contra la organización del usuario.
 - Tipos permitidos: `jpg`, `jpeg`, `png`, `pdf`
 - Tamano maximo: `5 MB`
-- Guarda en prefijo: `documents/demo`
+- Descarga: `App\Http\Controllers\Documents\DownloadController` vía
+  `route('documents.download', $document)`, con permiso `documents.view` y validación de organización.
 
 ## Proximos pasos recomendados
 - Definir convencion de paths por entidad (`documents/{entidad}/{id}/...`).

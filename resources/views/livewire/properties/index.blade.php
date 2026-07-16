@@ -94,7 +94,7 @@
         </x-slot:head>
         <x-slot:body>
             @forelse ($properties as $property)
-                <tr class="transition hover:bg-slate-50/80">
+                <tr wire:key="property-row-{{ $property->id }}" class="transition hover:bg-slate-50/80">
                     <td class="px-4 py-3">
                         <p class="font-medium text-slate-900">{{ $property->name }}</p>
                         <p class="text-xs text-slate-500">

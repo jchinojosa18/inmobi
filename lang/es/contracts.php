@@ -82,6 +82,7 @@ return [
     'register_deposit' => 'Registrar depósito',
     'settlement_title' => 'Finiquito de contrato',
     'settlement_description' => 'Registra cargos de salida, aplica depósito y cierra contrato.',
+    'settlement_ended_blocked' => 'Este contrato ya fue finiquitado y no admite un nuevo proceso de finiquito.',
     'deposit_paid' => 'Depósito pagado',
     'deposit_applied' => 'Depósito aplicado',
     'deposit_refunded' => 'Depósito devuelto',

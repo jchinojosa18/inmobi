@@ -20,6 +20,10 @@ class PaymentReceiptPdfController extends Controller
             abort(403);
         }
 
+        if ($payment->receipt_folio === null) {
+            abort(404);
+        }
+
         $receipt = $builder->build($payment);
 
         return Pdf::loadView('pdf.payment-receipt', ['receipt' => $receipt])

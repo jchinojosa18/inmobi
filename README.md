@@ -80,18 +80,10 @@ DB_DATABASE=inmo
 DB_USERNAME=sail
 DB_PASSWORD=password
 FILESYSTEM_DISK=local
-DOCUMENTS_DISK=public
+DOCUMENTS_DISK=local
 QUEUE_CONNECTION=redis
 REDIS_HOST=redis
 ```
-
-## Demo de carga de documentos
-- Ruta demo: `/demo/document-upload`
-- Flujo actual:
-  - Valida tipo de archivo (`jpg`, `jpeg`, `png`, `pdf`)
-  - Valida tamano maximo (5 MB)
-  - Guarda en `storage/app/public/documents/demo` usando disk `DOCUMENTS_DISK`
-  - Muestra link de descarga al archivo guardado
 
 ## MVP de pagos y recibos
 - Registrar pago desde detalle de contrato: boton `Registrar pago`.

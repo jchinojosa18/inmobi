@@ -194,7 +194,7 @@
             </x-slot:head>
             <x-slot:body>
                 @forelse ($overdueContracts as $row)
-                    <tr class="transition hover:bg-slate-50/80">
+                    <tr wire:key="dashboard-overdue-{{ $row->contract_id }}" class="transition hover:bg-slate-50/80">
                         <td class="px-4 py-3 text-slate-700">#{{ $row->contract_id }}</td>
                         <td class="px-4 py-3 text-slate-700">
                             {{ $row->property_name }} / {{ $row->unit_name ?? ($row->unit_code ?? '-') }}
@@ -234,7 +234,7 @@
             </x-slot:head>
             <x-slot:body>
                 @forelse ($graceContracts as $row)
-                    <tr class="transition hover:bg-slate-50/80">
+                    <tr wire:key="dashboard-grace-{{ $row->contract_id }}" class="transition hover:bg-slate-50/80">
                         <td class="px-4 py-3 text-slate-700">#{{ $row->contract_id }}</td>
                         <td class="px-4 py-3 text-slate-700">{{ $row->property_name }} / {{ $row->unit_name ?? ($row->unit_code ?? '-') }}</td>
                         <td class="px-4 py-3 text-slate-700">
@@ -270,8 +270,8 @@
         </x-slot:head>
         <x-slot:body>
             @forelse ($recentPayments as $payment)
-                <tr class="transition hover:bg-slate-50/80">
-                    <td class="px-4 py-3 text-slate-700">{{ $payment->receipt_folio }}</td>
+                <tr wire:key="dashboard-payment-{{ $payment->id }}" class="transition hover:bg-slate-50/80">
+                    <td class="px-4 py-3 text-slate-700">{{ $payment->receipt_folio ?? __('common.n_a') }}</td>
                     <td class="px-4 py-3 text-slate-700">{{ \Carbon\Carbon::parse($payment->paid_at)->timezone('America/Tijuana')->format('Y-m-d H:i') }}</td>
                     <td class="px-4 py-3 text-slate-700">
                         #{{ $payment->contract_id }} · {{ $payment->tenant_name }}
@@ -281,7 +281,9 @@
                     <td class="px-4 py-3 text-right">
                         <div class="inline-flex items-center gap-2">
                             <x-ui.button href="{{ route('payments.show', $payment->payment_id) }}" variant="secondary" size="sm">{{ __('common.view_payment') }}</x-ui.button>
-                            <x-ui.button href="{{ route('payments.receipt.pdf', ['paymentId' => $payment->payment_id]) }}" variant="secondary" size="sm">{{ __('common.receipt_pdf') }}</x-ui.button>
+                            @if ($payment->receipt_folio !== null)
+                                <x-ui.button href="{{ route('payments.receipt.pdf', ['paymentId' => $payment->payment_id]) }}" variant="secondary" size="sm">{{ __('common.receipt_pdf') }}</x-ui.button>
+                            @endif
                         </div>
                     </td>
                 </tr>

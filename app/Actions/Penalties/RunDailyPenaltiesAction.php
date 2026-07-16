@@ -2,11 +2,13 @@
 
 namespace App\Actions\Penalties;
 
+use App\Actions\Payments\ApplyCreditBalanceAction;
 use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\CreditBalance;
 use App\Models\Payment;
 use App\Models\PaymentAllocation;
+use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -187,6 +189,15 @@ class RunDailyPenaltiesAction
                 return 'not_applicable';
             }
 
+            $meta = [
+                'base_amount' => $baseAmount,
+                'rate_daily' => $rateDaily,
+                'computed_amount' => $computedAmount,
+                'algorithm_version' => self::ALGORITHM_VERSION,
+                'cutoff_timestamp' => $cutoffTimestampLocal->toIso8601String(),
+                'cutoff_timestamp_storage' => $cutoffTimestampStorage->toIso8601String(),
+            ];
+
             try {
                 Charge::query()
                     ->withoutOrganizationScope()
@@ -201,25 +212,71 @@ class RunDailyPenaltiesAction
                         'grace_until' => null,
                         'penalty_date' => $penaltyDate->toDateString(),
                         'amount' => $computedAmount,
-                        'meta' => [
-                            'base_amount' => $baseAmount,
-                            'rate_daily' => $rateDaily,
-                            'computed_amount' => $computedAmount,
-                            'algorithm_version' => self::ALGORITHM_VERSION,
-                            'cutoff_timestamp' => $cutoffTimestampLocal->toIso8601String(),
-                            'cutoff_timestamp_storage' => $cutoffTimestampStorage->toIso8601String(),
-                        ],
+                        'meta' => $meta,
                     ]);
             } catch (QueryException $exception) {
-                if ($this->isDuplicatePenaltyViolation($exception)) {
-                    return 'existing';
+                if (! $this->isDuplicatePenaltyViolation($exception)) {
+                    throw $exception;
                 }
 
-                throw $exception;
+                // Rebuild flows soft-delete the previous penalty for the same day before
+                // recomputing it; the unique index still reserves that (contract, day, type)
+                // slot for the trashed row, so restore-and-refresh it instead of treating
+                // this as a genuine duplicate.
+                if (! $this->restoreTrashedPenalty($lockedContract, $penaltyDate, $computedAmount, $meta)) {
+                    return 'existing';
+                }
             }
+
+            $this->applyCreditBalance($lockedContract);
 
             return 'created';
         }, 3);
+    }
+
+    /**
+     * @param  array<string, mixed>  $meta
+     */
+    private function restoreTrashedPenalty(
+        Contract $contract,
+        CarbonImmutable $penaltyDate,
+        float $computedAmount,
+        array $meta,
+    ): bool {
+        $trashed = Charge::query()
+            ->withoutOrganizationScope()
+            ->onlyTrashed()
+            ->where('organization_id', $contract->organization_id)
+            ->where('contract_id', $contract->id)
+            ->where('type', Charge::TYPE_PENALTY)
+            ->whereDate('penalty_date', $penaltyDate->toDateString())
+            ->lockForUpdate()
+            ->first();
+
+        if ($trashed === null) {
+            return false;
+        }
+
+        $trashed->restore();
+        $trashed->unit_id = $contract->unit_id;
+        $trashed->charge_date = $penaltyDate->toDateString();
+        $trashed->amount = $computedAmount;
+        $trashed->meta = $meta;
+        $trashed->save();
+
+        return true;
+    }
+
+    private function applyCreditBalance(Contract $contract): void
+    {
+        $previousOrganizationId = TenantContext::currentOrganizationId();
+        TenantContext::setOrganizationId($contract->organization_id);
+
+        try {
+            app(ApplyCreditBalanceAction::class)->execute($contract);
+        } finally {
+            TenantContext::setOrganizationId($previousOrganizationId);
+        }
     }
 
     private function hasOverdueRentBalance(

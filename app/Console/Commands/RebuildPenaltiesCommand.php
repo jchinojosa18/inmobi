@@ -78,28 +78,34 @@ class RebuildPenaltiesCommand extends Command
                 return self::FAILURE;
             }
 
-            $deleted = DB::transaction(function () use ($contract, $fromDate, $toDate): int {
-                $penaltyIds = DB::table('charges')
-                    ->where('organization_id', $contract->organization_id)
-                    ->where('contract_id', $contract->id)
-                    ->where('type', Charge::TYPE_PENALTY)
-                    ->whereDate('penalty_date', '>=', $fromDate->toDateString())
-                    ->whereDate('penalty_date', '<=', $toDate->toDateString())
-                    ->pluck('id')
-                    ->map(static fn ($id): int => (int) $id)
-                    ->all();
+            $penalties = Charge::query()
+                ->withoutOrganizationScope()
+                ->where('organization_id', $contract->organization_id)
+                ->where('contract_id', $contract->id)
+                ->where('type', Charge::TYPE_PENALTY)
+                ->whereDate('penalty_date', '>=', $fromDate->toDateString())
+                ->whereDate('penalty_date', '<=', $toDate->toDateString())
+                ->get();
 
-                if ($penaltyIds === []) {
-                    return 0;
+            $penaltyIds = $penalties->pluck('id')->all();
+
+            $hasAllocations = $penaltyIds !== []
+                && DB::table('payment_allocations')
+                    ->whereIn('charge_id', $penaltyIds)
+                    ->exists();
+
+            if ($hasAllocations) {
+                $this->error('Cannot rebuild: penalties have payment allocations.');
+
+                return self::FAILURE;
+            }
+
+            $deleted = DB::transaction(function () use ($penalties): int {
+                foreach ($penalties as $penalty) {
+                    $penalty->delete();
                 }
 
-                DB::table('payment_allocations')
-                    ->whereIn('charge_id', $penaltyIds)
-                    ->delete();
-
-                return DB::table('charges')
-                    ->whereIn('id', $penaltyIds)
-                    ->delete();
+                return $penalties->count();
             });
 
             $result = $this->action->execute(

@@ -6,6 +6,7 @@ use App\Models\AuditEvent;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -94,9 +95,18 @@ class AuditIndex extends Component
 
         $events = $query->paginate(30);
 
-        $selectedEvent = $this->selectedEventId !== null
-            ? AuditEvent::with('actor:id,name,email')->find($this->selectedEventId)
-            : null;
+        $selectedEvent = null;
+
+        if ($this->selectedEventId !== null) {
+            try {
+                $selectedEvent = AuditEvent::query()
+                    ->where('organization_id', $organizationId)
+                    ->with('actor:id,name,email')
+                    ->findOrFail($this->selectedEventId);
+            } catch (ModelNotFoundException) {
+                abort(404);
+            }
+        }
 
         $actors = User::query()
             ->where('organization_id', $organizationId)

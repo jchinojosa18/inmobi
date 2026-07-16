@@ -2,17 +2,20 @@
 
 namespace Tests\Unit\Actions;
 
+use App\Actions\Payments\ApplyPaymentAction;
 use App\Actions\Payments\RegisterContractPaymentAction;
 use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\Organization;
 use App\Models\OrganizationSetting;
+use App\Models\Payment;
 use App\Models\PaymentAllocation;
 use App\Models\Property;
 use App\Models\Tenant;
 use App\Models\Unit;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use RuntimeException;
 use Tests\TestCase;
 
 class RegisterContractPaymentActionTest extends TestCase
@@ -115,6 +118,32 @@ class RegisterContractPaymentActionTest extends TestCase
 
         $this->assertSame('FAC-0001', $firstPayment->receipt_folio);
         $this->assertSame('FAC-0002', $secondPayment->receipt_folio);
+    }
+
+    public function test_it_rolls_back_payment_when_apply_payment_action_fails(): void
+    {
+        [$organization, $contract] = $this->makeContractGraph();
+        TenantContext::setOrganizationId($organization->id);
+
+        $failingApply = $this->createMock(ApplyPaymentAction::class);
+        $failingApply->method('execute')->willThrowException(new RuntimeException('boom'));
+        $this->app->instance(ApplyPaymentAction::class, $failingApply);
+
+        $action = app(RegisterContractPaymentAction::class);
+
+        try {
+            $action->execute($contract, [
+                'amount' => 500,
+                'method' => 'TRANSFER',
+                'paid_at' => '2026-03-04 10:00:00',
+                'reference' => 'A-001',
+            ]);
+            $this->fail('Expected RuntimeException to be thrown.');
+        } catch (RuntimeException $exception) {
+            $this->assertSame('boom', $exception->getMessage());
+        }
+
+        $this->assertSame(0, Payment::query()->withoutOrganizationScope()->count());
     }
 
     /**

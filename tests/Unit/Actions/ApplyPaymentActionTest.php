@@ -169,6 +169,44 @@ class ApplyPaymentActionTest extends TestCase
         ]);
     }
 
+    public function test_it_applies_existing_credit_before_cash_payment(): void
+    {
+        [$organization, $contract, $unit] = $this->makeContractGraph();
+        TenantContext::setOrganizationId($organization->id);
+
+        $rent = Charge::factory()->create([
+            'organization_id' => $organization->id,
+            'contract_id' => $contract->id,
+            'unit_id' => $unit->id,
+            'type' => Charge::TYPE_RENT,
+            'amount' => 1000,
+            'charge_date' => '2026-02-01',
+        ]);
+
+        CreditBalance::query()->create([
+            'organization_id' => $organization->id,
+            'contract_id' => $contract->id,
+            'balance' => 300,
+        ]);
+
+        $payment = Payment::factory()->create([
+            'organization_id' => $organization->id,
+            'contract_id' => $contract->id,
+            'amount' => 700,
+            'method' => Payment::METHOD_TRANSFER,
+        ]);
+
+        app(ApplyPaymentAction::class)->execute($contract, $payment);
+
+        $this->assertSame(0.0, (float) CreditBalance::query()->where('contract_id', $contract->id)->value('balance'));
+        $this->assertSame(1000.0, (float) PaymentAllocation::query()->where('charge_id', $rent->id)->sum('amount'));
+        $this->assertDatabaseHas('payments', [
+            'contract_id' => $contract->id,
+            'method' => Payment::METHOD_CREDIT,
+            'amount' => '300.00',
+        ]);
+    }
+
     /**
      * @return array{0: Organization, 1: Contract, 2: Unit}
      */

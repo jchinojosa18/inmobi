@@ -133,6 +133,12 @@ Corrección manual mínima por contrato (tasa mal capturada):
 - Soporta parciales y adelantados.
 - Idempotencia: si el pago ya fue procesado o tiene allocations, no reaplica.
 - Saldo a favor: tabla [`credit_balances`](../app/Models/CreditBalance.php), no cargo negativo.
+- **Consumo automático de crédito** (opción B): [`ApplyCreditBalanceAction`](../app/Actions/Payments/ApplyCreditBalanceAction.php) crea un `Payment` interno `method=CREDIT` (sin folio de recibo) y genera `PaymentAllocation` con la misma prioridad. Se invoca:
+  1. Al inicio de [`ApplyPaymentAction`](../app/Actions/Payments/ApplyPaymentAction.php) (crédito antes del pago en efectivo).
+  2. Tras generar/asegurar RENT mensual ([`GenerateMonthlyRentChargesAction`](../app/Actions/Charges/GenerateMonthlyRentChargesAction.php)).
+  3. Tras crear cada PENALTY ([`RunDailyPenaltiesAction`](../app/Actions/Penalties/RunDailyPenaltiesAction.php)).
+  4. Al inicio del finiquito ([`ProcessContractSettlementAction`](../app/Actions/Contracts/ProcessContractSettlementAction.php)), antes de calcular adeudo y aplicar depósito.
+- Prioridad compartida en [`ChargeAllocationPrioritizer`](../app/Support/ChargeAllocationPrioritizer.php).
 
 ### 4.3 Depósitos y finiquito
 - Tipos: `DEPOSIT_HOLD`, `MOVEOUT`, `DEPOSIT_APPLY` (en [`Charge`](../app/Models/Charge.php)).

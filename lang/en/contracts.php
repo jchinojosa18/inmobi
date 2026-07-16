@@ -82,6 +82,7 @@ return [
     'register_deposit' => 'Record deposit',
     'settlement_title' => 'Contract settlement',
     'settlement_description' => 'Record move-out charges, apply deposit, and close the contract.',
+    'settlement_ended_blocked' => 'This contract has already been settled and cannot go through the settlement process again.',
     'deposit_paid' => 'Deposit paid',
     'deposit_applied' => 'Deposit applied',
     'deposit_refunded' => 'Deposit refunded',

@@ -25,7 +25,7 @@ return [
     |
     */
 
-    'documents_disk' => env('DOCUMENTS_DISK', 'public'),
+    'documents_disk' => env('DOCUMENTS_DISK', 'local'),
 
     /*
     |--------------------------------------------------------------------------

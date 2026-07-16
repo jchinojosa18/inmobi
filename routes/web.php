@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AcceptOrganizationInvitationController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\ContractSettlementPdfController;
+use App\Http\Controllers\Documents\DownloadController as DocumentDownloadController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\PaymentReceiptPdfController;
 use App\Http\Controllers\Reports\CashFlowCsvExportController;
@@ -204,6 +205,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/cobranza', CobranzaIndex::class)
         ->middleware('permission:cobranza.view')
         ->name('cobranza.index');
+
+    Route::get('/documents/{document}/download', DocumentDownloadController::class)
+        ->middleware('permission:documents.view')
+        ->name('documents.download');
 });
 
 Route::get('/invite/{token}', AcceptOrganizationInvitationController::class)->name('invitations.accept');
@@ -222,8 +227,6 @@ Route::get('/admin/health', function () {
 Route::get('/admin/system', AdminSystemStatus::class)
     ->middleware(['auth', 'verified', 'permission:system.view'])
     ->name('admin.system');
-
-Route::view('/demo/document-upload', 'document-upload-demo');
 
 Route::get('/pdf/sample-receipt', function () {
     $receipt = [

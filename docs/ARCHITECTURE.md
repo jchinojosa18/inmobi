@@ -215,9 +215,12 @@ Contract     1---1 CreditBalance (saldo a favor acumulado)
 - `CreditBalance`:
   - Saldo a favor por contrato (`unique(organization_id, contract_id)`).
   - `last_payment_id` referencia el ultimo pago que incrementó el saldo.
+  - Se **consume automáticamente** ante cargos pendientes vía `ApplyCreditBalanceAction` (no hay UI manual).
 
 ### Aplicacion de pagos (sin UI)
 - Caso de uso: `ApplyPaymentAction` (transaccional e idempotente).
+- **Consumo de crédito:** `ApplyCreditBalanceAction` (antes del cash en pagos; también tras RENT/PENALTY y al inicio del finiquito). Crea `Payment` con `method=CREDIT`, `receipt_folio=null`, y allocations; decrementa `credit_balances`. No es ingreso en efectivo — los ingresos operativos siguen siendo suma de allocations por tipo de cargo.
+- Prioridad compartida: `ChargeAllocationPrioritizer` (usado por ambas actions).
 - Prioridad de aplicación:
   1. `RENT` pendiente mas antiguo primero.
   2. `SERVICE` marcado como reembolsable (`meta.refundable = true`).

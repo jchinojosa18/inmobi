@@ -30,30 +30,32 @@ class RegisterContractPaymentAction
      */
     public function execute(Contract $contract, array $data, ?UploadedFile $evidence = null): Payment
     {
-        $payment = $this->createPaymentWithRetry($contract, $data);
+        return DB::transaction(function () use ($contract, $data, $evidence): Payment {
+            $payment = $this->createPaymentWithRetry($contract, $data);
 
-        $this->applyPaymentAction->execute($contract, $payment);
+            $this->applyPaymentAction->execute($contract, $payment);
 
-        if ($evidence !== null) {
-            $this->storeEvidence($payment, $evidence);
-        }
+            if ($evidence !== null) {
+                $this->storeEvidence($payment, $evidence);
+            }
 
-        $fresh = $payment->fresh(['allocations.charge', 'documents', 'contract.tenant', 'contract.unit.property']);
+            $fresh = $payment->fresh(['allocations.charge', 'documents', 'contract.tenant', 'contract.unit.property']);
 
-        $this->auditLogger->log(
-            action: 'payment.created',
-            auditable: $fresh,
-            summary: sprintf('Pago registrado %s $%s', $fresh->receipt_folio, number_format((float) $fresh->amount, 2)),
-            meta: [
-                'receipt_folio' => $fresh->receipt_folio,
-                'amount' => (float) $fresh->amount,
-                'method' => $fresh->method,
-                'contract_id' => $fresh->contract_id,
-                'paid_at' => $fresh->paid_at?->toDateString(),
-            ],
-        );
+            $this->auditLogger->log(
+                action: 'payment.created',
+                auditable: $fresh,
+                summary: sprintf('Pago registrado %s $%s', $fresh->receipt_folio, number_format((float) $fresh->amount, 2)),
+                meta: [
+                    'receipt_folio' => $fresh->receipt_folio,
+                    'amount' => (float) $fresh->amount,
+                    'method' => $fresh->method,
+                    'contract_id' => $fresh->contract_id,
+                    'paid_at' => $fresh->paid_at?->toDateString(),
+                ],
+            );
 
-        return $fresh;
+            return $fresh;
+        });
     }
 
     /**

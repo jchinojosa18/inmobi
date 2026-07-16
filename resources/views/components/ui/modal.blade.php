@@ -14,6 +14,7 @@
         '2xl' => 'max-w-2xl',
         default => 'max-w-xl',
     };
+    $titleId = 'modal-title-'.substr(md5($title.$closeAction), 0, 12);
 @endphp
 
 @if ($open)
@@ -21,7 +22,9 @@
         {{ $attributes->class('fixed inset-0 z-50 flex items-center justify-center p-4') }}
         role="dialog"
         aria-modal="true"
+        aria-labelledby="{{ $titleId }}"
         @if ($ariaLabel) aria-label="{{ $ariaLabel }}" @endif
+        @include('components.ui.partials.modal-focus-trap')
     >
         <div
             class="absolute inset-0 bg-black/50"
@@ -29,9 +32,13 @@
             aria-hidden="true"
         ></div>
 
-        <div class="relative z-10 flex w-full {{ $maxWidthClass }} max-h-[90vh] flex-col rounded-2xl border border-slate-200/80 bg-white shadow-lg">
+        <div
+            data-modal-panel
+            tabindex="-1"
+            class="relative z-10 flex w-full {{ $maxWidthClass }} max-h-[90vh] flex-col rounded-2xl border border-slate-200/80 bg-white shadow-lg outline-none"
+        >
             <div class="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-4">
-                <h2 class="text-base font-semibold text-slate-900">{{ $title }}</h2>
+                <h2 id="{{ $titleId }}" class="text-base font-semibold text-slate-900">{{ $title }}</h2>
                 <button
                     type="button"
                     wire:click="{{ $closeAction }}"

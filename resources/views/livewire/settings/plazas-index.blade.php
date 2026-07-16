@@ -75,7 +75,7 @@
             :aria-label="__('settings.delete_plaza_aria')"
         >
             <p class="text-slate-700">
-                {!! __('settings.delete_plaza_body', ['name' => '<span class="font-semibold text-slate-900">'.$pendingDeletePlazaName.'</span>']) !!}
+                {{ __('settings.delete_plaza_body', ['name' => $pendingDeletePlazaName]) }}
             </p>
             <p class="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
                 {{ __('settings.delete_plaza_note') }}

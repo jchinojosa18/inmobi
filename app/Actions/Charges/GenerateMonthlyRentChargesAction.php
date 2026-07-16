@@ -2,9 +2,12 @@
 
 namespace App\Actions\Charges;
 
+use App\Actions\Payments\ApplyCreditBalanceAction;
 use App\Models\Charge;
 use App\Models\Contract;
+use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\QueryException;
 
 class GenerateMonthlyRentChargesAction
 {
@@ -75,24 +78,68 @@ class GenerateMonthlyRentChargesAction
         $dueDate = $this->buildDueDate($periodStart, (int) $contract->due_day);
         $graceUntil = $dueDate->addDays(max((int) $contract->grace_days, 0));
 
-        return Charge::query()
-            ->withoutOrganizationScope()
-            ->firstOrCreate(
-                [
-                    'organization_id' => $contract->organization_id,
-                    'contract_id' => $contract->id,
-                    'type' => Charge::TYPE_RENT,
-                    'period' => $month,
-                ],
-                [
+        $attributes = [
+            'organization_id' => $contract->organization_id,
+            'contract_id' => $contract->id,
+            'type' => Charge::TYPE_RENT,
+            'period' => $month,
+        ];
+
+        $charge = Charge::query()->withoutOrganizationScope()->where($attributes)->first();
+
+        if ($charge === null) {
+            try {
+                $charge = Charge::query()->withoutOrganizationScope()->create($attributes + [
                     'unit_id' => $contract->unit_id,
                     'charge_date' => $periodStart->toDateString(),
                     'due_date' => $dueDate->toDateString(),
                     'grace_until' => $graceUntil->toDateString(),
                     'amount' => $contract->rent_amount,
                     'meta' => [],
-                ]
-            );
+                ]);
+            } catch (QueryException $exception) {
+                if (! $this->isDuplicateRentViolation($exception)) {
+                    throw $exception;
+                }
+
+                // Another process won the race and inserted the same RENT
+                // charge between our lookup and our insert; re-fetch it.
+                $charge = Charge::query()->withoutOrganizationScope()->where($attributes)->first();
+
+                if ($charge === null) {
+                    throw $exception;
+                }
+            }
+        }
+
+        $this->applyCreditBalance($contract);
+
+        return $charge;
+    }
+
+    private function isDuplicateRentViolation(QueryException $exception): bool
+    {
+        if ($exception->getCode() !== '23000') {
+            return false;
+        }
+
+        $message = strtolower($exception->getMessage());
+
+        return str_contains($message, 'charges_contract_rent_period_key_unique')
+            || str_contains($message, 'rent_period_key')
+            || str_contains($message, 'unique');
+    }
+
+    private function applyCreditBalance(Contract $contract): void
+    {
+        $previousOrganizationId = TenantContext::currentOrganizationId();
+        TenantContext::setOrganizationId($contract->organization_id);
+
+        try {
+            app(ApplyCreditBalanceAction::class)->execute($contract);
+        } finally {
+            TenantContext::setOrganizationId($previousOrganizationId);
+        }
     }
 
     private function buildDueDate(CarbonImmutable $periodStart, int $dueDay): CarbonImmutable

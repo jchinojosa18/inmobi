@@ -10,12 +10,15 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use RuntimeException;
 
 class SettlementWizard extends Component
 {
     use WithFileUploads;
 
     public Contract $contract;
+
+    public bool $isEnded = false;
 
     public string $move_out_date = '';
 
@@ -36,6 +39,7 @@ class SettlementWizard extends Component
     public function mount(Contract $contract): void
     {
         $this->contract = $contract;
+        $this->isEnded = $contract->status === Contract::STATUS_ENDED;
         $this->move_out_date = now('America/Tijuana')->toDateString();
         $this->concepts = [
             ['description' => '', 'amount' => ''],
@@ -63,6 +67,12 @@ class SettlementWizard extends Component
     {
         if (! (auth()->user()?->can('contracts.settle') ?? false)) {
             abort(403);
+        }
+
+        if ($this->isEnded || $this->contract->status === Contract::STATUS_ENDED) {
+            $this->addError('settlement_general', __('contracts.settlement_ended_blocked'));
+
+            return;
         }
 
         $this->validate([
@@ -115,6 +125,11 @@ class SettlementWizard extends Component
             $this->addError('settlement_general', $message);
 
             return;
+        } catch (RuntimeException) {
+            $this->isEnded = true;
+            $this->addError('settlement_general', __('contracts.settlement_ended_blocked'));
+
+            return;
         }
 
         $this->lastSettlementPdfUrl = route('contracts.settlements.pdf', [
@@ -139,8 +154,11 @@ class SettlementWizard extends Component
             ->with(['tenant:id,full_name', 'unit:id,name'])
             ->findOrFail($this->contract->id);
 
+        $this->isEnded = $contract->status === Contract::STATUS_ENDED;
+
         return view('livewire.contracts.settlement-wizard', [
             'contract' => $contract,
+            'isEnded' => $this->isEnded,
             'availableDeposit' => $depositBalanceService->availableDepositAmount($contract),
             'paidDeposit' => $depositBalanceService->paidDepositAmount($contract),
             'appliedDeposit' => $depositBalanceService->appliedDepositAmount($contract),

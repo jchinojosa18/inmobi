@@ -24,7 +24,7 @@ class BackupCommandTest extends TestCase
         config()->set('database.default', 'sqlite');
         config()->set('database.connections.sqlite.database', $sqlitePath);
 
-        $documentsDir = storage_path('app/public/documents/testing');
+        $documentsDir = $this->documentsDirectory('testing');
         if (! is_dir($documentsDir)) {
             mkdir($documentsDir, 0775, true);
         }
@@ -63,7 +63,7 @@ class BackupCommandTest extends TestCase
         config()->set('database.default', 'sqlite');
         config()->set('database.connections.sqlite.database', $sqlitePath);
 
-        $documentsDir = storage_path('app/public/documents/testing-rotation');
+        $documentsDir = $this->documentsDirectory('testing-rotation');
         if (! is_dir($documentsDir)) {
             mkdir($documentsDir, 0775, true);
         }
@@ -80,6 +80,19 @@ class BackupCommandTest extends TestCase
             ->values();
 
         $this->assertCount(1, $snapshots);
+    }
+
+    private function documentsDirectory(string $subpath = ''): string
+    {
+        $disk = (string) config('filesystems.documents_disk', 'local');
+        $root = (string) config("filesystems.disks.{$disk}.root", storage_path('app/private'));
+        $path = rtrim($root, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.'documents';
+
+        if ($subpath !== '') {
+            $path .= DIRECTORY_SEPARATOR.ltrim($subpath, DIRECTORY_SEPARATOR);
+        }
+
+        return $path;
     }
 
     private function deleteDirectory(string $directory): void

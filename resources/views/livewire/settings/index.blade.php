@@ -184,7 +184,7 @@
             :aria-label="__('settings.delete_category_aria')"
         >
             <p class="text-slate-700">
-                {!! __('settings.delete_category_body', ['name' => '<span class="font-semibold text-slate-900">'.$pendingDeleteCategoryName.'</span>']) !!}
+                {{ __('settings.delete_category_body', ['name' => $pendingDeleteCategoryName]) }}
             </p>
             <p class="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
                 {{ __('settings.delete_category_note') }}

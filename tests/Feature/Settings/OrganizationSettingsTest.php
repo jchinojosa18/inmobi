@@ -3,6 +3,7 @@
 namespace Tests\Feature\Settings;
 
 use App\Livewire\Settings\Index as SettingsIndex;
+use App\Models\ExpenseCategory;
 use App\Models\Organization;
 use App\Models\OrganizationSetting;
 use App\Models\User;
@@ -96,5 +97,25 @@ class OrganizationSettingsTest extends TestCase
 
         $response->assertOk();
         $response->assertDontSeeText('MANTENIMIENTO');
+    }
+
+    public function test_delete_confirmation_escapes_expense_category_name(): void
+    {
+        Role::findOrCreate('Admin', 'web');
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->create(['organization_id' => $organization->id]);
+        $admin->assignRole('Admin');
+
+        $category = ExpenseCategory::query()->create([
+            'organization_id' => $organization->id,
+            'name' => '<script>alert(1)</script>',
+            'is_active' => true,
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(SettingsIndex::class)
+            ->call('confirmDeleteExpenseCategory', $category->id)
+            ->assertDontSee('<script>alert(1)</script>', false)
+            ->assertSee('&lt;script&gt;alert(1)&lt;/script&gt;', false);
     }
 }

@@ -20,6 +20,8 @@ class Payment extends OrganizationScopedModel
 
     public const METHOD_TRANSFER = 'TRANSFER';
 
+    public const METHOD_CREDIT = 'CREDIT';
+
     /**
      * @var list<string>
      */
