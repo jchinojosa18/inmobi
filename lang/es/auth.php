@@ -2,7 +2,7 @@
 
 return [
     'login' => [
-        'title' => 'Login | AXIS',
+        'title' => 'Login',
         'badge' => 'LOGIN',
         'password' => 'Contraseña',
         'password_placeholder' => 'Ingresa tu contraseña',
@@ -17,8 +17,8 @@ return [
         'check_errors' => 'Revisa los datos e intenta nuevamente.',
     ],
     'register' => [
-        'title' => 'Crear cuenta | AXIS',
-        'title_invite' => 'Crear cuenta | AXIS',
+        'title' => 'Crear cuenta',
+        'title_invite' => 'Crear cuenta',
         'badge' => 'CREAR CUENTA',
         'badge_invite' => 'ACEPTAR INVITACIÓN',
         'subtitle' => 'Configura tu empresa y entra al panel en minutos.',
@@ -27,7 +27,7 @@ return [
         'login_link' => 'Inicia sesión',
     ],
     'forgot_password' => [
-        'title' => 'Recuperar contraseña | AXIS',
+        'title' => 'Recuperar contraseña',
         'badge' => 'RECUPERAR ACCESO',
         'heading' => '¿Olvidaste tu contraseña?',
         'description' => 'Ingresa tu email y te enviaremos un enlace para restablecer tu contraseña.',
@@ -36,7 +36,7 @@ return [
         'check_errors' => 'Revisa los datos e intenta nuevamente.',
     ],
     'reset_password' => [
-        'title' => 'Nueva contraseña | AXIS',
+        'title' => 'Nueva contraseña',
         'badge' => 'NUEVA CONTRASEÑA',
         'heading' => 'Restablecer contraseña',
         'description' => 'Elige una contraseña nueva para tu cuenta.',
@@ -48,7 +48,7 @@ return [
         'check_errors' => 'Revisa los datos e intenta nuevamente.',
     ],
     'verify_email' => [
-        'title' => 'Verifica tu correo | AXIS',
+        'title' => 'Verifica tu correo',
         'badge' => 'VERIFICACIÓN',
         'heading' => 'Verifica tu correo',
         'description' => 'Te enviamos un enlace de verificación a tu email. Debes confirmarlo para acceder al panel.',
