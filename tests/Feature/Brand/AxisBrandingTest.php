@@ -29,7 +29,7 @@ class AxisBrandingTest extends TestCase
         $response = $this->actingAs($user)->get(route('dashboard'));
 
         $response->assertOk();
-        $response->assertSee('<title>Dashboard operativo | AXIS</title>', false);
+        $response->assertSee('<title>AXIS</title>', false);
         $response->assertSee('rel="icon"', false);
         $response->assertSee('favicon.svg', false);
     }
@@ -41,7 +41,7 @@ class AxisBrandingTest extends TestCase
         $response->assertOk();
         $response->assertSee('AXIS', false);
         $response->assertSee('favicon.svg', false);
-        $response->assertSee('<title>Login | AXIS</title>', false);
+        $response->assertSee('<title>AXIS</title>', false);
         $response->assertDontSee('Inmo Admin', false);
     }
 
