@@ -77,6 +77,9 @@
     {{-- Quick Register Expense Modal (montado globalmente) --}}
     <livewire:expenses.quick-register-modal />
 
+    {{-- Contract Create/Edit Modal (montado globalmente) --}}
+    <livewire:contracts.create-modal />
+
     @livewireScripts
 
     {{-- ─────────────────────────────────────────────────────────────────── --}}

@@ -5,12 +5,19 @@
     >
         <x-slot:actions>
             @if ($canCreatePayments)
-                <x-ui.button href="{{ route('contracts.payments.create', $contract) }}" variant="accent">
+                <x-ui.button
+                    type="button"
+                    variant="accent"
+                    onclick="Livewire.dispatch('open-quick-payment', { contractId: {{ $contract->id }} })"
+                >
                     {{ __('common.register_payment') }}
                 </x-ui.button>
             @endif
             @if ($canManageContracts)
-                <x-ui.button href="{{ route('contracts.edit', $contract) }}">
+                <x-ui.button
+                    type="button"
+                    onclick="Livewire.dispatch('open-contract-edit', { contractId: {{ $contract->id }} })"
+                >
                     {{ __('contracts.edit_contract') }}
                 </x-ui.button>
             @endif

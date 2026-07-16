@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Contracts;
 
-use App\Livewire\Contracts\Form;
+use App\Livewire\Contracts\CreateModal;
 use App\Models\Contract;
 use App\Models\Organization;
 use App\Models\Property;
@@ -22,7 +22,8 @@ class ContractPenaltyRateNormalizationTest extends TestCase
         [$organization, $unit, $tenant, $user] = $this->createGraph();
 
         Livewire::actingAs($user)
-            ->test(Form::class)
+            ->test(CreateModal::class)
+            ->call('open')
             ->set('unit_id', $unit->id)
             ->set('tenant_id', $tenant->id)
             ->set('rent_amount', '10000')
@@ -48,7 +49,8 @@ class ContractPenaltyRateNormalizationTest extends TestCase
         [$organization, $unit, $tenant, $user] = $this->createGraph();
 
         Livewire::actingAs($user)
-            ->test(Form::class)
+            ->test(CreateModal::class)
+            ->call('open')
             ->set('unit_id', $unit->id)
             ->set('tenant_id', $tenant->id)
             ->set('rent_amount', '9500')
@@ -69,7 +71,7 @@ class ContractPenaltyRateNormalizationTest extends TestCase
         $this->assertEqualsWithDelta(0.05, (float) $contract->penalty_rate_daily, 0.00001);
     }
 
-    public function test_edit_form_displays_percentage_when_stored_rate_is_decimal(): void
+    public function test_edit_modal_displays_percentage_when_stored_rate_is_decimal(): void
     {
         [$organization, $unit, $tenant, $user] = $this->createGraph();
 
@@ -81,7 +83,8 @@ class ContractPenaltyRateNormalizationTest extends TestCase
         ]);
 
         Livewire::actingAs($user)
-            ->test(Form::class, ['contract' => $contract])
+            ->test(CreateModal::class)
+            ->dispatch('open-contract-edit', contractId: $contract->id)
             ->assertSet('penalty_rate_daily', '5.0000');
     }
 
@@ -90,7 +93,8 @@ class ContractPenaltyRateNormalizationTest extends TestCase
         [$organization, $unit, $tenant, $user] = $this->createGraph();
 
         Livewire::actingAs($user)
-            ->test(Form::class)
+            ->test(CreateModal::class)
+            ->call('open')
             ->set('unit_id', $unit->id)
             ->set('tenant_id', $tenant->id)
             ->set('rent_amount', '9000')
@@ -124,9 +128,11 @@ class ContractPenaltyRateNormalizationTest extends TestCase
         $unit = Unit::factory()->create([
             'organization_id' => $organization->id,
             'property_id' => $property->id,
+            'status' => 'active',
         ]);
         $tenant = Tenant::factory()->create([
             'organization_id' => $organization->id,
+            'status' => 'active',
         ]);
         $user = User::factory()->create([
             'organization_id' => $organization->id,

@@ -19,6 +19,8 @@ class CreateModal extends Component
 
     public bool $open = false;
 
+    public ?int $contractId = null;
+
     public ?int $unit_id = null;
 
     public ?int $tenant_id = null;
@@ -62,6 +64,31 @@ class CreateModal extends Component
         }
     }
 
+    #[On('open-contract-edit')]
+    public function openEdit(int $contractId): void
+    {
+        if (! (auth()->user()?->can('contracts.manage') ?? false)) {
+            abort(403);
+        }
+
+        $contract = Contract::query()->findOrFail($contractId);
+
+        $this->resetForm();
+        $this->contractId = $contract->id;
+        $this->unit_id = $contract->unit_id;
+        $this->tenant_id = $contract->tenant_id;
+        $this->rent_amount = (string) $contract->rent_amount;
+        $this->deposit_amount = (string) $contract->deposit_amount;
+        $this->due_day = (string) $contract->due_day;
+        $this->grace_days = (string) $contract->grace_days;
+        $this->penalty_rate_daily = $this->toDisplayPenaltyRate((float) $contract->penalty_rate_daily);
+        $this->status = $contract->status;
+        $this->starts_at = optional($contract->starts_at)->format('Y-m-d') ?: now()->toDateString();
+        $this->ends_at = optional($contract->ends_at)->format('Y-m-d');
+        $this->meta_notes = data_get($contract->meta, 'notes');
+        $this->open = true;
+    }
+
     public function cancelForm(): void
     {
         $this->close();
@@ -103,7 +130,10 @@ class CreateModal extends Component
                 $unit = Unit::query()->findOrFail((int) $validated['unit_id']);
                 $tenant = Tenant::query()->findOrFail((int) $validated['tenant_id']);
 
-                $contract = new Contract;
+                $contract = $this->contractId !== null
+                    ? Contract::query()->findOrFail($this->contractId)
+                    : new Contract;
+
                 $contract->organization_id = auth()->user()?->organization_id;
                 $contract->unit()->associate($unit);
                 $contract->tenant()->associate($tenant);
@@ -132,12 +162,15 @@ class CreateModal extends Component
             throw $exception;
         }
 
+        $isNew = $this->contractId === null;
+
         app(AuditLogger::class)->log(
-            action: 'contract.created',
+            action: $isNew ? 'contract.created' : 'contract.updated',
             auditable: $contract,
             summary: sprintf(
-                'Contrato #%d creado para unidad #%d',
+                'Contrato #%d %s para unidad #%d',
                 $contract->id,
+                $isNew ? 'creado' : 'actualizado',
                 $contract->unit_id,
             ),
             meta: [
@@ -150,10 +183,19 @@ class CreateModal extends Component
             ],
         );
 
-        session()->flash('success', __('contracts.flash.contract_created'));
+        session()->flash('success', $isNew
+            ? __('contracts.flash.contract_created')
+            : __('contracts.flash.contract_updated'));
+
         $this->close();
 
-        return redirect()->route('contracts.show', $contract);
+        if ($isNew) {
+            return redirect()->route('contracts.show', $contract);
+        }
+
+        $this->dispatch('contract-updated');
+
+        return null;
     }
 
     public function render(): View
@@ -173,6 +215,7 @@ class CreateModal extends Component
         return view('livewire.contracts.create-modal', [
             'units' => $units,
             'tenants' => $tenants,
+            'isEdit' => $this->contractId !== null,
         ]);
     }
 
@@ -190,10 +233,15 @@ class CreateModal extends Component
                         return;
                     }
 
-                    if (Contract::query()
+                    $query = Contract::query()
                         ->where('unit_id', $value)
-                        ->where('status', Contract::STATUS_ACTIVE)
-                        ->exists()) {
+                        ->where('status', Contract::STATUS_ACTIVE);
+
+                    if ($this->contractId !== null) {
+                        $query->whereKeyNot($this->contractId);
+                    }
+
+                    if ($query->exists()) {
                         $fail(__('contracts.validation.unit_active_contract'));
                     }
                 },
@@ -264,6 +312,7 @@ class CreateModal extends Component
     private function resetForm(): void
     {
         $this->reset([
+            'contractId',
             'unit_id',
             'tenant_id',
             'rent_amount',

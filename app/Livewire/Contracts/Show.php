@@ -11,10 +11,17 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class Show extends Component
 {
+    #[On('payment-registered')]
+    public function onPaymentRegistered(): void {}
+
+    #[On('contract-updated')]
+    public function onContractUpdated(): void {}
+
     public Contract $contract;
 
     public string $adjustment_amount = '';

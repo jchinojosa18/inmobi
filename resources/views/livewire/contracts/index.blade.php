@@ -164,7 +164,12 @@
                                 {{ __('contracts.view') }}
                             </x-ui.button>
                             @if ($canCreatePayments)
-                                <x-ui.button href="{{ route('contracts.payments.create', $contract) }}" variant="accent" size="sm">
+                                <x-ui.button
+                                    type="button"
+                                    variant="accent"
+                                    size="sm"
+                                    onclick="Livewire.dispatch('open-quick-payment', { contractId: {{ $contract->id }} })"
+                                >
                                     {{ __('common.register_payment') }}
                                 </x-ui.button>
                             @endif
@@ -181,8 +186,4 @@
             </div>
         </x-slot:footer>
     </x-ui.table>
-
-    @if ($canManageContracts)
-        <livewire:contracts.create-modal />
-    @endif
 </section>

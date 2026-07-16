@@ -13,12 +13,19 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
+use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
 
 class Index extends Component
 {
     use WithPagination;
+
+    #[On('payment-registered')]
+    public function onPaymentRegistered(): void {}
+
+    #[On('contract-updated')]
+    public function onContractUpdated(): void {}
 
     private ?string $databaseDriver = null;
 
