@@ -342,7 +342,7 @@ Debe ser la pareja de la privada que codificaste.
 
 | Sintoma | Causa probable | Solucion |
 |---------|----------------|----------|
-| `ssh-add ... error in libcrypto` | Clave pegada mal en GitHub (saltos de linea rotos) | Usar base64 (comando de arriba) en `HOSTINGER_SSH_KEY` |
+| `HOSTINGER_SSH_KEY invalida` en Setup SSH key | Secret corrupto, PEM mal pegado o base64 truncado | Ejecutar `./scripts/set-hostinger-ssh-secret.sh` (con `gh` auth) o pegar el base64 que imprime |
 | `exit code 255` | `HOSTINGER_HOST` incluye `usuario@` | Usar solo hostname en `HOSTINGER_HOST` |
 | `exit code 255` | Puerto incorrecto | `HOSTINGER_SSH_PORT=65002` |
 | Falla `Test SSH connection` | `HOSTINGER_PATH` incorrecto | Debe ser la carpeta con `artisan`, no `public/` |
