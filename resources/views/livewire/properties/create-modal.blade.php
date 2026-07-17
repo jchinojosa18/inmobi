@@ -38,12 +38,12 @@
 
                 <form wire:submit="save" class="grid gap-4 md:grid-cols-2">
                     <div class="md:col-span-2">
-                        <x-ui.input :label="__('common.name').' *'" type="text" wire:model.live="name" class="uppercase" />
+                        <x-ui.input :label="__('common.name').' *'" type="text" wire:model="name" class="uppercase" />
                         @error('name') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
-                        <x-ui.input :label="__('common.code').' *'" type="text" wire:model.live="code" class="uppercase" />
+                        <x-ui.input :label="__('common.code').' *'" type="text" wire:model="code" class="uppercase" />
                         @error('code') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
@@ -56,7 +56,7 @@
                     </div>
 
                     <div class="md:col-span-2">
-                        <x-ui.input :label="__('common.address')" type="text" wire:model.live="address" class="uppercase" />
+                        <x-ui.input :label="__('common.address')" type="text" wire:model="address" class="uppercase" />
                         @error('address') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
@@ -82,12 +82,12 @@
 
                 <form wire:submit="save" class="grid gap-4 md:grid-cols-2">
                     <div class="md:col-span-2">
-                        <x-ui.input :label="__('common.name').' *'" type="text" wire:model.live="name" class="uppercase" />
+                        <x-ui.input :label="__('common.name').' *'" type="text" wire:model="name" class="uppercase" />
                         @error('name') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div class="md:col-span-2">
-                        <x-ui.input :label="__('common.address')" type="text" wire:model.live="address" class="uppercase" />
+                        <x-ui.input :label="__('common.address')" type="text" wire:model="address" class="uppercase" />
                         @error('address') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 

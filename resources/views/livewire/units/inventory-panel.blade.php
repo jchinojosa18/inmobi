@@ -20,13 +20,13 @@
             max-width="2xl"
             close-action="cancelForm"
         >
-            <form wire:submit="saveItem" class="grid gap-4 md:grid-cols-2">
+            <form wire:submit="saveItem" wire:key="inventory-item-form-{{ $editingItemId ?? 'new' }}" class="grid gap-4 md:grid-cols-2">
                 <div class="md:col-span-2">
                     <x-ui.input
                         id="inventory-item-name"
                         :label="__('inventory.item_name')"
                         type="text"
-                        wire:model.blur="formName"
+                        wire:model="formName"
                         required
                     />
                     @error('formName')
@@ -39,7 +39,7 @@
                         id="inventory-item-quantity"
                         :label="__('inventory.quantity')"
                         type="number"
-                        wire:model.blur="formQuantity"
+                        wire:model="formQuantity"
                         min="1"
                         required
                     />
@@ -62,7 +62,7 @@
                 <div class="md:col-span-2">
                     <label class="mb-1 block text-sm font-medium text-slate-700">{{ __('common.notes') }}</label>
                     <textarea
-                        wire:model.blur="formNotes"
+                        wire:model="formNotes"
                         rows="3"
                         class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
                     ></textarea>

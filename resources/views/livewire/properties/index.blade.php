@@ -42,13 +42,13 @@
             <form wire:submit="save" class="grid gap-4 md:grid-cols-2">
                 <div class="md:col-span-2">
                     <label class="mb-1 block text-sm font-medium text-slate-700">{{ __('common.name') }} *</label>
-                    <input type="text" wire:model.live="name" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm uppercase">
+                    <input type="text" wire:model="name" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm uppercase">
                     @error('name') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
                     <label class="mb-1 block text-sm font-medium text-slate-700">{{ __('common.code') }}</label>
-                    <input type="text" wire:model.live="code" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm uppercase">
+                    <input type="text" wire:model="code" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm uppercase">
                     @error('code') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
@@ -63,7 +63,7 @@
 
                 <div class="md:col-span-2">
                     <label class="mb-1 block text-sm font-medium text-slate-700">{{ __('common.address') }}</label>
-                    <input type="text" wire:model.live="address" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm uppercase">
+                    <input type="text" wire:model="address" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm uppercase">
                     @error('address') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
