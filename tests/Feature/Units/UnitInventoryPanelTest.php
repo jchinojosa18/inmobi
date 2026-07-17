@@ -108,7 +108,8 @@ class UnitInventoryPanelTest extends TestCase
             ->test(InventoryPanel::class, ['unit' => $unit])
             ->set('photoUploads.'.$item->id, $file)
             ->call('uploadPhoto', $item->id)
-            ->assertHasNoErrors();
+            ->assertHasNoErrors()
+            ->assertDispatched('inventory-photo-uploaded');
 
         $this->assertDatabaseHas('documents', [
             'documentable_type' => UnitInventoryItem::class,
