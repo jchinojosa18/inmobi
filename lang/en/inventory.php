@@ -12,6 +12,7 @@ return [
     'condition' => 'Condition',
     'photos' => 'Photos',
     'upload_photo' => 'Upload photo',
+    'choose_photo' => 'Choose file',
     'uploading_photo' => 'Uploading photo...',
     'no_photos' => 'No photos',
     'view_photos' => 'View photos',

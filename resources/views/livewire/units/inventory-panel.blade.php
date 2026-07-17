@@ -143,24 +143,51 @@
                 @if ($canUploadPhotos && $galleryItem->documents_count < $maxPhotosPerItem)
                     <div class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4">
                         <p class="mb-2 text-sm font-medium text-slate-700">{{ __('inventory.upload_photo') }}</p>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <input
-                                type="file"
-                                wire:key="inventory-photo-upload-{{ $galleryItem->id }}-{{ $photoUploadInputKeys[$galleryItem->id] ?? 0 }}"
-                                wire:model="photoUploads.{{ $galleryItem->id }}"
-                                accept=".jpg,.jpeg,.png"
-                                class="block max-w-xs text-xs text-slate-600 file:mr-2 file:rounded-md file:border-0 file:bg-white file:px-2 file:py-1 file:text-xs file:font-medium file:text-slate-700"
-                            >
-                            <x-ui.button
-                                type="button"
-                                size="sm"
-                                variant="secondary"
-                                wire:click="uploadPhoto({{ $galleryItem->id }})"
-                                wire:loading.attr="disabled"
-                                wire:target="photoUploads.{{ $galleryItem->id }},uploadPhoto"
-                            >
-                                {{ __('inventory.upload_photo') }}
-                            </x-ui.button>
+                        @php
+                            $photoInputId = 'inventory-photo-upload-'.$galleryItem->id.'-'.($photoUploadInputKeys[$galleryItem->id] ?? 0);
+                        @endphp
+                        <div
+                            x-data="{ fileName: '' }"
+                            x-on:inventory-photo-uploaded.window="fileName = ''"
+                            class="flex flex-col gap-2"
+                        >
+                            <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                                <input
+                                    id="{{ $photoInputId }}"
+                                    type="file"
+                                    wire:key="inventory-photo-upload-{{ $galleryItem->id }}-{{ $photoUploadInputKeys[$galleryItem->id] ?? 0 }}"
+                                    wire:model="photoUploads.{{ $galleryItem->id }}"
+                                    accept=".jpg,.jpeg,.png"
+                                    x-on:change="fileName = $event.target.files[0]?.name ?? ''"
+                                    class="sr-only"
+                                >
+                                <label
+                                    for="{{ $photoInputId }}"
+                                    class="inline-flex min-h-10 w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-offset-2 sm:min-h-0 sm:w-auto sm:px-3 sm:py-1.5 sm:text-xs"
+                                >
+                                    <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                    </svg>
+                                    {{ __('inventory.choose_photo') }}
+                                </label>
+                                <x-ui.button
+                                    type="button"
+                                    size="sm"
+                                    variant="secondary"
+                                    wire:click="uploadPhoto({{ $galleryItem->id }})"
+                                    wire:loading.attr="disabled"
+                                    wire:target="photoUploads.{{ $galleryItem->id }},uploadPhoto"
+                                    class="min-h-10 w-full sm:min-h-0 sm:w-auto"
+                                >
+                                    {{ __('inventory.upload_photo') }}
+                                </x-ui.button>
+                            </div>
+                            <p
+                                x-show="fileName"
+                                x-text="fileName"
+                                x-cloak
+                                class="truncate text-xs text-slate-500"
+                            ></p>
                         </div>
                         @error('photoUploads.'.$galleryItem->id)
                             <p class="mt-2 text-xs text-red-600">{{ $message }}</p>

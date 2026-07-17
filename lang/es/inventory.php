@@ -12,6 +12,7 @@ return [
     'condition' => 'Condición',
     'photos' => 'Fotos',
     'upload_photo' => 'Subir foto',
+    'choose_photo' => 'Elegir archivo',
     'uploading_photo' => 'Subiendo foto...',
     'no_photos' => 'Sin fotos',
     'view_photos' => 'Ver fotos',
