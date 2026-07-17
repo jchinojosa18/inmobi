@@ -87,7 +87,7 @@
         @php
             $galleryPhotos = $galleryItem->documents->map(fn ($document) => [
                 'id' => $document->id,
-                'url' => route('documents.download', ['document' => $document, 'inline' => 1]),
+                'url' => route('documents.download', $document),
             ])->values();
         @endphp
 
@@ -200,7 +200,7 @@
             <div
                 x-show="viewerOpen"
                 x-cloak
-                class="fixed inset-0 z-[60] flex items-center justify-center p-4"
+                class="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto p-4"
                 role="dialog"
                 aria-modal="true"
                 :aria-label="@js(__('inventory.photo_viewer'))"
@@ -259,13 +259,12 @@
                             </svg>
                         </button>
 
-                        <div class="w-full overflow-hidden rounded-xl border border-white/20 bg-black shadow-2xl">
-                            <iframe
-                                :key="photos[activeIndex]?.id"
-                                :src="photos[activeIndex]?.url"
-                                class="h-[70vh] w-full bg-black sm:h-[80vh]"
-                                :title="@js(__('inventory.photo_viewer'))"
-                            ></iframe>
+                        <div class="flex w-full items-center justify-center px-10 sm:px-14">
+                            <img
+                                x-bind:src="photos[activeIndex]?.url"
+                                alt="{{ __('inventory.photo_viewer') }}"
+                                class="block max-h-[50vh] w-auto max-w-full rounded-xl border border-white/20 bg-black object-contain shadow-2xl sm:max-h-[65vh]"
+                            >
                         </div>
 
                         <button
