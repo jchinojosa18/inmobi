@@ -22,8 +22,6 @@ class InvitationsIndex extends Component
 
     public string $expiresInDays = '7';
 
-    public ?string $lastInvitationLink = null;
-
     /**
      * @var array<int, string>
      */
@@ -63,7 +61,7 @@ class InvitationsIndex extends Component
         $expiresAt = CarbonImmutable::now('America/Tijuana')->addDays((int) $validated['expiresInDays']);
 
         try {
-            $created = $invitationService->createInvitation(
+            $invitationService->createInvitation(
                 organizationId: (int) auth()->user()?->organization_id,
                 email: (string) $validated['email'],
                 role: (string) $validated['role'],
@@ -77,8 +75,6 @@ class InvitationsIndex extends Component
             return;
         }
 
-        $token = $created['token'];
-        $this->lastInvitationLink = route('invitations.accept', ['token' => $token]);
         $this->reset(['email', 'role', 'expiresInDays']);
         $this->role = 'Capturista';
         $this->expiresInDays = '7';

@@ -2,11 +2,13 @@
 
 namespace App\Support;
 
+use App\Mail\OrganizationInvitationMail;
 use App\Models\Organization;
 use App\Models\OrganizationInvitation;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Role;
@@ -35,7 +37,21 @@ class OrganizationInvitationService
 
         if ($alreadyInOrganization) {
             throw ValidationException::withMessages([
-                'email' => 'Ese correo ya pertenece a esta empresa.',
+                'email' => __('settings.validation.invitation_email_already_member'),
+            ]);
+        }
+
+        $hasPendingInvitation = OrganizationInvitation::query()
+            ->where('organization_id', $organizationId)
+            ->where('email', $normalizedEmail)
+            ->whereNull('accepted_at')
+            ->whereNull('revoked_at')
+            ->where('expires_at', '>', now())
+            ->exists();
+
+        if ($hasPendingInvitation) {
+            throw ValidationException::withMessages([
+                'email' => __('settings.validation.invitation_email_pending'),
             ]);
         }
 
@@ -50,16 +66,6 @@ class OrganizationInvitationService
             $expiresAt,
             $invitedByUserId
         ): OrganizationInvitation {
-            OrganizationInvitation::query()
-                ->where('organization_id', $organizationId)
-                ->where('email', $normalizedEmail)
-                ->whereNull('accepted_at')
-                ->whereNull('revoked_at')
-                ->update([
-                    'revoked_at' => now(),
-                    'updated_at' => now(),
-                ]);
-
             return OrganizationInvitation::query()->create([
                 'organization_id' => $organizationId,
                 'email' => $normalizedEmail,
@@ -83,6 +89,17 @@ class OrganizationInvitationService
             organizationId: $organizationId,
             actorUserId: $invitedByUserId,
         );
+
+        $invitation->load('organization');
+        $invitedBy = $invitedByUserId !== null
+            ? User::query()->find($invitedByUserId)
+            : null;
+
+        Mail::to($normalizedEmail)->send(new OrganizationInvitationMail(
+            invitation: $invitation,
+            plainToken: $token,
+            invitedBy: $invitedBy,
+        ));
 
         return [
             'invitation' => $invitation,

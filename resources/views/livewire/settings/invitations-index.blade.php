@@ -88,23 +88,6 @@
                 </x-ui.button>
             </div>
         </form>
-
-        @if ($lastInvitationLink)
-            <div class="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p class="text-xs font-medium uppercase tracking-wide text-slate-500">{{ __('settings.invitation_link') }}</p>
-                <div class="mt-2 flex flex-col gap-2 md:flex-row md:items-center">
-                    <x-ui.input type="text" readonly value="{{ $lastInvitationLink }}" class="text-xs" />
-                    <x-ui.button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onclick="navigator.clipboard.writeText(@js($lastInvitationLink))"
-                    >
-                        {{ __('settings.copy') }}
-                    </x-ui.button>
-                </div>
-            </div>
-        @endif
     </x-ui.card>
 
     <x-ui.table>

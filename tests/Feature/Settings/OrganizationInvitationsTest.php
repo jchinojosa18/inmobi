@@ -3,10 +3,13 @@
 namespace Tests\Feature\Settings;
 
 use App\Livewire\Settings\InvitationsIndex;
+use App\Mail\OrganizationInvitationMail;
 use App\Models\Organization;
+use App\Models\OrganizationInvitation;
 use App\Models\User;
 use App\Support\OrganizationInvitationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -17,6 +20,8 @@ class OrganizationInvitationsTest extends TestCase
 
     public function test_admin_can_create_invitation_from_settings_screen(): void
     {
+        Mail::fake();
+
         [$organization, $admin] = $this->createOrganizationAdminPair();
 
         Livewire::actingAs($admin)
@@ -33,6 +38,59 @@ class OrganizationInvitationsTest extends TestCase
             'accepted_at' => null,
             'revoked_at' => null,
         ]);
+
+        Mail::assertSent(OrganizationInvitationMail::class, function (OrganizationInvitationMail $mail) {
+            return $mail->hasTo('nuevo.usuario@test.dev');
+        });
+    }
+
+    public function test_it_blocks_invitation_when_email_already_belongs_to_organization(): void
+    {
+        Mail::fake();
+
+        [$organization, $admin] = $this->createOrganizationAdminPair();
+        User::factory()->create([
+            'organization_id' => $organization->id,
+            'email' => 'existing.member@test.dev',
+        ]);
+
+        $invitationsBefore = OrganizationInvitation::query()->count();
+
+        Livewire::actingAs($admin)
+            ->test(InvitationsIndex::class)
+            ->set('email', 'existing.member@test.dev')
+            ->set('role', 'Lectura')
+            ->set('expiresInDays', '7')
+            ->call('createInvitation')
+            ->assertHasErrors('email');
+
+        $this->assertSame($invitationsBefore, OrganizationInvitation::query()->count());
+        Mail::assertNothingSent();
+    }
+
+    public function test_it_blocks_invitation_when_pending_invitation_exists(): void
+    {
+        Mail::fake();
+
+        [$organization, $admin] = $this->createOrganizationAdminPair();
+        $this->createInvitationToken($organization->id, 'pending.invite@test.dev', 'Lectura', $admin->id);
+
+        Livewire::actingAs($admin)
+            ->test(InvitationsIndex::class)
+            ->set('email', 'pending.invite@test.dev')
+            ->set('role', 'Capturista')
+            ->set('expiresInDays', '7')
+            ->call('createInvitation')
+            ->assertHasErrors('email');
+
+        $this->assertSame(1, OrganizationInvitation::query()
+            ->where('organization_id', $organization->id)
+            ->where('email', 'pending.invite@test.dev')
+            ->whereNull('accepted_at')
+            ->whereNull('revoked_at')
+            ->count());
+
+        Mail::assertSentCount(1);
     }
 
     public function test_non_admin_cannot_access_invitations_screen(): void
