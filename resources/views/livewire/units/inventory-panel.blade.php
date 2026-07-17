@@ -146,6 +146,7 @@
                         <div class="flex flex-wrap items-center gap-2">
                             <input
                                 type="file"
+                                wire:key="inventory-photo-upload-{{ $galleryItem->id }}-{{ $photoUploadInputKeys[$galleryItem->id] ?? 0 }}"
                                 wire:model="photoUploads.{{ $galleryItem->id }}"
                                 accept=".jpg,.jpeg,.png"
                                 class="block max-w-xs text-xs text-slate-600 file:mr-2 file:rounded-md file:border-0 file:bg-white file:px-2 file:py-1 file:text-xs file:font-medium file:text-slate-700"
@@ -436,4 +437,17 @@
             <p class="text-slate-700">{{ __('inventory.messages.confirm_delete_photo') }}</p>
         </x-ui.confirm-modal>
     @endif
+
+    <div
+        x-data="{ show: false }"
+        x-on:inventory-photo-uploaded.window="show = true; setTimeout(() => show = false, 2500)"
+        x-show="show"
+        x-cloak
+        x-transition.opacity
+        class="pointer-events-none fixed bottom-6 right-6 z-[70] rounded-lg bg-slate-800/95 px-4 py-2 text-sm font-medium text-white shadow-lg"
+        role="status"
+        aria-live="polite"
+    >
+        {{ __('inventory.messages.photo_uploaded') }}
+    </div>
 </x-ui.card>

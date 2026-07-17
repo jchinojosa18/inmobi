@@ -38,6 +38,11 @@ class InventoryPanel extends Component
      */
     public array $photoUploads = [];
 
+    /**
+     * @var array<int, int>
+     */
+    public array $photoUploadInputKeys = [];
+
     public bool $showPhotoGallery = false;
 
     public ?int $galleryItemId = null;
@@ -191,8 +196,10 @@ class InventoryPanel extends Component
         );
 
         unset($this->photoUploads[$itemId]);
+        $this->photoUploadInputKeys[$itemId] = ($this->photoUploadInputKeys[$itemId] ?? 0) + 1;
+        $this->resetValidation('photoUploads.'.$itemId);
 
-        session()->flash('success', __('inventory.messages.photo_uploaded'));
+        $this->dispatch('inventory-photo-uploaded');
     }
 
     public function openPhotoGallery(int $itemId): void
