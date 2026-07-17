@@ -29,6 +29,7 @@ use App\Livewire\Settings\PlazasIndex as SettingsPlazasIndex;
 use App\Livewire\Settings\RolePreview as SettingsRolePreview;
 use App\Livewire\Tenants\Index as TenantsIndex;
 use App\Livewire\Units\Index as UnitsIndex;
+use App\Livewire\Units\Show as UnitsShow;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
@@ -126,6 +127,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/properties/{property}/units', UnitsIndex::class)
         ->middleware('permission:units.view')
         ->name('properties.units.index');
+    Route::get('/properties/{property}/units/{unit}', UnitsShow::class)
+        ->middleware('permission:units.view')
+        ->name('properties.units.show');
     Route::get('/houses/create', function () {
         return redirect()->route('properties.index', ['create' => 1]);
     })

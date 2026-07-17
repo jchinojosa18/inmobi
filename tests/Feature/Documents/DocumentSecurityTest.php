@@ -137,4 +137,34 @@ class DocumentSecurityTest extends TestCase
             ->get(route('documents.download', $document))
             ->assertOk();
     }
+
+    public function test_inline_view_streams_file_with_inline_disposition(): void
+    {
+        $organization = Organization::factory()->create();
+
+        $user = User::factory()->create([
+            'organization_id' => $organization->id,
+        ]);
+
+        $unit = Unit::factory()->create([
+            'organization_id' => $organization->id,
+        ]);
+
+        \Illuminate\Support\Facades\Storage::fake('local');
+        \Illuminate\Support\Facades\Storage::disk('local')->put('documents/unit/'.$organization->id.'/photo.jpg', 'imagen');
+
+        $document = Document::factory()->create([
+            'organization_id' => $organization->id,
+            'documentable_type' => Unit::class,
+            'documentable_id' => $unit->id,
+            'path' => 'documents/unit/'.$organization->id.'/photo.jpg',
+            'mime' => 'image/jpeg',
+            'meta' => ['disk' => 'local'],
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('documents.download', ['document' => $document, 'inline' => 1]))
+            ->assertOk()
+            ->assertHeader('content-disposition', 'inline');
+    }
 }

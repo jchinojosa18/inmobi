@@ -86,6 +86,14 @@ class Unit extends OrganizationScopedModel
         return $this->morphMany(Document::class, 'documentable');
     }
 
+    /**
+     * @return HasMany<UnitInventoryItem, $this>
+     */
+    public function inventoryItems(): HasMany
+    {
+        return $this->hasMany(UnitInventoryItem::class);
+    }
+
     public function isHouse(): bool
     {
         return $this->kind === self::KIND_HOUSE;

@@ -628,6 +628,7 @@ class Index extends Component
                 'charges',
                 'expenses',
                 'documents',
+                'inventoryItems',
             ])
             ->paginate(10);
     }
@@ -660,7 +661,8 @@ class Index extends Component
             ->whereDoesntHave('contracts')
             ->whereDoesntHave('charges')
             ->whereDoesntHave('expenses')
-            ->whereDoesntHave('documents');
+            ->whereDoesntHave('documents')
+            ->whereDoesntHave('inventoryItems');
     }
 
     private function unitIsDeletable(Unit $unit): bool
@@ -669,7 +671,8 @@ class Index extends Component
             return $unit->contracts_count === 0
                 && $unit->charges_count === 0
                 && $unit->expenses_count === 0
-                && $unit->documents_count === 0;
+                && $unit->documents_count === 0
+                && $unit->inventory_items_count === 0;
         }
 
         return ! $this->unitHasOperationalHistory($unit);
@@ -689,6 +692,7 @@ class Index extends Component
         return $unit->contracts()->exists()
             || $unit->charges()->exists()
             || $unit->expenses()->exists()
-            || $unit->documents()->exists();
+            || $unit->documents()->exists()
+            || $unit->inventoryItems()->exists();
     }
 }

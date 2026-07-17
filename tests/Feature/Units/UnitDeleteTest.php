@@ -10,6 +10,7 @@ use App\Models\Expense;
 use App\Models\Organization;
 use App\Models\Property;
 use App\Models\Unit;
+use App\Models\UnitInventoryItem;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -176,6 +177,33 @@ class UnitDeleteTest extends TestCase
             'property_id' => $property->id,
         ]);
         Expense::factory()->create([
+            'organization_id' => $organization->id,
+            'unit_id' => $unit->id,
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(Index::class, ['property' => $property])
+            ->call('deleteUnit', $unit->id)
+            ->assertHasErrors(['delete']);
+
+        $this->assertNotSoftDeleted('units', ['id' => $unit->id]);
+    }
+
+    public function test_it_blocks_delete_when_unit_has_inventory_items(): void
+    {
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create([
+            'organization_id' => $organization->id,
+        ]);
+        $property = Property::factory()->create([
+            'organization_id' => $organization->id,
+            'code' => 'EDIF-H',
+        ]);
+        $unit = Unit::factory()->create([
+            'organization_id' => $organization->id,
+            'property_id' => $property->id,
+        ]);
+        UnitInventoryItem::factory()->create([
             'organization_id' => $organization->id,
             'unit_id' => $unit->id,
         ]);

@@ -26,6 +26,13 @@ class DownloadController extends Controller
             abort(404);
         }
 
+        if ($request->boolean('inline')) {
+            return Storage::disk($disk)->response($record->path, null, [
+                'Content-Type' => $record->mime ?: 'application/octet-stream',
+                'Content-Disposition' => 'inline',
+            ]);
+        }
+
         return Storage::disk($disk)->download($record->path, basename($record->path));
     }
 }

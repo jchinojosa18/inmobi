@@ -328,7 +328,8 @@
                     $unitIsDeletable = $unit->contracts_count === 0
                         && $unit->charges_count === 0
                         && $unit->expenses_count === 0
-                        && $unit->documents_count === 0;
+                        && $unit->documents_count === 0
+                        && $unit->inventory_items_count === 0;
                 @endphp
                 <tr wire:key="unit-row-{{ $unit->id }}" class="transition hover:bg-slate-50/80">
                     @if ($canManageUnits)
@@ -345,7 +346,12 @@
                         </td>
                     @endif
                     <td class="px-4 py-3">
-                        <p class="font-medium uppercase text-slate-900">{{ $unit->code ?: __('common.no_code') }}</p>
+                        <a
+                            href="{{ route('properties.units.show', ['property' => $property, 'unit' => $unit]) }}"
+                            class="font-medium uppercase text-blue-700 hover:underline"
+                        >
+                            {{ $unit->code ?: __('common.no_code') }}
+                        </a>
                         @if ($lockedNumberingScheme === 'sequential' && $unit->floor)
                             <p class="text-xs text-slate-500">{{ __('catalog.units.floor_label', ['floor' => $unit->floor]) }}</p>
                         @endif
@@ -357,6 +363,13 @@
                     </td>
                     <td class="px-4 py-3">
                         <div class="flex justify-end gap-2">
+                            <x-ui.button
+                                href="{{ route('properties.units.show', ['property' => $property, 'unit' => $unit]) }}"
+                                variant="secondary"
+                                size="sm"
+                            >
+                                {{ __('inventory.view_inventory') }}
+                            </x-ui.button>
                             @if ($canManageUnits && $unitIsDeletable)
                                 <button
                                     type="button"
