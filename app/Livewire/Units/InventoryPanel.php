@@ -287,13 +287,19 @@ class InventoryPanel extends Component
             $remaining = UnitInventoryItem::query()
                 ->whereKey($this->galleryItemId)
                 ->where('unit_id', $this->unit->id)
+                ->with(['documents' => fn ($query) => $query->latest('created_at')])
                 ->withCount('documents')
                 ->first();
 
             if ($remaining === null) {
                 $this->closePhotoGallery();
+                $this->dispatchPhotoViewerSync(null);
+            } else {
+                $this->dispatchPhotoViewerSync($remaining);
             }
         }
+
+        $this->dispatch('inventory-photo-deleted');
 
         session()->flash('success', __('inventory.messages.photo_deleted'));
     }
@@ -366,5 +372,26 @@ class InventoryPanel extends Component
         $this->formCondition = UnitInventoryItem::CONDITION_GOOD;
         $this->formNotes = '';
         $this->resetValidation();
+    }
+
+    /**
+     * @return list<array{id: int, url: string}>
+     */
+    private function galleryPhotosPayload(UnitInventoryItem $item): array
+    {
+        return $item->documents
+            ->map(fn (Document $document): array => [
+                'id' => $document->id,
+                'url' => route('documents.download', $document),
+            ])
+            ->values()
+            ->all();
+    }
+
+    private function dispatchPhotoViewerSync(?UnitInventoryItem $item): void
+    {
+        $photos = $item !== null ? $this->galleryPhotosPayload($item) : [];
+
+        $this->dispatch('inventory-photo-viewer-sync', photos: $photos);
     }
 }

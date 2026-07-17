@@ -251,6 +251,39 @@ class UnitInventoryPanelTest extends TestCase
         Storage::disk('public')->assertMissing($path);
     }
 
+    public function test_it_syncs_viewer_after_deleting_last_photo_in_gallery(): void
+    {
+        Storage::fake('public');
+        config(['filesystems.documents_disk' => 'public']);
+
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+        $unit = Unit::factory()->create(['organization_id' => $organization->id]);
+        $item = UnitInventoryItem::factory()->create([
+            'organization_id' => $organization->id,
+            'unit_id' => $unit->id,
+        ]);
+
+        $path = 'documents/unitinventoryitem/'.$organization->id.'/photo.jpg';
+        Storage::disk('public')->put($path, 'imagen');
+
+        $document = Document::factory()->create([
+            'organization_id' => $organization->id,
+            'documentable_type' => UnitInventoryItem::class,
+            'documentable_id' => $item->id,
+            'path' => $path,
+            'mime' => 'image/jpeg',
+            'meta' => ['disk' => 'public'],
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(InventoryPanel::class, ['unit' => $unit])
+            ->call('openPhotoGallery', $item->id)
+            ->call('deletePhoto', $document->id)
+            ->assertSet('showPhotoGallery', true)
+            ->assertDispatched('inventory-photo-viewer-sync', photos: []);
+    }
+
     public function test_it_blocks_photo_delete_without_documents_delete_permission(): void
     {
         $organization = Organization::factory()->create();

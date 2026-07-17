@@ -188,6 +188,16 @@
                     closeViewer() {
                         this.viewerOpen = false;
                     },
+                    syncViewer(detail) {
+                        this.photos = detail.photos ?? [];
+                        if (this.photos.length === 0) {
+                            this.closeViewer();
+                            return;
+                        }
+                        if (this.activeIndex >= this.photos.length) {
+                            this.activeIndex = this.photos.length - 1;
+                        }
+                    },
                     nextPhoto() {
                         if (this.photos.length === 0) return;
                         this.activeIndex = (this.activeIndex + 1) % this.photos.length;
@@ -207,6 +217,7 @@
                     },
                 }"
                 @open-inventory-photo-viewer.window="openViewer($event.detail)"
+                @inventory-photo-viewer-sync.window="syncViewer($event.detail)"
                 @keydown.escape.window="viewerOpen && closeViewer()"
                 @keydown.arrow-right.window="viewerOpen && nextPhoto()"
                 @keydown.arrow-left.window="viewerOpen && prevPhoto()"
@@ -283,7 +294,8 @@
                                         x-show="activeIndex === index"
                                         x-bind:src="photo.url"
                                         alt="{{ __('inventory.photo_viewer') }}"
-                                        class="block max-h-[50vh] w-auto max-w-full rounded-xl border border-white/20 bg-black object-contain shadow-2xl sm:max-h-[65vh]"
+                                        draggable="false"
+                                        class="pointer-events-none block max-h-[50vh] w-auto max-w-full select-none rounded-xl border border-white/20 bg-black object-contain shadow-2xl sm:max-h-[65vh]"
                                     >
                                 </template>
                             </div>
