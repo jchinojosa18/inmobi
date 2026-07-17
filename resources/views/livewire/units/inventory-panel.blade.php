@@ -91,210 +91,231 @@
             ])->values();
         @endphp
 
-        <div
-            x-data="{
-                viewerOpen: false,
-                activeIndex: 0,
-                photos: @js($galleryPhotos),
-                openViewer(index) {
-                    this.activeIndex = index;
-                    this.viewerOpen = true;
-                },
-                closeViewer() {
-                    this.viewerOpen = false;
-                },
-                nextPhoto() {
-                    if (this.photos.length === 0) return;
-                    this.activeIndex = (this.activeIndex + 1) % this.photos.length;
-                },
-                prevPhoto() {
-                    if (this.photos.length === 0) return;
-                    this.activeIndex = (this.activeIndex - 1 + this.photos.length) % this.photos.length;
-                },
-            }"
-            @keydown.escape.window="viewerOpen && closeViewer()"
-            @keydown.arrow-right.window="viewerOpen && nextPhoto()"
-            @keydown.arrow-left.window="viewerOpen && prevPhoto()"
+        <x-ui.modal
+            :open="true"
+            :title="__('inventory.photo_gallery_for', ['item' => $galleryItem->name])"
+            :aria-label="__('inventory.photo_gallery')"
+            max-width="2xl"
+            close-action="closePhotoGallery"
         >
-            <x-ui.modal
-                :open="true"
-                :title="__('inventory.photo_gallery_for', ['item' => $galleryItem->name])"
-                :aria-label="__('inventory.photo_gallery')"
-                max-width="2xl"
-                close-action="closePhotoGallery"
-            >
-                <div class="space-y-4">
-                    @if ($galleryItem->documents->isEmpty())
-                        <p class="rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                            {{ __('inventory.no_photos') }}
-                        </p>
-                    @else
-                        <p class="text-sm text-slate-600">
-                            {{ trans_choice('inventory.photo_count', $galleryItem->documents->count(), ['count' => $galleryItem->documents->count()]) }}
-                        </p>
+            <div class="space-y-4">
+                @if ($galleryItem->documents->isEmpty())
+                    <p class="rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                        {{ __('inventory.no_photos') }}
+                    </p>
+                @else
+                    <p class="text-sm text-slate-600">
+                        {{ trans_choice('inventory.photo_count', $galleryItem->documents->count(), ['count' => $galleryItem->documents->count()]) }}
+                    </p>
 
-                        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                            @foreach ($galleryItem->documents as $document)
-                                <div class="group relative aspect-square overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                    <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                        @foreach ($galleryItem->documents as $document)
+                            <div class="group relative aspect-square overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                                <button
+                                    type="button"
+                                    @click="$dispatch('open-inventory-photo-viewer', { index: {{ $loop->index }}, photos: @js($galleryPhotos) })"
+                                    class="h-full w-full transition hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                    aria-label="{{ __('inventory.view_photos') }}: {{ $galleryItem->name }}"
+                                >
+                                    <img
+                                        src="{{ route('documents.download', $document) }}"
+                                        alt="{{ $galleryItem->name }}"
+                                        class="pointer-events-none h-full w-full object-cover transition group-hover:scale-105"
+                                    >
+                                </button>
+                                @if ($canDeletePhotos)
                                     <button
                                         type="button"
-                                        @click="openViewer({{ $loop->index }})"
-                                        class="h-full w-full transition hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-slate-400"
-                                        aria-label="{{ __('inventory.view_photos') }}: {{ $galleryItem->name }}"
+                                        wire:click="confirmDeletePhoto({{ $document->id }})"
+                                        class="pointer-events-none absolute right-2 top-2 rounded-full bg-black/60 p-1.5 text-white opacity-0 transition group-hover:pointer-events-auto hover:bg-red-600 group-hover:opacity-100"
+                                        aria-label="{{ __('inventory.delete_photo') }}"
                                     >
-                                        <img
-                                            src="{{ route('documents.download', $document) }}"
-                                            alt="{{ $galleryItem->name }}"
-                                            class="h-full w-full object-cover transition group-hover:scale-105"
-                                        >
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
                                     </button>
-                                    @if ($canDeletePhotos)
-                                        <button
-                                            type="button"
-                                            wire:click="confirmDeletePhoto({{ $document->id }})"
-                                            class="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 text-white opacity-0 transition hover:bg-red-600 group-hover:opacity-100"
-                                            aria-label="{{ __('inventory.delete_photo') }}"
-                                        >
-                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                            </svg>
-                                        </button>
-                                    @endif
-                                </div>
-                            @endforeach
-                        </div>
-                    @endif
-
-                    @if ($canUploadPhotos && $galleryItem->documents_count < $maxPhotosPerItem)
-                        <div class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4">
-                            <p class="mb-2 text-sm font-medium text-slate-700">{{ __('inventory.upload_photo') }}</p>
-                            <div class="flex flex-wrap items-center gap-2">
-                                <input
-                                    type="file"
-                                    wire:model="photoUploads.{{ $galleryItem->id }}"
-                                    accept=".jpg,.jpeg,.png"
-                                    class="block max-w-xs text-xs text-slate-600 file:mr-2 file:rounded-md file:border-0 file:bg-white file:px-2 file:py-1 file:text-xs file:font-medium file:text-slate-700"
-                                >
-                                <x-ui.button
-                                    type="button"
-                                    size="sm"
-                                    variant="secondary"
-                                    wire:click="uploadPhoto({{ $galleryItem->id }})"
-                                    wire:loading.attr="disabled"
-                                    wire:target="photoUploads.{{ $galleryItem->id }},uploadPhoto"
-                                >
-                                    {{ __('inventory.upload_photo') }}
-                                </x-ui.button>
+                                @endif
                             </div>
-                            @error('photoUploads.'.$galleryItem->id)
-                                <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
-                            @enderror
-                            <p wire:loading wire:target="photoUploads.{{ $galleryItem->id }}" class="mt-2 text-xs text-slate-500">
-                                {{ __('inventory.uploading_photo') }}
-                            </p>
-                        </div>
-                    @endif
-                </div>
-            </x-ui.modal>
+                        @endforeach
+                    </div>
+                @endif
 
+                @if ($canUploadPhotos && $galleryItem->documents_count < $maxPhotosPerItem)
+                    <div class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4">
+                        <p class="mb-2 text-sm font-medium text-slate-700">{{ __('inventory.upload_photo') }}</p>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <input
+                                type="file"
+                                wire:model="photoUploads.{{ $galleryItem->id }}"
+                                accept=".jpg,.jpeg,.png"
+                                class="block max-w-xs text-xs text-slate-600 file:mr-2 file:rounded-md file:border-0 file:bg-white file:px-2 file:py-1 file:text-xs file:font-medium file:text-slate-700"
+                            >
+                            <x-ui.button
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                wire:click="uploadPhoto({{ $galleryItem->id }})"
+                                wire:loading.attr="disabled"
+                                wire:target="photoUploads.{{ $galleryItem->id }},uploadPhoto"
+                            >
+                                {{ __('inventory.upload_photo') }}
+                            </x-ui.button>
+                        </div>
+                        @error('photoUploads.'.$galleryItem->id)
+                            <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
+                        @enderror
+                        <p wire:loading wire:target="photoUploads.{{ $galleryItem->id }}" class="mt-2 text-xs text-slate-500">
+                            {{ __('inventory.uploading_photo') }}
+                        </p>
+                    </div>
+                @endif
+            </div>
+        </x-ui.modal>
+
+        <div wire:ignore>
             <div
-                x-show="viewerOpen"
-                x-cloak
-                class="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto p-4"
-                role="dialog"
-                aria-modal="true"
-                :aria-label="@js(__('inventory.photo_viewer'))"
+                x-data="{
+                    viewerOpen: false,
+                    activeIndex: 0,
+                    photos: [],
+                    touchStartX: 0,
+                    openViewer(detail) {
+                        this.photos = detail.photos ?? [];
+                        this.activeIndex = detail.index ?? 0;
+                        this.viewerOpen = true;
+                    },
+                    closeViewer() {
+                        this.viewerOpen = false;
+                    },
+                    nextPhoto() {
+                        if (this.photos.length === 0) return;
+                        this.activeIndex = (this.activeIndex + 1) % this.photos.length;
+                    },
+                    prevPhoto() {
+                        if (this.photos.length === 0) return;
+                        this.activeIndex = (this.activeIndex - 1 + this.photos.length) % this.photos.length;
+                    },
+                    handleTouchStart(event) {
+                        this.touchStartX = event.changedTouches[0].screenX;
+                    },
+                    handleTouchEnd(event) {
+                        if (this.photos.length <= 1) return;
+                        const diff = event.changedTouches[0].screenX - this.touchStartX;
+                        if (diff > 50) this.prevPhoto();
+                        if (diff < -50) this.nextPhoto();
+                    },
+                }"
+                @open-inventory-photo-viewer.window="openViewer($event.detail)"
+                @keydown.escape.window="viewerOpen && closeViewer()"
+                @keydown.arrow-right.window="viewerOpen && nextPhoto()"
+                @keydown.arrow-left.window="viewerOpen && prevPhoto()"
             >
                 <div
-                    class="absolute inset-0 bg-black/80"
-                    @click="closeViewer()"
-                    aria-hidden="true"
-                ></div>
+                    x-show="viewerOpen"
+                    x-cloak
+                    class="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto p-4"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="{{ __('inventory.photo_viewer') }}"
+                >
+                    <div
+                        class="absolute inset-0 bg-black/80"
+                        @click="closeViewer()"
+                        aria-hidden="true"
+                    ></div>
 
-                <div class="relative z-10 flex w-full max-w-6xl flex-col gap-3">
-                    <div class="flex items-center justify-between gap-3 text-white">
-                        <p class="text-sm font-medium text-white">
-                            {{ __('inventory.photo_viewer') }}
-                            <span x-show="photos.length > 0" class="text-white/80">
-                                (<span x-text="activeIndex + 1"></span>/<span x-text="photos.length"></span>)
-                            </span>
-                        </p>
-                        <button
-                            type="button"
-                            @click="closeViewer()"
-                            class="rounded-lg p-2 text-white/80 transition hover:bg-white/10 hover:text-white"
-                            :aria-label="@js(__('inventory.close_viewer'))"
-                        >
-                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                        </button>
-                    </div>
-
-                    @if ($canDeletePhotos)
-                        <div class="flex justify-end">
+                    <div class="relative z-10 flex w-full max-w-6xl flex-col gap-3" @click.stop>
+                        <div class="flex items-center justify-between gap-3 text-white">
+                            <p class="text-sm font-medium text-white">
+                                {{ __('inventory.photo_viewer') }}
+                                <span x-show="photos.length > 0" class="text-white/80">
+                                    (<span x-text="activeIndex + 1"></span>/<span x-text="photos.length"></span>)
+                                </span>
+                            </p>
                             <button
                                 type="button"
-                                @click="$wire.confirmDeletePhoto(photos[activeIndex]?.id)"
-                                class="inline-flex items-center gap-2 rounded-lg border border-red-400/50 bg-red-500/20 px-3 py-1.5 text-sm font-medium text-red-100 transition hover:bg-red-500/40"
+                                @click="closeViewer()"
+                                class="rounded-lg p-2 text-white/80 transition hover:bg-white/10 hover:text-white"
+                                aria-label="{{ __('inventory.close_viewer') }}"
                             >
-                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                                 </svg>
-                                {{ __('inventory.delete_photo') }}
                             </button>
                         </div>
-                    @endif
 
-                    <div class="relative flex items-center justify-center">
-                        <button
-                            type="button"
-                            @click="prevPhoto()"
-                            class="absolute left-0 z-10 -translate-x-2 rounded-full bg-black/50 p-3 text-white transition hover:bg-black/70 sm:translate-x-0"
-                            :aria-label="@js(__('inventory.previous_photo'))"
-                            x-show="photos.length > 1"
+                        @if ($canDeletePhotos)
+                            <div class="flex justify-end">
+                                <button
+                                    type="button"
+                                    @click.stop="$wire.confirmDeletePhoto(photos[activeIndex]?.id)"
+                                    class="inline-flex items-center gap-2 rounded-lg border border-red-400/50 bg-red-500/20 px-3 py-1.5 text-sm font-medium text-red-100 transition hover:bg-red-500/40"
+                                >
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                    {{ __('inventory.delete_photo') }}
+                                </button>
+                            </div>
+                        @endif
+
+                        <div
+                            class="relative flex items-center justify-center"
+                            @touchstart="handleTouchStart($event)"
+                            @touchend="handleTouchEnd($event)"
                         >
-                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                            </svg>
-                        </button>
-
-                        <div class="flex w-full items-center justify-center px-10 sm:px-14">
-                            <img
-                                x-bind:src="photos[activeIndex]?.url"
-                                alt="{{ __('inventory.photo_viewer') }}"
-                                class="block max-h-[50vh] w-auto max-w-full rounded-xl border border-white/20 bg-black object-contain shadow-2xl sm:max-h-[65vh]"
+                            <button
+                                type="button"
+                                @click.stop="prevPhoto()"
+                                class="absolute left-2 z-10 hidden rounded-full bg-black/50 p-3 text-white transition hover:bg-black/70 sm:block"
+                                :aria-label="@js(__('inventory.previous_photo'))"
+                                x-show="photos.length > 1"
                             >
+                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                                </svg>
+                            </button>
+
+                            <div class="flex w-full items-center justify-center px-2 sm:px-14">
+                                <template x-for="(photo, index) in photos" :key="photo.id">
+                                    <img
+                                        x-show="activeIndex === index"
+                                        x-bind:src="photo.url"
+                                        alt="{{ __('inventory.photo_viewer') }}"
+                                        class="block max-h-[50vh] w-auto max-w-full rounded-xl border border-white/20 bg-black object-contain shadow-2xl sm:max-h-[65vh]"
+                                    >
+                                </template>
+                            </div>
+
+                            <button
+                                type="button"
+                                @click.stop="nextPhoto()"
+                                class="absolute right-2 z-10 hidden rounded-full bg-black/50 p-3 text-white transition hover:bg-black/70 sm:block"
+                                :aria-label="@js(__('inventory.next_photo'))"
+                                x-show="photos.length > 1"
+                            >
+                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </button>
                         </div>
 
-                        <button
-                            type="button"
-                            @click="nextPhoto()"
-                            class="absolute right-0 z-10 translate-x-2 rounded-full bg-black/50 p-3 text-white transition hover:bg-black/70 sm:translate-x-0"
-                            :aria-label="@js(__('inventory.next_photo'))"
-                            x-show="photos.length > 1"
-                        >
-                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                            </svg>
-                        </button>
-                    </div>
-
-                    <div class="flex justify-center gap-2" x-show="photos.length > 1">
-                        <button
-                            type="button"
-                            @click="prevPhoto()"
-                            class="inline-flex items-center justify-center rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20"
-                        >
-                            {{ __('inventory.previous_photo') }}
-                        </button>
-                        <button
-                            type="button"
-                            @click="nextPhoto()"
-                            class="inline-flex items-center justify-center rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20"
-                        >
-                            {{ __('inventory.next_photo') }}
-                        </button>
+                        <div class="flex justify-center gap-2" x-show="photos.length > 1">
+                            <button
+                                type="button"
+                                @click.stop="prevPhoto()"
+                                class="inline-flex min-h-11 min-w-[7rem] items-center justify-center rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20"
+                            >
+                                {{ __('inventory.previous_photo') }}
+                            </button>
+                            <button
+                                type="button"
+                                @click.stop="nextPhoto()"
+                                class="inline-flex min-h-11 min-w-[7rem] items-center justify-center rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20"
+                            >
+                                {{ __('inventory.next_photo') }}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
