@@ -1,0 +1,62 @@
+<?php
+
+return [
+    'title' => 'Inventario maestro',
+    'section_description' => 'Registro de mobiliario y equipo del departamento con evidencia fotográfica.',
+    'add_item' => 'Agregar ítem',
+    'edit_item' => 'Editar ítem',
+    'empty' => 'No hay ítems en el inventario todavía.',
+    'empty_cta' => 'Agrega el primer ítem para documentar el departamento.',
+    'item_name' => 'Nombre del ítem',
+    'quantity' => 'Cantidad',
+    'condition' => 'Condición',
+    'photos' => 'Fotos',
+    'upload_photo' => 'Subir foto',
+    'uploading_photo' => 'Subiendo foto...',
+    'no_photos' => 'Sin fotos',
+    'view_photos' => 'Ver fotos',
+    'photo_gallery' => 'Galería de fotos',
+    'photo_gallery_for' => 'Fotos de :item',
+    'photo_count' => ':count foto|:count fotos',
+    'photo_viewer' => 'Visor de fotos',
+    'previous_photo' => 'Foto anterior',
+    'next_photo' => 'Foto siguiente',
+    'close_viewer' => 'Cerrar visor',
+    'delete_photo' => 'Eliminar foto',
+    'delete_photo_title' => 'Eliminar foto del inventario',
+    'photo_position' => 'Foto :current de :total',
+    'unit_show_title' => ':code · :property',
+    'unit_info' => 'Datos de la unidad',
+    'back_to_units' => 'Volver a unidades',
+    'view_inventory' => 'Inventario',
+
+    'conditions' => [
+        'good' => 'Bueno',
+        'fair' => 'Regular',
+        'poor' => 'Malo',
+    ],
+
+    'validation' => [
+        'name_required' => 'El nombre del ítem es obligatorio.',
+        'quantity_min' => 'La cantidad debe ser al menos 1.',
+        'condition_invalid' => 'Selecciona una condición válida.',
+        'max_photos' => 'Cada ítem admite un máximo de 5 fotos.',
+        'photo_required' => 'Selecciona una imagen para subir.',
+        'photo_invalid' => 'Solo se permiten imágenes JPG o PNG de hasta 5 MB.',
+    ],
+
+    'messages' => [
+        'item_created' => 'Ítem agregado al inventario.',
+        'item_updated' => 'Ítem actualizado.',
+        'item_deleted' => 'Ítem eliminado del inventario.',
+        'photo_uploaded' => 'Foto subida correctamente.',
+        'photo_deleted' => 'Foto eliminada.',
+        'confirm_delete_photo' => '¿Eliminar esta foto del inventario?',
+        'confirm_delete_item' => '¿Eliminar este ítem del inventario?',
+    ],
+
+    'audit' => [
+        'photo_uploaded' => 'Foto de inventario subida para ítem #:id',
+        'photo_deleted' => 'Foto de inventario eliminada del ítem #:id',
+    ],
+];
