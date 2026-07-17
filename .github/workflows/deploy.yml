@@ -80,12 +80,24 @@ jobs:
           test -n "${DEPLOY_PATH}" || (echo "::error::Missing secret HOSTINGER_PATH" && exit 1)
 
       - name: Setup SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
         run: |
           install -m 700 -d ~/.ssh
-          echo "${{ secrets.HOSTINGER_SSH_KEY }}" | base64 -d > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          if ! ssh-keygen -y -f ~/.ssh/deploy_key >/dev/null 2>&1; then
-            echo "::error::HOSTINGER_SSH_KEY invalida. Genera base64 con: base64 -i ~/.ssh/inmo_deploy | tr -d '\\n'"
+          deploy_key=~/.ssh/deploy_key
+
+          if printf '%s' "$SSH_PRIVATE_KEY" | grep -q 'BEGIN.*PRIVATE KEY'; then
+            printf '%s\n' "$SSH_PRIVATE_KEY" > "$deploy_key"
+          elif printf '%s' "$SSH_PRIVATE_KEY" | tr -d '\r\n' | base64 -d > "$deploy_key" 2>/dev/null; then
+            :
+          else
+            echo "::error::HOSTINGER_SSH_KEY invalida. Usa PEM completo o base64: base64 -i ~/.ssh/inmo_deploy | tr -d '\\n'"
+            exit 1
+          fi
+
+          chmod 600 "$deploy_key"
+          if ! ssh-keygen -y -f "$deploy_key" >/dev/null 2>&1; then
+            echo "::error::HOSTINGER_SSH_KEY no es una clave privada valida. Regenera el secret con: scripts/set-hostinger-ssh-secret.sh"
             exit 1
           fi
           ssh-keyscan -p "${SSH_PORT}" -H "${{ secrets.HOSTINGER_HOST }}" >> ~/.ssh/known_hosts
