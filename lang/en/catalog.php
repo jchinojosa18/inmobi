@@ -139,6 +139,7 @@ return [
         'numbering_distinct' => 'Select a numbering scheme different from the building\'s current one.',
         'numbering_invalid' => 'The selected numbering scheme is not valid.',
         'property_code_required' => 'The property must have a code to generate units.',
+        'property_code_required_with_units' => 'You cannot clear the building code while units still use that prefix.',
         'numbering_locked' => 'This building already uses the «:scheme» numbering scheme. Delete all units or change the building numbering to use another.',
         'floor_rows_min' => 'Add at least one floor with valid units.',
         'duplicate_unit_numbers' => 'There are duplicate unit numbers in the configuration.',

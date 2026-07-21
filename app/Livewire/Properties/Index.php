@@ -6,8 +6,11 @@ use App\Livewire\Concerns\NormalizesPropertyUppercaseFields;
 use App\Models\Organization;
 use App\Models\Plaza;
 use App\Models\Property;
+use App\Support\UnitNumberingService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -125,7 +128,28 @@ class Index extends Component
         }
 
         $property = Property::query()->findOrFail($this->editingId);
-        $property->update($payload);
+        $oldCode = $property->code !== null ? trim((string) $property->code) : '';
+        $newCode = $payload['code'] !== null ? trim((string) $payload['code']) : '';
+        $numberingService = app(UnitNumberingService::class);
+
+        if ($newCode === '' && $oldCode !== '' && $numberingService->propertyHasPrefixedUnits($property, $oldCode)) {
+            throw ValidationException::withMessages([
+                'code' => __('catalog.validation.property_code_required_with_units'),
+            ]);
+        }
+
+        DB::transaction(function () use ($property, $payload, $oldCode, $newCode, $numberingService): void {
+            $property->update($payload);
+
+            if ($oldCode !== '' && $newCode !== '' && $oldCode !== $newCode) {
+                $numberingService->syncUnitCodesAfterPropertyCodeChange(
+                    $property->fresh(),
+                    $oldCode,
+                    $newCode,
+                );
+            }
+        });
+
         session()->flash('success', __('catalog.flash.property_updated'));
 
         $this->resetForm();

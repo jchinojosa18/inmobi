@@ -139,6 +139,7 @@ return [
         'numbering_distinct' => 'Selecciona una nomenclatura distinta a la actual del edificio.',
         'numbering_invalid' => 'La nomenclatura seleccionada no es válida.',
         'property_code_required' => 'La propiedad debe tener un código para generar unidades.',
+        'property_code_required_with_units' => 'No puedes quitar el código del edificio mientras haya unidades con ese prefijo.',
         'numbering_locked' => 'Este edificio ya usa la nomenclatura «:scheme». Elimina todas las unidades o cambia la nomenclatura del edificio para usar otra.',
         'floor_rows_min' => 'Agrega al menos un piso con unidades válidas.',
         'duplicate_unit_numbers' => 'Hay números de unidad duplicados en la configuración.',
