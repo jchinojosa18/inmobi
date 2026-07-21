@@ -12,7 +12,7 @@ Permitir gestionar el **inventario maestro** de cada departamento (unidad en edi
 
 - Snapshots de inventario por contrato (entrada / salida / comparación)
 - Catálogo de ítems configurable por organización en `/settings`
-- Inventario en casas, locales o terrenos (`/houses/{property}`) — reutilizar el mismo componente en fase 2
+- Inventario en casas/locales (`/houses/{property}`) — fase 2: ver `2026-07-21-standalone-house-local-inventory-design.md` (terreno sigue fuera)
 - PDF en fotos de inventario (solo imágenes JPG/PNG)
 - Permisos nuevos (reutilizar `units.*` y `documents.*`)
 
