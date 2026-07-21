@@ -2,11 +2,11 @@
 
 return [
     'title' => 'Inventario maestro',
-    'section_description' => 'Registro de mobiliario y equipo del departamento con evidencia fotográfica.',
+    'section_description' => 'Registro de mobiliario y equipo de la unidad con evidencia fotográfica.',
     'add_item' => 'Agregar ítem',
     'edit_item' => 'Editar ítem',
     'empty' => 'No hay ítems en el inventario todavía.',
-    'empty_cta' => 'Agrega el primer ítem para documentar el departamento.',
+    'empty_cta' => 'Agrega el primer ítem para documentar la unidad.',
     'item_name' => 'Nombre del ítem',
     'quantity' => 'Cantidad',
     'condition' => 'Condición',
