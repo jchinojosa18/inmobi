@@ -33,4 +33,10 @@
             :hint="__('catalog.houses.type_code_hint', ['kind' => $unit->kind, 'code' => $unit->code ?: __('common.no_code')])"
         />
     </div>
+
+    @if (in_array($property->kind, [\App\Models\Property::KIND_STANDALONE_HOUSE, \App\Models\Property::KIND_LOCAL], true))
+        @can('units.view')
+            <livewire:units.inventory-panel :unit="$unit" :key="'inventory-panel-'.$unit->id" />
+        @endcan
+    @endif
 </section>
