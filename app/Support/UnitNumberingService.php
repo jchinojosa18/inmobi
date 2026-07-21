@@ -146,6 +146,65 @@ class UnitNumberingService
         return TextCase::upperRequired(trim((string) $property->code).'-'.$cleanNumber);
     }
 
+    public function propertyHasPrefixedUnits(Property $property, string $propertyCode): bool
+    {
+        $propertyCode = trim($propertyCode);
+        if ($propertyCode === '') {
+            return false;
+        }
+
+        $prefix = $propertyCode.'-';
+
+        return Unit::query()
+            ->where('property_id', $property->id)
+            ->whereNotNull('code')
+            ->get(['code'])
+            ->contains(fn (Unit $unit): bool => str_starts_with((string) $unit->code, $prefix));
+    }
+
+    public function syncUnitCodesAfterPropertyCodeChange(
+        Property $property,
+        ?string $oldCode,
+        ?string $newCode,
+    ): int {
+        $oldCode = $oldCode !== null ? trim($oldCode) : '';
+        $newCode = $newCode !== null ? trim($newCode) : '';
+
+        if ($oldCode === '' || $newCode === '' || $oldCode === $newCode) {
+            return 0;
+        }
+
+        $prefix = $oldCode.'-';
+        $updated = 0;
+
+        $units = Unit::query()
+            ->where('property_id', $property->id)
+            ->whereNotNull('code')
+            ->get(['id', 'code']);
+
+        foreach ($units as $unit) {
+            $code = (string) $unit->code;
+            if (! str_starts_with($code, $prefix)) {
+                continue;
+            }
+
+            $number = $this->extractUnitNumber($oldCode, $code);
+            if ($number === null || $number === '') {
+                continue;
+            }
+
+            Unit::query()
+                ->whereKey($unit->id)
+                ->update([
+                    'code' => $this->buildUnitCode($property, $number),
+                ]);
+
+            $updated++;
+        }
+
+        return $updated;
+    }
+
     private function inferSchemeFromUnits(Property $property): ?string
     {
         $units = Unit::query()
