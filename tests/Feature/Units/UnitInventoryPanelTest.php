@@ -84,7 +84,10 @@ class UnitInventoryPanelTest extends TestCase
 
         Livewire::actingAs($user)
             ->test(InventoryPanel::class, ['unit' => $unit])
-            ->call('deleteItem', $item->id)
+            ->call('confirmDeleteItem', $item->id)
+            ->assertSet('showDeleteItemConfirm', true)
+            ->call('executeDeleteItemConfirm')
+            ->assertSet('showDeleteItemConfirm', false)
             ->assertHasNoErrors();
 
         $this->assertSoftDeleted('unit_inventory_items', ['id' => $item->id]);
@@ -401,6 +404,52 @@ class UnitInventoryPanelTest extends TestCase
         $this->assertSame(3, Document::query()
             ->where('documentable_type', UnitInventoryItem::class)
             ->where('documentable_id', $item->id)
+            ->count());
+    }
+
+    public function test_it_clears_photo_uploads_after_rejected_over_limit_batch(): void
+    {
+        Storage::fake('public');
+        config(['filesystems.documents_disk' => 'public']);
+
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+        $unit = Unit::factory()->create(['organization_id' => $organization->id]);
+        $item = UnitInventoryItem::factory()->create([
+            'organization_id' => $organization->id,
+            'unit_id' => $unit->id,
+        ]);
+
+        Document::factory()->count(3)->create([
+            'organization_id' => $organization->id,
+            'documentable_type' => UnitInventoryItem::class,
+            'documentable_id' => $item->id,
+            'type' => 'UNIT_INVENTORY_PHOTO',
+        ]);
+
+        $component = Livewire::actingAs($user)
+            ->test(InventoryPanel::class, ['unit' => $unit])
+            ->set('photoUploads.'.$item->id, [
+                UploadedFile::fake()->image('a.jpg'),
+                UploadedFile::fake()->image('b.jpg'),
+                UploadedFile::fake()->image('c.jpg'),
+            ])
+            ->call('uploadPhoto', $item->id)
+            ->assertHasErrors(['photoUploads.'.$item->id]);
+
+        $this->assertArrayNotHasKey($item->id, $component->get('photoUploads'));
+        $this->assertSame(1, $component->get('photoUploadInputKeys.'.$item->id));
+
+        $component
+            ->set('photoUploads.'.$item->id, [UploadedFile::fake()->image('ok.jpg')])
+            ->call('uploadPhoto', $item->id)
+            ->assertHasNoErrors()
+            ->assertDispatched('inventory-photo-uploaded');
+
+        $this->assertSame(4, Document::query()
+            ->where('documentable_type', UnitInventoryItem::class)
+            ->where('documentable_id', $item->id)
+            ->where('type', 'UNIT_INVENTORY_PHOTO')
             ->count());
     }
 

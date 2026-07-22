@@ -52,6 +52,10 @@ class InventoryPanel extends Component
 
     public ?int $pendingDeletePhotoId = null;
 
+    public bool $showDeleteItemConfirm = false;
+
+    public ?int $pendingDeleteItemId = null;
+
     public function mount(Unit $unit): void
     {
         if (! (auth()->user()?->can('units.view') ?? false)) {
@@ -132,6 +136,34 @@ class InventoryPanel extends Component
         $this->resetForm();
     }
 
+    public function confirmDeleteItem(int $itemId): void
+    {
+        if (! (auth()->user()?->can('units.manage') ?? false)) {
+            abort(403);
+        }
+
+        $this->unit->inventoryItems()->findOrFail($itemId);
+
+        $this->pendingDeleteItemId = $itemId;
+        $this->showDeleteItemConfirm = true;
+    }
+
+    public function cancelDeleteItemConfirm(): void
+    {
+        $this->showDeleteItemConfirm = false;
+        $this->pendingDeleteItemId = null;
+    }
+
+    public function executeDeleteItemConfirm(): void
+    {
+        if ($this->pendingDeleteItemId === null) {
+            return;
+        }
+
+        $this->deleteItem($this->pendingDeleteItemId);
+        $this->cancelDeleteItemConfirm();
+    }
+
     public function deleteItem(int $itemId): void
     {
         if (! (auth()->user()?->can('units.manage') ?? false)) {
@@ -163,28 +195,35 @@ class InventoryPanel extends Component
         $incomingCount = count($uploads);
 
         if ($incomingCount < 1) {
+            $this->clearPhotoUploadInput($itemId);
             throw ValidationException::withMessages([
                 $key => __('inventory.validation.photo_required'),
             ]);
         }
 
         if ($existingCount + $incomingCount > self::MAX_PHOTOS_PER_ITEM) {
+            $this->clearPhotoUploadInput($itemId);
             throw ValidationException::withMessages([
                 $key => __('inventory.validation.max_photos'),
             ]);
         }
 
-        $this->validate([
-            $key => ['required', 'array', 'min:1'],
-            $key.'.*' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:5120'],
-        ], [
-            $key.'.required' => __('inventory.validation.photo_required'),
-            $key.'.min' => __('inventory.validation.photo_required'),
-            $key.'.*.required' => __('inventory.validation.photo_required'),
-            $key.'.*.image' => __('inventory.validation.photo_invalid'),
-            $key.'.*.mimes' => __('inventory.validation.photo_invalid'),
-            $key.'.*.max' => __('inventory.validation.photo_invalid'),
-        ]);
+        try {
+            $this->validate([
+                $key => ['required', 'array', 'min:1'],
+                $key.'.*' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:5120'],
+            ], [
+                $key.'.required' => __('inventory.validation.photo_required'),
+                $key.'.min' => __('inventory.validation.photo_required'),
+                $key.'.*.required' => __('inventory.validation.photo_required'),
+                $key.'.*.image' => __('inventory.validation.photo_invalid'),
+                $key.'.*.mimes' => __('inventory.validation.photo_invalid'),
+                $key.'.*.max' => __('inventory.validation.photo_invalid'),
+            ]);
+        } catch (ValidationException $exception) {
+            $this->clearPhotoUploadInput($itemId);
+            throw $exception;
+        }
 
         $disk = (string) config('filesystems.documents_disk', 'public');
 
@@ -219,11 +258,17 @@ class InventoryPanel extends Component
             }
         });
 
-        unset($this->photoUploads[$itemId]);
-        $this->photoUploadInputKeys[$itemId] = ($this->photoUploadInputKeys[$itemId] ?? 0) + 1;
+        $this->clearPhotoUploadInput($itemId);
         $this->resetValidation($key);
 
         $this->dispatch('inventory-photo-uploaded');
+    }
+
+    private function clearPhotoUploadInput(int $itemId): void
+    {
+        unset($this->photoUploads[$itemId]);
+        $this->photoUploadInputKeys[$itemId] = ($this->photoUploadInputKeys[$itemId] ?? 0) + 1;
+        $this->dispatch('inventory-photo-upload-reset');
     }
 
     public function openPhotoGallery(int $itemId): void

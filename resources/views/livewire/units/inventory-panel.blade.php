@@ -147,8 +147,10 @@
                             $photoInputId = 'inventory-photo-upload-'.$galleryItem->id.'-'.($photoUploadInputKeys[$galleryItem->id] ?? 0);
                         @endphp
                         <div
+                            wire:key="inventory-photo-upload-wrap-{{ $galleryItem->id }}-{{ $photoUploadInputKeys[$galleryItem->id] ?? 0 }}"
                             x-data="{ fileLabel: '' }"
                             x-on:inventory-photo-uploaded.window="fileLabel = ''"
+                            x-on:inventory-photo-upload-reset.window="fileLabel = ''"
                             class="flex flex-col gap-2"
                         >
                             <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
@@ -156,7 +158,6 @@
                                     id="{{ $photoInputId }}"
                                     type="file"
                                     multiple
-                                    wire:key="inventory-photo-upload-{{ $galleryItem->id }}-{{ $photoUploadInputKeys[$galleryItem->id] ?? 0 }}"
                                     wire:model="photoUploads.{{ $galleryItem->id }}"
                                     accept=".jpg,.jpeg,.png"
                                     x-on:change="
@@ -459,8 +460,7 @@
                                             type="button"
                                             size="sm"
                                             variant="danger"
-                                            wire:click="deleteItem({{ $item->id }})"
-                                            wire:confirm="{{ __('inventory.messages.confirm_delete_item') }}"
+                                            wire:click="confirmDeleteItem({{ $item->id }})"
                                         >
                                             {{ __('common.delete') }}
                                         </x-ui.button>
@@ -473,6 +473,20 @@
             </x-ui.table>
         @endif
     </div>
+
+    @if ($canManageUnits)
+        <x-ui.confirm-modal
+            :open="$showDeleteItemConfirm"
+            :title="__('inventory.delete_item_title')"
+            confirm-action="executeDeleteItemConfirm"
+            cancel-action="cancelDeleteItemConfirm"
+            :confirm-label="__('inventory.delete_item')"
+            :cancel-label="__('common.cancel')"
+            :aria-label="__('inventory.delete_item_title')"
+        >
+            <p class="text-slate-700">{{ __('inventory.messages.confirm_delete_item') }}</p>
+        </x-ui.confirm-modal>
+    @endif
 
     @if ($canDeletePhotos)
         <x-ui.confirm-modal

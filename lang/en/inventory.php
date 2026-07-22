@@ -23,6 +23,8 @@ return [
     'previous_photo' => 'Previous photo',
     'next_photo' => 'Next photo',
     'close_viewer' => 'Close viewer',
+    'delete_item' => 'Delete item',
+    'delete_item_title' => 'Delete inventory item',
     'delete_photo' => 'Delete photo',
     'delete_photo_title' => 'Delete inventory photo',
     'photo_position' => 'Photo :current of :total',

@@ -23,6 +23,8 @@ return [
     'previous_photo' => 'Foto anterior',
     'next_photo' => 'Foto siguiente',
     'close_viewer' => 'Cerrar visor',
+    'delete_item' => 'Eliminar ítem',
+    'delete_item_title' => 'Eliminar ítem del inventario',
     'delete_photo' => 'Eliminar foto',
     'delete_photo_title' => 'Eliminar foto del inventario',
     'photo_position' => 'Foto :current de :total',
