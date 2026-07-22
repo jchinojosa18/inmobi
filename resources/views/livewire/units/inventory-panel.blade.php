@@ -147,18 +147,22 @@
                             $photoInputId = 'inventory-photo-upload-'.$galleryItem->id.'-'.($photoUploadInputKeys[$galleryItem->id] ?? 0);
                         @endphp
                         <div
-                            x-data="{ fileName: '' }"
-                            x-on:inventory-photo-uploaded.window="fileName = ''"
+                            x-data="{ fileLabel: '' }"
+                            x-on:inventory-photo-uploaded.window="fileLabel = ''"
                             class="flex flex-col gap-2"
                         >
                             <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
                                 <input
                                     id="{{ $photoInputId }}"
                                     type="file"
+                                    multiple
                                     wire:key="inventory-photo-upload-{{ $galleryItem->id }}-{{ $photoUploadInputKeys[$galleryItem->id] ?? 0 }}"
                                     wire:model="photoUploads.{{ $galleryItem->id }}"
                                     accept=".jpg,.jpeg,.png"
-                                    x-on:change="fileName = $event.target.files[0]?.name ?? ''"
+                                    x-on:change="
+                                        const files = Array.from($event.target.files || []);
+                                        fileLabel = files.map(file => file.name).join(', ');
+                                    "
                                     class="sr-only"
                                 >
                                 <label
@@ -183,15 +187,22 @@
                                 </x-ui.button>
                             </div>
                             <p
-                                x-show="fileName"
-                                x-text="fileName"
+                                x-show="fileLabel"
+                                x-text="fileLabel"
                                 x-cloak
                                 class="truncate text-xs text-slate-500"
                             ></p>
                         </div>
-                        @error('photoUploads.'.$galleryItem->id)
+                        @php
+                            $photoErrorMessages = collect($errors->getMessages())
+                                ->filter(fn ($messages, $errorKey) => str_starts_with((string) $errorKey, 'photoUploads.'.$galleryItem->id))
+                                ->flatten()
+                                ->unique()
+                                ->values();
+                        @endphp
+                        @foreach ($photoErrorMessages as $message)
                             <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
-                        @enderror
+                        @endforeach
                         <p wire:loading wire:target="photoUploads.{{ $galleryItem->id }}" class="mt-2 text-xs text-slate-500">
                             {{ __('inventory.uploading_photo') }}
                         </p>
