@@ -106,7 +106,7 @@ class UnitInventoryPanelTest extends TestCase
 
         Livewire::actingAs($user)
             ->test(InventoryPanel::class, ['unit' => $unit])
-            ->set('photoUploads.'.$item->id, $file)
+            ->set('photoUploads.'.$item->id, [$file])
             ->call('uploadPhoto', $item->id)
             ->assertHasNoErrors()
             ->assertDispatched('inventory-photo-uploaded');
@@ -330,8 +330,107 @@ class UnitInventoryPanelTest extends TestCase
 
         Livewire::actingAs($user)
             ->test(InventoryPanel::class, ['unit' => $unit])
-            ->set('photoUploads.'.$item->id, $file)
+            ->set('photoUploads.'.$item->id, [$file])
             ->call('uploadPhoto', $item->id)
             ->assertHasErrors(['photoUploads.'.$item->id]);
+    }
+
+    public function test_it_uploads_multiple_photos_for_inventory_item(): void
+    {
+        Storage::fake('public');
+        config(['filesystems.documents_disk' => 'public']);
+
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+        $unit = Unit::factory()->create(['organization_id' => $organization->id]);
+        $item = UnitInventoryItem::factory()->create([
+            'organization_id' => $organization->id,
+            'unit_id' => $unit->id,
+        ]);
+        $files = [
+            UploadedFile::fake()->image('evidence-1.jpg'),
+            UploadedFile::fake()->image('evidence-2.jpg'),
+        ];
+
+        Livewire::actingAs($user)
+            ->test(InventoryPanel::class, ['unit' => $unit])
+            ->set('photoUploads.'.$item->id, $files)
+            ->call('uploadPhoto', $item->id)
+            ->assertHasNoErrors()
+            ->assertDispatched('inventory-photo-uploaded');
+
+        $this->assertSame(2, Document::query()
+            ->where('documentable_type', UnitInventoryItem::class)
+            ->where('documentable_id', $item->id)
+            ->where('type', 'UNIT_INVENTORY_PHOTO')
+            ->count());
+    }
+
+    public function test_it_rejects_entire_batch_when_photos_would_exceed_limit(): void
+    {
+        Storage::fake('public');
+        config(['filesystems.documents_disk' => 'public']);
+
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+        $unit = Unit::factory()->create(['organization_id' => $organization->id]);
+        $item = UnitInventoryItem::factory()->create([
+            'organization_id' => $organization->id,
+            'unit_id' => $unit->id,
+        ]);
+
+        Document::factory()->count(3)->create([
+            'organization_id' => $organization->id,
+            'documentable_type' => UnitInventoryItem::class,
+            'documentable_id' => $item->id,
+            'type' => 'UNIT_INVENTORY_PHOTO',
+        ]);
+
+        $files = [
+            UploadedFile::fake()->image('a.jpg'),
+            UploadedFile::fake()->image('b.jpg'),
+            UploadedFile::fake()->image('c.jpg'),
+        ];
+
+        Livewire::actingAs($user)
+            ->test(InventoryPanel::class, ['unit' => $unit])
+            ->set('photoUploads.'.$item->id, $files)
+            ->call('uploadPhoto', $item->id)
+            ->assertHasErrors(['photoUploads.'.$item->id]);
+
+        $this->assertSame(3, Document::query()
+            ->where('documentable_type', UnitInventoryItem::class)
+            ->where('documentable_id', $item->id)
+            ->count());
+    }
+
+    public function test_it_rejects_entire_batch_when_one_file_is_invalid(): void
+    {
+        Storage::fake('public');
+        config(['filesystems.documents_disk' => 'public']);
+
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+        $unit = Unit::factory()->create(['organization_id' => $organization->id]);
+        $item = UnitInventoryItem::factory()->create([
+            'organization_id' => $organization->id,
+            'unit_id' => $unit->id,
+        ]);
+
+        $files = [
+            UploadedFile::fake()->image('ok.jpg'),
+            UploadedFile::fake()->create('bad.pdf', 100, 'application/pdf'),
+        ];
+
+        Livewire::actingAs($user)
+            ->test(InventoryPanel::class, ['unit' => $unit])
+            ->set('photoUploads.'.$item->id, $files)
+            ->call('uploadPhoto', $item->id)
+            ->assertHasErrors();
+
+        $this->assertSame(0, Document::query()
+            ->where('documentable_type', UnitInventoryItem::class)
+            ->where('documentable_id', $item->id)
+            ->count());
     }
 }
