@@ -7,6 +7,7 @@ use App\Models\Unit;
 use App\Models\UnitInventoryItem;
 use App\Support\AuditLogger;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -34,7 +35,7 @@ class InventoryPanel extends Component
     public string $formNotes = '';
 
     /**
-     * @var array<int, mixed>
+     * @var array<int, array<int, mixed>|mixed>
      */
     public array $photoUploads = [];
 
@@ -150,54 +151,77 @@ class InventoryPanel extends Component
         }
 
         $item = $this->unit->inventoryItems()->findOrFail($itemId);
+        $key = 'photoUploads.'.$itemId;
+        $uploads = $this->photoUploads[$itemId] ?? null;
 
-        if ($item->documents()->count() >= self::MAX_PHOTOS_PER_ITEM) {
+        if (! is_array($uploads)) {
+            $uploads = $uploads !== null ? [$uploads] : [];
+            $this->photoUploads[$itemId] = $uploads;
+        }
+
+        $existingCount = $item->documents()->count();
+        $incomingCount = count($uploads);
+
+        if ($incomingCount < 1) {
             throw ValidationException::withMessages([
-                'photoUploads.'.$itemId => __('inventory.validation.max_photos'),
+                $key => __('inventory.validation.photo_required'),
+            ]);
+        }
+
+        if ($existingCount + $incomingCount > self::MAX_PHOTOS_PER_ITEM) {
+            throw ValidationException::withMessages([
+                $key => __('inventory.validation.max_photos'),
             ]);
         }
 
         $this->validate([
-            'photoUploads.'.$itemId => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:5120'],
+            $key => ['required', 'array', 'min:1'],
+            $key.'.*' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:5120'],
         ], [
-            'photoUploads.'.$itemId.'.required' => __('inventory.validation.photo_required'),
-            'photoUploads.'.$itemId.'.image' => __('inventory.validation.photo_invalid'),
-            'photoUploads.'.$itemId.'.mimes' => __('inventory.validation.photo_invalid'),
-            'photoUploads.'.$itemId.'.max' => __('inventory.validation.photo_invalid'),
+            $key.'.required' => __('inventory.validation.photo_required'),
+            $key.'.min' => __('inventory.validation.photo_required'),
+            $key.'.*.required' => __('inventory.validation.photo_required'),
+            $key.'.*.image' => __('inventory.validation.photo_invalid'),
+            $key.'.*.mimes' => __('inventory.validation.photo_invalid'),
+            $key.'.*.max' => __('inventory.validation.photo_invalid'),
         ]);
 
-        $upload = $this->photoUploads[$itemId];
         $disk = (string) config('filesystems.documents_disk', 'public');
-        $path = $upload->store('documents/unitinventoryitem/'.$item->organization_id, $disk);
 
-        Document::query()->create([
-            'organization_id' => (int) $item->organization_id,
-            'documentable_type' => UnitInventoryItem::class,
-            'documentable_id' => $item->id,
-            'path' => $path,
-            'mime' => $upload->getMimeType() ?: 'image/jpeg',
-            'size' => $upload->getSize() ?: 0,
-            'type' => 'UNIT_INVENTORY_PHOTO',
-            'tags' => ['inventory', 'photo'],
-            'meta' => [
-                'disk' => $disk,
-                'uploaded_at' => now()->toISOString(),
-            ],
-        ]);
+        DB::transaction(function () use ($item, $uploads, $disk): void {
+            foreach ($uploads as $upload) {
+                $path = $upload->store('documents/unitinventoryitem/'.$item->organization_id, $disk);
 
-        app(AuditLogger::class)->log(
-            action: 'inventory.photo_uploaded',
-            auditable: $item,
-            summary: __('inventory.audit.photo_uploaded', ['id' => $item->id]),
-            meta: [
-                'unit_id' => $this->unit->id,
-                'item_id' => $item->id,
-            ],
-        );
+                Document::query()->create([
+                    'organization_id' => (int) $item->organization_id,
+                    'documentable_type' => UnitInventoryItem::class,
+                    'documentable_id' => $item->id,
+                    'path' => $path,
+                    'mime' => $upload->getMimeType() ?: 'image/jpeg',
+                    'size' => $upload->getSize() ?: 0,
+                    'type' => 'UNIT_INVENTORY_PHOTO',
+                    'tags' => ['inventory', 'photo'],
+                    'meta' => [
+                        'disk' => $disk,
+                        'uploaded_at' => now()->toISOString(),
+                    ],
+                ]);
+
+                app(AuditLogger::class)->log(
+                    action: 'inventory.photo_uploaded',
+                    auditable: $item,
+                    summary: __('inventory.audit.photo_uploaded', ['id' => $item->id]),
+                    meta: [
+                        'unit_id' => $this->unit->id,
+                        'item_id' => $item->id,
+                    ],
+                );
+            }
+        });
 
         unset($this->photoUploads[$itemId]);
         $this->photoUploadInputKeys[$itemId] = ($this->photoUploadInputKeys[$itemId] ?? 0) + 1;
-        $this->resetValidation('photoUploads.'.$itemId);
+        $this->resetValidation($key);
 
         $this->dispatch('inventory-photo-uploaded');
     }
