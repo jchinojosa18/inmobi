@@ -4,8 +4,10 @@ namespace App\Livewire\Contracts;
 
 use App\Actions\Contracts\RegisterDepositHoldAction;
 use App\Models\Contract;
+use App\Support\DepositBalanceService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class DepositHoldForm extends Component
@@ -18,11 +20,22 @@ class DepositHoldForm extends Component
 
     public ?string $deposit_notes = null;
 
-    public function mount(Contract $contract): void
+    public function mount(Contract $contract, DepositBalanceService $depositBalanceService): void
     {
         $this->contract = $contract;
         $this->deposit_received_at = now('America/Tijuana')->toDateString();
-        $this->deposit_amount = number_format((float) $contract->deposit_amount, 2, '.', '');
+        $this->deposit_amount = number_format(
+            $depositBalanceService->remainingDepositHoldAmount($contract),
+            2,
+            '.',
+            ''
+        );
+    }
+
+    #[On('deposit-hold-registered')]
+    public function onDepositHoldRegistered(): void
+    {
+        // Re-render; remaining/prefill refreshed in render().
     }
 
     public function registerDeposit(RegisterDepositHoldAction $action): void
@@ -53,7 +66,9 @@ class DepositHoldForm extends Component
                 userId: auth()->id(),
             );
         } catch (ValidationException $exception) {
-            $message = $exception->errors()['month_close'][0] ?? $exception->errors()['deposit_amount'][0] ?? __('contracts.validation.deposit_failed');
+            $message = $exception->errors()['month_close'][0]
+                ?? $exception->errors()['deposit_amount'][0]
+                ?? __('contracts.validation.deposit_failed');
             $this->addError('deposit_general', $message);
 
             return;
@@ -61,11 +76,29 @@ class DepositHoldForm extends Component
 
         $this->reset('deposit_notes');
         session()->flash('success', __('contracts.flash.deposit_registered'));
+        $this->deposit_amount = number_format(
+            app(DepositBalanceService::class)->remainingDepositHoldAmount($this->contract->fresh()),
+            2,
+            '.',
+            ''
+        );
         $this->dispatch('deposit-hold-registered');
     }
 
-    public function render(): View
+    public function render(DepositBalanceService $depositBalanceService): View
     {
-        return view('livewire.contracts.deposit-hold-form');
+        $contract = Contract::query()->findOrFail($this->contract->id);
+        $registered = $depositBalanceService->registeredDepositHoldAmount($contract);
+        $remaining = $depositBalanceService->remainingDepositHoldAmount($contract);
+
+        if ($remaining > 0 && (float) $this->deposit_amount <= 0) {
+            $this->deposit_amount = number_format($remaining, 2, '.', '');
+        }
+
+        return view('livewire.contracts.deposit-hold-form', [
+            'contractDepositAmount' => (float) $contract->deposit_amount,
+            'registeredDeposit' => $registered,
+            'remainingDeposit' => $remaining,
+        ]);
     }
 }

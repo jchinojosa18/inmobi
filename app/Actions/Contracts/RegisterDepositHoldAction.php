@@ -5,6 +5,7 @@ namespace App\Actions\Contracts;
 use App\Models\Charge;
 use App\Models\Contract;
 use App\Support\AuditLogger;
+use App\Support\DepositBalanceService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -13,6 +14,7 @@ class RegisterDepositHoldAction
 {
     public function __construct(
         private readonly AuditLogger $auditLogger,
+        private readonly DepositBalanceService $depositBalanceService,
     ) {}
 
     public function execute(Contract $contract, float $amount, string $receivedAt, ?string $notes, ?int $userId): Charge
@@ -42,6 +44,22 @@ class RegisterDepositHoldAction
 
             if ($existingCharge !== null) {
                 return $existingCharge;
+            }
+
+            $remaining = $this->depositBalanceService->remainingDepositHoldAmount($lockedContract);
+
+            if ($remaining <= 0) {
+                throw ValidationException::withMessages([
+                    'deposit_amount' => __('contracts.validation.deposit_already_complete'),
+                ]);
+            }
+
+            if (round($amount, 2) > $remaining) {
+                throw ValidationException::withMessages([
+                    'deposit_amount' => __('contracts.validation.deposit_exceeds_remaining', [
+                        'remaining' => number_format($remaining, 2, '.', ''),
+                    ]),
+                ]);
             }
 
             return Charge::query()

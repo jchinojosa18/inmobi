@@ -143,6 +143,7 @@ Corrección manual mínima por contrato (tasa mal capturada):
 ### 4.3 Depósitos y finiquito
 - Tipos: `DEPOSIT_HOLD`, `MOVEOUT`, `DEPOSIT_APPLY` (en [`Charge`](../app/Models/Charge.php)).
 - `DEPOSIT_HOLD` se puede pagar con flujo normal para evidencia/recibo.
+- Tope de registro: la suma de cargos `DEPOSIT_HOLD` de un contrato no puede superar `contracts.deposit_amount` (parciales permitidos). Guard en [`RegisterDepositHoldAction`](../app/Actions/Contracts/RegisterDepositHoldAction.php); helpers en [`DepositBalanceService`](../app/Support/DepositBalanceService.php) (`registeredDepositHoldAmount` / `remainingDepositHoldAmount`). UI en detalle de contrato oculta el form al completar.
 - Finiquito: [`ProcessContractSettlementAction`](../app/Actions/Contracts/ProcessContractSettlementAction.php)
   - crea `MOVEOUT`
   - aplica depósito con `DEPOSIT_APPLY` (negativo)

@@ -9,6 +9,23 @@ use App\Models\PaymentAllocation;
 
 class DepositBalanceService
 {
+    public function registeredDepositHoldAmount(Contract $contract): float
+    {
+        return round((float) Charge::query()
+            ->withoutOrganizationScope()
+            ->where('organization_id', $contract->organization_id)
+            ->where('contract_id', $contract->id)
+            ->where('type', Charge::TYPE_DEPOSIT_HOLD)
+            ->sum('amount'), 2);
+    }
+
+    public function remainingDepositHoldAmount(Contract $contract): float
+    {
+        $depositAmount = round((float) $contract->deposit_amount, 2);
+
+        return round(max($depositAmount - $this->registeredDepositHoldAmount($contract), 0), 2);
+    }
+
     public function paidDepositAmount(Contract $contract): float
     {
         return round((float) PaymentAllocation::query()
