@@ -89,6 +89,30 @@ class DepositHoldFormTest extends TestCase
             ->assertHasErrors(['deposit_general']);
     }
 
+    public function test_void_deposit_removes_hold_and_restores_form(): void
+    {
+        [$user, $contract] = $this->makeContractWithUser(depositAmount: 1000.0);
+
+        $hold = Charge::factory()->create([
+            'organization_id' => $contract->organization_id,
+            'contract_id' => $contract->id,
+            'unit_id' => $contract->unit_id,
+            'type' => Charge::TYPE_DEPOSIT_HOLD,
+            'period' => '2026-07',
+            'charge_date' => '2026-07-21',
+            'amount' => 1000,
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(DepositHoldForm::class, ['contract' => $contract])
+            ->call('confirmVoidDeposit', $hold->id)
+            ->call('executeVoidDeposit')
+            ->assertHasNoErrors()
+            ->assertSee(__('contracts.register_deposit'));
+
+        $this->assertSoftDeleted('charges', ['id' => $hold->id]);
+    }
+
     /**
      * @return array{0: User, 1: Contract}
      */

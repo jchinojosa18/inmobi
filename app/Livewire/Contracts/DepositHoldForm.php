@@ -3,9 +3,12 @@
 namespace App\Livewire\Contracts;
 
 use App\Actions\Contracts\RegisterDepositHoldAction;
+use App\Actions\Contracts\VoidDepositHoldAction;
+use App\Models\Charge;
 use App\Models\Contract;
 use App\Support\DepositBalanceService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -20,6 +23,10 @@ class DepositHoldForm extends Component
 
     public ?string $deposit_notes = null;
 
+    public bool $showVoidConfirm = false;
+
+    public ?int $voidingChargeId = null;
+
     public function mount(Contract $contract, DepositBalanceService $depositBalanceService): void
     {
         $this->contract = $contract;
@@ -33,7 +40,8 @@ class DepositHoldForm extends Component
     }
 
     #[On('deposit-hold-registered')]
-    public function onDepositHoldRegistered(): void
+    #[On('deposit-hold-voided')]
+    public function onDepositHoldChanged(): void
     {
         // Re-render; remaining/prefill refreshed in render().
     }
@@ -85,6 +93,61 @@ class DepositHoldForm extends Component
         $this->dispatch('deposit-hold-registered');
     }
 
+    public function confirmVoidDeposit(int $chargeId): void
+    {
+        if (! (auth()->user()?->can('charges.manage') ?? false)) {
+            abort(403);
+        }
+
+        $this->voidingChargeId = $chargeId;
+        $this->showVoidConfirm = true;
+    }
+
+    public function cancelVoidDeposit(): void
+    {
+        $this->showVoidConfirm = false;
+        $this->voidingChargeId = null;
+    }
+
+    public function executeVoidDeposit(VoidDepositHoldAction $action): void
+    {
+        if (! (auth()->user()?->can('charges.manage') ?? false)) {
+            abort(403);
+        }
+
+        if ($this->voidingChargeId === null) {
+            $this->cancelVoidDeposit();
+
+            return;
+        }
+
+        try {
+            $action->execute(
+                contract: $this->contract,
+                chargeId: $this->voidingChargeId,
+                userId: auth()->id(),
+            );
+        } catch (ValidationException $exception) {
+            $message = $exception->errors()['month_close'][0]
+                ?? $exception->errors()['deposit_void'][0]
+                ?? __('contracts.validation.deposit_void_failed');
+            $this->addError('deposit_general', $message);
+            $this->cancelVoidDeposit();
+
+            return;
+        }
+
+        $this->cancelVoidDeposit();
+        session()->flash('success', __('contracts.flash.deposit_voided'));
+        $this->deposit_amount = number_format(
+            app(DepositBalanceService::class)->remainingDepositHoldAmount($this->contract->fresh()),
+            2,
+            '.',
+            ''
+        );
+        $this->dispatch('deposit-hold-voided');
+    }
+
     public function render(DepositBalanceService $depositBalanceService): View
     {
         $contract = Contract::query()->findOrFail($this->contract->id);
@@ -99,6 +162,21 @@ class DepositHoldForm extends Component
             'contractDepositAmount' => (float) $contract->deposit_amount,
             'registeredDeposit' => $registered,
             'remainingDeposit' => $remaining,
+            'depositHolds' => $this->activeDepositHolds($contract),
+            'canManageCharges' => auth()->user()?->can('charges.manage') ?? false,
         ]);
+    }
+
+    /**
+     * @return Collection<int, Charge>
+     */
+    private function activeDepositHolds(Contract $contract): Collection
+    {
+        return Charge::query()
+            ->where('contract_id', $contract->id)
+            ->where('type', Charge::TYPE_DEPOSIT_HOLD)
+            ->orderBy('charge_date')
+            ->orderBy('id')
+            ->get();
     }
 }

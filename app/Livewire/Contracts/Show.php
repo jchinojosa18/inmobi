@@ -22,6 +22,10 @@ class Show extends Component
     #[On('contract-updated')]
     public function onContractUpdated(): void {}
 
+    #[On('deposit-hold-registered')]
+    #[On('deposit-hold-voided')]
+    public function onDepositHoldChanged(): void {}
+
     public Contract $contract;
 
     public string $adjustment_amount = '';
@@ -112,11 +116,14 @@ class Show extends Component
 
         $ledgerRows = $this->buildLedgerRows($contract);
         $groupedLedger = $this->groupLedgerRows($ledgerRows);
+        $operationalRows = $ledgerRows->reject(
+            fn (array $row): bool => $this->isDepositLedgerType($row['type'])
+        );
 
-        $chargesTotal = round((float) $ledgerRows->sum('amount'), 2);
-        $allocatedTotal = round((float) $ledgerRows->sum('paid'), 2);
+        $chargesTotal = round((float) $operationalRows->sum('amount'), 2);
+        $allocatedTotal = round((float) $operationalRows->sum('paid'), 2);
         $creditTotal = (float) ($contract->creditBalance?->balance ?? 0);
-        $pendingBalance = max(0, round((float) $ledgerRows->sum('balance'), 2));
+        $pendingBalance = max(0, round((float) $operationalRows->sum('balance'), 2));
 
         $payments = Payment::query()
             ->where('contract_id', $contract->id)
@@ -233,16 +240,25 @@ class Show extends Component
         return $ledgerRows
             ->groupBy('period_key')
             ->map(function (Collection $rows): array {
+                $operationalRows = $rows->reject(
+                    fn (array $row): bool => $this->isDepositLedgerType($row['type'])
+                );
+
                 return [
                     'period_key' => (string) $rows->first()['period_key'],
                     'period_label' => (string) $rows->first()['period_label'],
-                    'charges_total' => round((float) $rows->sum('amount'), 2),
-                    'paid_total' => round((float) $rows->sum('paid'), 2),
-                    'balance_total' => round((float) $rows->sum('balance'), 2),
+                    'charges_total' => round((float) $operationalRows->sum('amount'), 2),
+                    'paid_total' => round((float) $operationalRows->sum('paid'), 2),
+                    'balance_total' => round((float) $operationalRows->sum('balance'), 2),
                     'rows' => $rows->values(),
                 ];
             })
             ->values();
+    }
+
+    private function isDepositLedgerType(string $type): bool
+    {
+        return in_array($type, [Charge::TYPE_DEPOSIT_HOLD, Charge::TYPE_DEPOSIT_APPLY], true);
     }
 
     /**
@@ -336,6 +352,10 @@ class Show extends Component
         ?CarbonImmutable $dueDate,
         ?CarbonImmutable $graceUntil
     ): array {
+        if (in_array($charge->type, [Charge::TYPE_DEPOSIT_HOLD, Charge::TYPE_DEPOSIT_APPLY], true)) {
+            return ['label' => __('contracts.charge_statuses.guarantee'), 'tone' => 'blue'];
+        }
+
         if ($balance <= 0) {
             return ['label' => __('contracts.charge_statuses.paid'), 'tone' => 'emerald'];
         }

@@ -1,0 +1,122 @@
+<?php
+
+namespace Tests\Unit\Actions;
+
+use App\Actions\Contracts\VoidDepositHoldAction;
+use App\Models\Charge;
+use App\Models\Contract;
+use App\Models\Organization;
+use App\Models\Payment;
+use App\Models\PaymentAllocation;
+use App\Models\Property;
+use App\Models\Tenant;
+use App\Models\Unit;
+use App\Support\DepositBalanceService;
+use App\Support\TenantContext;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
+use Tests\TestCase;
+
+class VoidDepositHoldActionTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        TenantContext::clear();
+    }
+
+    public function test_void_soft_deletes_hold_and_restores_remaining(): void
+    {
+        $contract = $this->makeContract(1000.0);
+        TenantContext::setOrganizationId($contract->organization_id);
+
+        $hold = Charge::factory()->create([
+            'organization_id' => $contract->organization_id,
+            'contract_id' => $contract->id,
+            'unit_id' => $contract->unit_id,
+            'type' => Charge::TYPE_DEPOSIT_HOLD,
+            'period' => '2026-07',
+            'charge_date' => '2026-07-21',
+            'amount' => 1000,
+        ]);
+
+        app(VoidDepositHoldAction::class)->execute($contract, $hold->id, null);
+
+        $this->assertSoftDeleted('charges', ['id' => $hold->id]);
+        $this->assertSame(0.0, app(DepositBalanceService::class)->registeredDepositHoldAmount($contract));
+        $this->assertSame(1000.0, app(DepositBalanceService::class)->remainingDepositHoldAmount($contract));
+    }
+
+    public function test_void_is_blocked_when_hold_has_payment_allocation(): void
+    {
+        $contract = $this->makeContract(1000.0);
+        TenantContext::setOrganizationId($contract->organization_id);
+
+        $hold = Charge::factory()->create([
+            'organization_id' => $contract->organization_id,
+            'contract_id' => $contract->id,
+            'unit_id' => $contract->unit_id,
+            'type' => Charge::TYPE_DEPOSIT_HOLD,
+            'period' => '2026-07',
+            'charge_date' => '2026-07-21',
+            'amount' => 1000,
+        ]);
+
+        $payment = Payment::factory()->create([
+            'organization_id' => $contract->organization_id,
+            'contract_id' => $contract->id,
+            'amount' => 1000,
+        ]);
+
+        PaymentAllocation::factory()->create([
+            'organization_id' => $contract->organization_id,
+            'payment_id' => $payment->id,
+            'charge_id' => $hold->id,
+            'amount' => 1000,
+        ]);
+
+        $this->expectException(ValidationException::class);
+        app(VoidDepositHoldAction::class)->execute($contract, $hold->id, null);
+    }
+
+    public function test_void_is_blocked_when_contract_is_ended(): void
+    {
+        $contract = $this->makeContract(1000.0, Contract::STATUS_ENDED);
+        TenantContext::setOrganizationId($contract->organization_id);
+
+        $hold = Charge::factory()->create([
+            'organization_id' => $contract->organization_id,
+            'contract_id' => $contract->id,
+            'unit_id' => $contract->unit_id,
+            'type' => Charge::TYPE_DEPOSIT_HOLD,
+            'period' => '2026-07',
+            'charge_date' => '2026-07-21',
+            'amount' => 1000,
+        ]);
+
+        $this->expectException(ValidationException::class);
+        app(VoidDepositHoldAction::class)->execute($contract, $hold->id, null);
+    }
+
+    private function makeContract(float $depositAmount, string $status = Contract::STATUS_ACTIVE): Contract
+    {
+        $organization = Organization::factory()->create();
+        $property = Property::factory()->create(['organization_id' => $organization->id]);
+        $unit = Unit::factory()->create([
+            'organization_id' => $organization->id,
+            'property_id' => $property->id,
+        ]);
+        $tenant = Tenant::factory()->create(['organization_id' => $organization->id]);
+
+        return Contract::factory()->create([
+            'organization_id' => $organization->id,
+            'unit_id' => $unit->id,
+            'tenant_id' => $tenant->id,
+            'deposit_amount' => $depositAmount,
+            'rent_amount' => 0,
+            'status' => $status,
+        ]);
+    }
+}
