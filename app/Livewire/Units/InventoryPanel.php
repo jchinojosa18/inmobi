@@ -170,8 +170,26 @@ class InventoryPanel extends Component
             abort(403);
         }
 
-        $item = $this->unit->inventoryItems()->findOrFail($itemId);
-        $item->delete();
+        $item = $this->unit->inventoryItems()->with('documents')->findOrFail($itemId);
+
+        DB::transaction(function () use ($item): void {
+            foreach ($item->documents as $document) {
+                $disk = (string) data_get($document->meta, 'disk', config('filesystems.documents_disk', 'public'));
+
+                if (Storage::disk($disk)->exists($document->path)) {
+                    Storage::disk($disk)->delete($document->path);
+                }
+
+                $document->delete();
+            }
+
+            $item->delete();
+        });
+
+        if ($this->galleryItemId === $itemId) {
+            $this->closePhotoGallery();
+            $this->dispatchPhotoViewerSync(null);
+        }
 
         session()->flash('success', __('inventory.messages.item_deleted'));
     }

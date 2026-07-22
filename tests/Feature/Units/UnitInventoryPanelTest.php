@@ -93,6 +93,43 @@ class UnitInventoryPanelTest extends TestCase
         $this->assertSoftDeleted('unit_inventory_items', ['id' => $item->id]);
     }
 
+    public function test_it_deletes_related_photos_when_deleting_inventory_item(): void
+    {
+        Storage::fake('public');
+        config(['filesystems.documents_disk' => 'public']);
+
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+        $unit = Unit::factory()->create(['organization_id' => $organization->id]);
+        $item = UnitInventoryItem::factory()->create([
+            'organization_id' => $organization->id,
+            'unit_id' => $unit->id,
+        ]);
+
+        $path = 'documents/unitinventoryitem/'.$organization->id.'/cascade.jpg';
+        Storage::disk('public')->put($path, 'imagen');
+
+        $document = Document::factory()->create([
+            'organization_id' => $organization->id,
+            'documentable_type' => UnitInventoryItem::class,
+            'documentable_id' => $item->id,
+            'path' => $path,
+            'mime' => 'image/jpeg',
+            'type' => 'UNIT_INVENTORY_PHOTO',
+            'meta' => ['disk' => 'public'],
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(InventoryPanel::class, ['unit' => $unit])
+            ->call('confirmDeleteItem', $item->id)
+            ->call('executeDeleteItemConfirm')
+            ->assertHasNoErrors();
+
+        $this->assertSoftDeleted('unit_inventory_items', ['id' => $item->id]);
+        $this->assertSoftDeleted('documents', ['id' => $document->id]);
+        Storage::disk('public')->assertMissing($path);
+    }
+
     public function test_it_uploads_photo_for_inventory_item(): void
     {
         Storage::fake('public');
