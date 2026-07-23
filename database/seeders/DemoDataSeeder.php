@@ -46,6 +46,7 @@ class DemoDataSeeder extends Seeder
                 'organization_id' => $organization->id,
                 'name' => 'Smoke Admin',
                 'password' => 'password',
+                'email_verified_at' => now(),
             ]
         );
 

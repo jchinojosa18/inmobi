@@ -7,11 +7,11 @@ use App\Models\Property;
 use App\Models\Unit;
 use App\Support\ContractOverdueQuery;
 use App\Support\OrganizationSettingsService;
+use App\Support\PaymentReceiptShareUrl;
 use App\Support\TenantContext;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\URL;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -120,11 +120,7 @@ class Index extends Component
             $shareableLink = null;
 
             if (! empty($row->latest_payment_id)) {
-                $shareableLink = URL::temporarySignedRoute(
-                    'payments.receipt.share',
-                    now()->addDays(7),
-                    ['paymentId' => (int) $row->latest_payment_id]
-                );
+                $shareableLink = PaymentReceiptShareUrl::make((int) $row->latest_payment_id);
             }
 
             $unitLabel = trim((string) ($row->property_name.' / '.($row->unit_name ?: ($row->unit_code ?: 'N/D'))));

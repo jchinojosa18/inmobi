@@ -9,6 +9,17 @@ use Illuminate\Support\Collection;
 class ChargeAllocationPrioritizer
 {
     /**
+     * Deposit ledger types are not cobranza targets.
+     * DEPOSIT_HOLD is received at registration; DEPOSIT_APPLY is settlement-only.
+     *
+     * @var list<string>
+     */
+    private const EXCLUDED_TYPES = [
+        Charge::TYPE_DEPOSIT_HOLD,
+        Charge::TYPE_DEPOSIT_APPLY,
+    ];
+
+    /**
      * @return Collection<int, Charge>
      */
     public function pendingPrioritized(Contract $contract): Collection
@@ -16,6 +27,7 @@ class ChargeAllocationPrioritizer
         /** @var Collection<int, Charge> $charges */
         $charges = Charge::query()
             ->where('contract_id', $contract->id)
+            ->whereNotIn('type', self::EXCLUDED_TYPES)
             ->withSum('paymentAllocations as allocated_amount', 'amount')
             ->lockForUpdate()
             ->get();

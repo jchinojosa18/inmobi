@@ -5,7 +5,7 @@
 - El flujo financiero está basado en ledger: `Charge` + `Payment` + `PaymentAllocation`.
 - La fuente de verdad de ingresos operativos son las allocations (no `payments.amount` bruto).
 - Hay motor de multas diarias compuestas (`inmo:penalties:run`) con idempotencia fuerte.
-- Hay generación de rentas mensuales (`inmo:generate-rent`) al crear/activar contrato y por comando/scheduler.
+- Hay generación de rentas mensuales (`inmo:generate-rent`): scheduler diario (due-soon, 5 días antes del vencimiento), al crear/activar contrato, y `--month=` para backfill.
 - Hay depósitos/finiquito (`DEPOSIT_HOLD`, `MOVEOUT`, `DEPOSIT_APPLY`) con PDF de finiquito.
 - Hay cierre mensual con snapshot y bloqueo de movimientos en meses cerrados.
 - Hay configuración por organización (`/settings`) para folios, plantillas y categorías de egreso.
@@ -138,13 +138,15 @@ Corrección manual mínima por contrato (tasa mal capturada):
   2. Tras generar/asegurar RENT mensual ([`GenerateMonthlyRentChargesAction`](../app/Actions/Charges/GenerateMonthlyRentChargesAction.php)).
   3. Tras crear cada PENALTY ([`RunDailyPenaltiesAction`](../app/Actions/Penalties/RunDailyPenaltiesAction.php)).
   4. Al inicio del finiquito ([`ProcessContractSettlementAction`](../app/Actions/Contracts/ProcessContractSettlementAction.php)), antes de calcular adeudo y aplicar depósito.
+  5. Tras crear un `ADJUSTMENT` desde el show del contrato ([`Contracts\Show::createAdjustment`](../app/Livewire/Contracts/Show.php)).
 - Prioridad compartida en [`ChargeAllocationPrioritizer`](../app/Support/ChargeAllocationPrioritizer.php).
 
 ### 4.3 Depósitos y finiquito
 - Tipos: `DEPOSIT_HOLD`, `MOVEOUT`, `DEPOSIT_APPLY` (en [`Charge`](../app/Models/Charge.php)).
-- `DEPOSIT_HOLD` se puede pagar con flujo normal para evidencia/recibo.
-- Tope de registro: la suma de cargos `DEPOSIT_HOLD` de un contrato no puede superar `contracts.deposit_amount` (parciales permitidos). Guard en [`RegisterDepositHoldAction`](../app/Actions/Contracts/RegisterDepositHoldAction.php); helpers en [`DepositBalanceService`](../app/Support/DepositBalanceService.php) (`registeredDepositHoldAmount` / `remainingDepositHoldAmount`). UI en detalle de contrato oculta el form al completar.
-- El estado de cuenta del contrato **excluye** `DEPOSIT_HOLD`/`DEPOSIT_APPLY` del saldo pendiente (el depósito es garantía, no adeudo operativo); estatus UI = Garantía. Anulación de captura errónea: [`VoidDepositHoldAction`](../app/Actions/Contracts/VoidDepositHoldAction.php) (soft-delete; bloquea si hay pago/finiquito).
+- `DEPOSIT_HOLD` es garantía recibida (no cobranza): al registrar se crea el cargo con folio propio `DEP-YYYY-#####` en `meta.deposit_receipt_folio`, PDF en `/deposits/{id}/receipt.pdf`, y evidencia vía `Documents` sobre el cargo. **No** crea `Payment` de cobranza.
+- Finiquito: `availableDepositAmount` usa lo **registrado** (`registeredDepositHoldAmount`), no allocations de pagos.
+- Tope de registro: suma de `DEPOSIT_HOLD` ≤ `contracts.deposit_amount`. Guard en [`RegisterDepositHoldAction`](../app/Actions/Contracts/RegisterDepositHoldAction.php).
+- Estado de cuenta: excluye `DEPOSIT_HOLD`/`DEPOSIT_APPLY` del saldo pendiente; estatus UI = Garantía. Anulación: [`VoidDepositHoldAction`](../app/Actions/Contracts/VoidDepositHoldAction.php).
 - Finiquito: [`ProcessContractSettlementAction`](../app/Actions/Contracts/ProcessContractSettlementAction.php)
   - crea `MOVEOUT`
   - aplica depósito con `DEPOSIT_APPLY` (negativo)
@@ -238,7 +240,9 @@ Definición en [`routes/console.php`](../routes/console.php):
 - Heartbeat scheduler: cada minuto.
 - `inmo:daily`: diario `00:15` America/Tijuana.
 - `inmo:penalties:run`: diario `00:05` America/Tijuana.
-- `inmo:generate-rent --month=YYYY-MM`: día 1 a `00:10` America/Tijuana.
+- `inmo:generate-rent` (sin `--month`): diario `00:10` America/Tijuana — genera RENT cuando `hoy >= due_date - 5 días` (catch-up incluido; candidatos mes anterior/actual/siguiente).
+- `inmo:generate-rent --month=YYYY-MM`: backfill forzado del mes completo.
+- Al crear/activar contrato: sigue generando RENT del mes corriente de inmediato.
 - `inmo:backup`: diario `03:10` America/Tijuana.
 - `inmo:logs:prune`: mensual día 1 a `03:15` America/Tijuana.
 - `inmo:backup:prune`: mensual día 1 a `03:35` America/Tijuana.
@@ -313,7 +317,7 @@ Definidas en [`routes/web.php`](../routes/web.php) (todas auth salvo donde se in
   - Incluye panel de gobernanza Owner/Admin y transferencia de ownership (solo owner actual).
 - `/admin/system` (`permission:system.view`) -> [`Admin\SystemStatus`](../app/Livewire/Admin/SystemStatus.php)
 - `/admin/health` (`permission:system.view`) JSON health simple
-- `/receipts/{paymentId}/shared.pdf` firmado (sin auth, con `signed`)
+- `/receipts/{paymentId}/shared.pdf` firmado relativo (sin auth, middleware `signed:relative`; helper [`PaymentReceiptShareUrl`](../app/Support/PaymentReceiptShareUrl.php))
 
 Navegación principal está en [`resources/views/layouts/app.blade.php`](../resources/views/layouts/app.blade.php).
 

@@ -8,6 +8,7 @@ use App\Support\DepositBalanceService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use RuntimeException;
@@ -35,6 +36,10 @@ class SettlementWizard extends Component
     public ?string $lastSettlementPdfUrl = null;
 
     public ?string $lastSettlementSummary = null;
+
+    #[On('deposit-hold-registered')]
+    #[On('deposit-hold-voided')]
+    public function onDepositHoldChanged(): void {}
 
     public function mount(Contract $contract): void
     {

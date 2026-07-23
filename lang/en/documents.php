@@ -7,7 +7,11 @@ return [
     'size' => 'Size',
     'upload_title' => 'Upload document',
     'allowed_types' => 'Allowed: JPG, PNG, PDF. Maximum 5 MB.',
+    'allowed_types_contract' => 'Allowed: PDF. Maximum 10 MB.',
     'upload_button' => 'Upload document',
+    'choose_file' => 'Choose file',
+    'delete_title' => 'Delete document',
+    'confirm_delete' => 'Delete this document? This action cannot be undone.',
     'uploading' => 'Uploading file...',
     'no_upload_permission' => 'You do not have permission to upload documents.',
     'upload_demo_title' => 'Upload evidence/document',
@@ -19,10 +23,14 @@ return [
     'download_file' => 'Download file',
     'uploaded_success' => 'Document uploaded successfully.',
     'audit_uploaded' => 'Document uploaded on :type #:id',
+    'audit_deleted' => 'Document deleted from :type #:id',
 
     'validation' => [
         'required' => 'Select a file to upload.',
         'max' => 'The file exceeds the 5 MB limit.',
+        'max_contract' => 'The file exceeds the 10 MB limit.',
         'mimes' => 'Only JPG, PNG, or PDF files are allowed.',
+        'category_required' => 'Select a document type.',
+        'pdf_only' => 'Only PDF files are allowed.',
     ],
 ];

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Domain\Shared\OrganizationScopedModel;
 use App\Models\Concerns\Auditable;
+use App\Support\ContractDocumentCategory;
 use App\Support\MonthCloseGuard;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -26,6 +27,7 @@ class Document extends OrganizationScopedModel
         'mime',
         'size',
         'type',
+        'category',
         'tags',
         'meta',
     ];
@@ -52,6 +54,7 @@ class Document extends OrganizationScopedModel
     {
         return [
             'size' => 'integer',
+            'category' => ContractDocumentCategory::class,
             'tags' => 'array',
             'meta' => 'array',
         ];
@@ -85,6 +88,7 @@ class Document extends OrganizationScopedModel
             'mime',
             'size',
             'type',
+            'category',
             'tags',
         ];
     }

@@ -9,8 +9,11 @@ use App\Models\Expense;
 use App\Models\Payment;
 use App\Models\Unit;
 use App\Support\AuditLogger;
+use App\Support\ContractDocumentCategory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -18,6 +21,10 @@ use Livewire\WithFileUploads;
 class Panel extends Component
 {
     use WithFileUploads;
+
+    private const DEFAULT_MAX_FILE_KB = 5120;
+
+    private const CONTRACT_MAX_FILE_KB = 10240;
 
     /**
      * @var list<class-string<Model>>
@@ -36,10 +43,26 @@ class Panel extends Component
 
     public string $title = '';
 
+    public string $variant = 'default';
+
+    public string $category = '';
+
     public $document;
 
-    public function mount(string $documentableType, int $documentableId, ?string $title = null): void
-    {
+    public bool $showUploadModal = false;
+
+    public int $uploadInputKey = 0;
+
+    public bool $showDeleteConfirm = false;
+
+    public ?int $pendingDeleteDocumentId = null;
+
+    public function mount(
+        string $documentableType,
+        int $documentableId,
+        ?string $title = null,
+        string $variant = 'default',
+    ): void {
         if (! (auth()->user()?->can('documents.view') ?? false)) {
             abort(403);
         }
@@ -47,6 +70,7 @@ class Panel extends Component
         $this->documentableType = $documentableType;
         $this->documentableId = $documentableId;
         $this->title = $title ?? __('documents.title');
+        $this->variant = $variant;
 
         $this->resolveDocumentable();
     }
@@ -58,6 +82,12 @@ class Panel extends Component
         }
 
         $this->validate();
+
+        if ($this->isContractVariant() && $this->categoryIsTaken()) {
+            throw ValidationException::withMessages([
+                'category' => __('contracts.document_category_taken'),
+            ]);
+        }
 
         $documentable = $this->resolveDocumentable();
         $disk = (string) config('filesystems.documents_disk', 'local');
@@ -73,6 +103,7 @@ class Panel extends Component
                 'mime' => $this->document->getMimeType() ?: 'application/octet-stream',
                 'size' => $this->document->getSize() ?: 0,
                 'type' => strtoupper(class_basename($documentable)).'_DOCUMENT',
+                'category' => $this->isContractVariant() ? $this->category : null,
                 'tags' => [strtolower(class_basename($documentable)), 'manual-upload'],
                 'meta' => [
                     'disk' => $disk,
@@ -80,7 +111,7 @@ class Panel extends Component
                 ],
             ]);
         } catch (ValidationException $exception) {
-            $this->reset('document');
+            $this->reset('document', 'category');
             throw $exception;
         }
 
@@ -95,27 +126,140 @@ class Panel extends Component
                 'documentable_type' => $this->documentableType,
                 'documentable_id' => $this->documentableId,
                 'mime' => $this->document->getMimeType(),
+                'category' => $this->isContractVariant() ? $this->category : null,
             ],
         );
 
-        $this->reset('document');
+        $this->reset('document', 'category');
+        $this->resetUploadInput();
+        $this->closeUploadModal();
         session()->flash('success', __('documents.uploaded_success'));
+    }
+
+    public function openUploadModal(): void
+    {
+        if (! (auth()->user()?->can('documents.upload') ?? false)) {
+            abort(403);
+        }
+
+        if ($this->isContractVariant() && $this->availableContractCategories() === []) {
+            return;
+        }
+
+        $this->showUploadModal = true;
+    }
+
+    public function closeUploadModal(): void
+    {
+        $this->showUploadModal = false;
+        $this->reset('document', 'category');
+        $this->resetValidation();
+        $this->resetUploadInput();
+    }
+
+    private function resetUploadInput(): void
+    {
+        $this->uploadInputKey++;
+        $this->dispatch('document-upload-reset');
+    }
+
+    public function confirmDeleteDocument(int $documentId): void
+    {
+        if (! (auth()->user()?->can('documents.upload') ?? false)) {
+            abort(403);
+        }
+
+        $this->pendingDeleteDocumentId = $documentId;
+        $this->showDeleteConfirm = true;
+    }
+
+    public function cancelDeleteDocumentConfirm(): void
+    {
+        $this->showDeleteConfirm = false;
+        $this->pendingDeleteDocumentId = null;
+    }
+
+    public function executeDeleteDocumentConfirm(): void
+    {
+        if ($this->pendingDeleteDocumentId === null) {
+            return;
+        }
+
+        $this->deleteDocument($this->pendingDeleteDocumentId);
+        $this->cancelDeleteDocumentConfirm();
+    }
+
+    public function deleteDocument(int $documentId): void
+    {
+        if (! (auth()->user()?->can('documents.upload') ?? false)) {
+            abort(403);
+        }
+
+        $document = Document::query()
+            ->where('documentable_type', $this->documentableType)
+            ->where('documentable_id', $this->documentableId)
+            ->findOrFail($documentId);
+
+        $disk = (string) data_get($document->meta, 'disk', config('filesystems.documents_disk', 'local'));
+
+        if (Storage::disk($disk)->exists($document->path)) {
+            Storage::disk($disk)->delete($document->path);
+        }
+
+        $documentable = $this->resolveDocumentable();
+        $categoryValue = $document->category?->value;
+
+        $document->update(['category' => null]);
+        $document->delete();
+
+        app(AuditLogger::class)->log(
+            action: 'document.deleted',
+            auditable: $documentable,
+            summary: __('documents.audit_deleted', [
+                'type' => class_basename($documentable),
+                'id' => $documentable->getKey(),
+            ]),
+            meta: [
+                'document_id' => $documentId,
+                'category' => $categoryValue,
+            ],
+        );
+
+        session()->flash('success', __('contracts.document_deleted_success'));
     }
 
     protected function rules(): array
     {
+        if ($this->isContractVariant()) {
+            return [
+                'category' => ['required', 'string', Rule::enum(ContractDocumentCategory::class)],
+                'document' => ['required', 'file', 'max:'.self::CONTRACT_MAX_FILE_KB, 'mimes:pdf'],
+            ];
+        }
+
         return [
-            'document' => ['required', 'file', 'max:5120', 'mimes:jpg,jpeg,png,pdf'],
+            'document' => ['required', 'file', 'max:'.self::DEFAULT_MAX_FILE_KB, 'mimes:jpg,jpeg,png,pdf'],
         ];
     }
 
     protected function messages(): array
     {
-        return [
+        $messages = [
             'document.required' => __('documents.validation.required'),
             'document.max' => __('documents.validation.max'),
-            'document.mimes' => __('documents.validation.mimes'),
         ];
+
+        if ($this->isContractVariant()) {
+            $messages['category.required'] = __('contracts.document_category_required');
+            $messages['document.mimes'] = __('contracts.document_pdf_only');
+            $messages['document.max'] = __('documents.validation.max_contract');
+
+            return $messages;
+        }
+
+        $messages['document.mimes'] = __('documents.validation.mimes');
+
+        return $messages;
     }
 
     public function render(): View
@@ -129,17 +273,69 @@ class Panel extends Component
                 return [
                     'id' => $document->id,
                     'path' => $document->path,
+                    'file_name' => basename($document->path),
                     'url' => route('documents.download', $document),
                     'mime' => $document->mime,
                     'size' => (int) $document->size,
                     'created_at' => $document->created_at,
+                    'category' => $document->category?->value,
+                    'category_label' => $document->category?->label(),
                 ];
             });
 
         return view('livewire.documents.panel', [
             'documents' => $documents,
             'canUploadDocuments' => auth()->user()?->can('documents.upload') ?? false,
+            'variant' => $this->variant,
+            'availableCategories' => $this->isContractVariant()
+                ? $this->availableContractCategories()
+                : [],
+            'canOpenUpload' => $this->canOpenUpload(),
         ]);
+    }
+
+    private function canOpenUpload(): bool
+    {
+        if (! (auth()->user()?->can('documents.upload') ?? false)) {
+            return false;
+        }
+
+        if ($this->isContractVariant()) {
+            return $this->availableContractCategories() !== [];
+        }
+
+        return true;
+    }
+
+    private function isContractVariant(): bool
+    {
+        return $this->variant === 'contract'
+            && $this->documentableType === Contract::class;
+    }
+
+    private function categoryIsTaken(): bool
+    {
+        return Document::query()
+            ->where('documentable_type', $this->documentableType)
+            ->where('documentable_id', $this->documentableId)
+            ->where('category', $this->category)
+            ->exists();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function availableContractCategories(): array
+    {
+        $used = Document::query()
+            ->where('documentable_type', $this->documentableType)
+            ->where('documentable_id', $this->documentableId)
+            ->whereNotNull('category')
+            ->pluck('category')
+            ->map(fn ($value) => $value instanceof ContractDocumentCategory ? $value->value : (string) $value)
+            ->all();
+
+        return array_diff_key(ContractDocumentCategory::options(), array_flip($used));
     }
 
     private function resolveDocumentable(): Model

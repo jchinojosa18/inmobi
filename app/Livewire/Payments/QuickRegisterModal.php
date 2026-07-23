@@ -8,10 +8,10 @@ use App\Models\Contract;
 use App\Models\Payment;
 use App\Models\PaymentAllocation;
 use App\Support\OrganizationSettingsService;
+use App\Support\PaymentReceiptShareUrl;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\On;
@@ -164,11 +164,7 @@ class QuickRegisterModal extends Component
             Mail::to($tenantEmail)->send(new \App\Mail\PaymentReceiptMail($payment));
         }
 
-        $this->shareUrl = URL::temporarySignedRoute(
-            'payments.receipt.share',
-            now()->addDays(7),
-            ['paymentId' => $payment->id]
-        );
+        $this->shareUrl = PaymentReceiptShareUrl::make($payment->id);
 
         $organizationId = (int) $payment->organization_id;
         $settings = $settingsService->forOrganization($organizationId);

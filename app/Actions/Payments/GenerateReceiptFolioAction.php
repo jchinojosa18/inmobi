@@ -27,8 +27,11 @@ class GenerateReceiptFolioAction
             year: $year
         );
 
+        // Soft-deleted payments still occupy the unique (organization_id, receipt_folio)
+        // index, so the sequence must include them or the next insert will collide.
         $latestFolio = Payment::query()
             ->withoutOrganizationScope()
+            ->withTrashed()
             ->where('organization_id', $organizationId)
             ->where('receipt_folio', 'like', $folioPrefix.'%')
             ->lockForUpdate()

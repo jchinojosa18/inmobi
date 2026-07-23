@@ -2,14 +2,15 @@
 
 namespace App\Livewire\Contracts;
 
+use App\Actions\Payments\ApplyCreditBalanceAction;
 use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\Payment;
 use App\Models\PaymentAllocation;
+use App\Support\PaymentReceiptShareUrl;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -98,6 +99,8 @@ class Show extends Component
             return;
         }
 
+        app(ApplyCreditBalanceAction::class)->execute($this->contract);
+
         $this->reset([
             'adjustment_amount',
             'adjustment_reason',
@@ -132,11 +135,7 @@ class Show extends Component
             ->limit(10)
             ->get()
             ->map(function (Payment $payment): array {
-                $shareUrl = URL::temporarySignedRoute(
-                    'payments.receipt.share',
-                    now()->addDays(7),
-                    ['paymentId' => $payment->id]
-                );
+                $shareUrl = PaymentReceiptShareUrl::make($payment->id);
 
                 return [
                     'id' => $payment->id,
@@ -279,8 +278,15 @@ class Show extends Component
     private function mapChargeToLedgerRow(Contract $contract, Charge $charge): array
     {
         $amount = round((float) $charge->amount, 2);
-        $paid = round((float) max(min((float) $charge->allocated_amount, $amount), 0), 2);
-        $balance = round($amount - $paid, 2);
+
+        if ($this->isDepositLedgerType($charge->type)) {
+            // Guarantee received at registration — not cobranza balance.
+            $paid = $amount;
+            $balance = 0.0;
+        } else {
+            $paid = round((float) max(min((float) $charge->allocated_amount, $amount), 0), 2);
+            $balance = round($amount - $paid, 2);
+        }
 
         $dueDate = $this->resolveDueDate($charge);
         $graceUntil = $this->resolveGraceUntil($charge, $contract, $dueDate);

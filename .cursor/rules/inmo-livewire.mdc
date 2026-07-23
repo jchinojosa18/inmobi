@@ -27,3 +27,13 @@ alwaysApply: false
 ## Documentos
 
 Morph en `Document`; disk `DOCUMENTS_DISK` (default `public`). Validar tipos/tamaño como en flujos existentes.
+
+## Confirmaciones destructivas
+
+- **Nunca** usar `wire:confirm`, `window.confirm()` ni `alert()` del navegador para eliminar o acciones irreversibles.
+- Usar **`x-ui.confirm-modal`** con estado en Livewire:
+  - `confirm…(id)` abre el modal y guarda el ID pendiente.
+  - `cancel…Confirm()` cierra y limpia el estado.
+  - `execute…Confirm()` ejecuta la acción y cierra.
+- Referencias: `Units/InventoryPanel` (foto/ítem), `settings/index` (categorías), `Documents/Panel` (documentos de contrato).
+- Textos en `lang/*/…` con `delete_*_title` + `confirm_delete_*` (o equivalente); escapar nombres dinámicos con `{{ }}`.

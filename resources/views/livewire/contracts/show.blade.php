@@ -50,12 +50,37 @@
 
     @if ($canManageCharges)
         <x-ui.card>
-            <h2 class="text-lg font-semibold text-slate-900">{{ __('contracts.create_adjustment') }}</h2>
-            <p class="mt-1 text-sm text-slate-600">
-                {{ __('contracts.adjustment_description') }}
-            </p>
+            <div x-data="{ open: false }">
+                <button
+                    type="button"
+                    class="flex w-full items-center justify-between gap-3 text-left"
+                    @click="open = !open"
+                    :aria-expanded="open.toString()"
+                    aria-controls="adjustment-panel"
+                    aria-expanded="false"
+                    aria-label="{{ __('contracts.adjustment_panel_toggle') }}"
+                >
+                    <h2 class="text-lg font-semibold text-slate-900">{{ __('contracts.create_adjustment') }}</h2>
+                    <svg
+                        class="h-5 w-5 shrink-0 text-slate-500 transition-transform"
+                        :class="{ 'rotate-180': open }"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke-width="1.5"
+                        stroke="currentColor"
+                        aria-hidden="true"
+                    >
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                    </svg>
+                </button>
 
-            <form wire:submit="createAdjustment" class="mt-4 grid gap-4 md:grid-cols-2">
+                <div id="adjustment-panel" x-show="open" x-cloak class="mt-4">
+                    <p class="text-sm text-slate-600">
+                        {{ __('contracts.adjustment_description') }}
+                    </p>
+
+                    <form wire:submit="createAdjustment" class="mt-4 grid gap-4 md:grid-cols-2">
                 @error('adjustment_month_close')
                     <div class="md:col-span-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
                         {{ $message }}
@@ -93,12 +118,14 @@
                         {{ __('contracts.register_adjustment') }}
                     </x-ui.button>
                 </div>
-            </form>
+                    </form>
+                </div>
+            </div>
         </x-ui.card>
     @endif
 
-    <x-ui.card>
-        <div class="flex flex-wrap items-center justify-between gap-3">
+    <x-ui.card :padding="false">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
             <h2 class="text-lg font-semibold text-slate-900">{{ __('contracts.account_statement') }}</h2>
             <div class="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
                 <p class="text-xs uppercase tracking-wide text-slate-500">{{ __('contracts.pending_balance') }}</p>
@@ -106,9 +133,9 @@
             </div>
         </div>
 
-        <div class="mt-4 space-y-4">
+        <div class="divide-y divide-slate-200">
             @forelse ($ledgerGroups as $group)
-                <div class="overflow-hidden rounded-lg border border-slate-200">
+                <div>
                     <div class="grid gap-2 bg-slate-50 px-4 py-3 text-sm sm:grid-cols-4">
                         <p class="font-semibold text-slate-900">{{ __('contracts.period_label', ['period' => $group['period_label']]) }}</p>
                         <p class="text-slate-600">{{ __('contracts.charges') }}: <span class="font-medium text-slate-900">${{ number_format($group['charges_total'], 2) }}</span></p>
@@ -161,7 +188,7 @@
                     </div>
                 </div>
             @empty
-                <p class="rounded-md border border-slate-200 bg-slate-50 px-4 py-6 text-center text-slate-500">
+                <p class="px-5 py-6 text-center text-slate-500">
                     {{ __('contracts.no_charges_for_contract') }}
                 </p>
             @endforelse
@@ -193,14 +220,14 @@
                         <td class="px-4 py-3">
                             <div class="flex justify-end gap-2">
                                 @if ($canViewPayments)
-                                    <x-ui.button href="{{ $payment['show_url'] }}" variant="secondary" size="sm">
+                                    <x-ui.button :href="$payment['show_url']" variant="secondary" size="sm">
                                         {{ __('common.view_payment') }}
                                     </x-ui.button>
                                     @if ($payment['folio'] !== null)
-                                        <x-ui.button href="{{ $payment['receipt_url'] }}" variant="secondary" size="sm" target="_blank" rel="noopener noreferrer">
+                                        <x-ui.button :href="$payment['receipt_url']" variant="secondary" size="sm" target="_blank" rel="noopener noreferrer">
                                             {{ __('common.receipt_pdf') }}
                                         </x-ui.button>
-                                        <x-ui.button href="{{ $payment['share_url'] }}" size="sm" target="_blank" rel="noopener noreferrer">
+                                        <x-ui.button :href="$payment['share_url']" size="sm" target="_blank" rel="noopener noreferrer">
                                             {{ __('contracts.shareable_link') }}
                                         </x-ui.button>
                                     @endif
@@ -219,6 +246,7 @@
         :documentable-type="\App\Models\Contract::class"
         :documentable-id="$contract->id"
         :title="__('contracts.contract_documents')"
+        variant="contract"
         :key="'contract-documents-'.$contract->id"
     />
 </section>

@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AcceptOrganizationInvitationController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\ContractSettlementPdfController;
+use App\Http\Controllers\DepositReceiptPdfController;
 use App\Http\Controllers\Documents\DownloadController as DocumentDownloadController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\PaymentReceiptPdfController;
@@ -192,6 +193,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/contracts/{contract}/settlements/{batch}/pdf', ContractSettlementPdfController::class)
         ->middleware('permission:contracts.settle')
         ->name('contracts.settlements.pdf');
+    Route::get('/deposits/{chargeId}/receipt.pdf', DepositReceiptPdfController::class)
+        ->middleware('permission:charges.manage')
+        ->name('deposits.receipt.pdf');
 
     Route::get('/contracts/{contract}/payments/create', PaymentCreate::class)
         ->middleware('permission:payments.create')
@@ -214,7 +218,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 Route::get('/invite/{token}', AcceptOrganizationInvitationController::class)->name('invitations.accept');
 
 Route::get('/receipts/{paymentId}/shared.pdf', PaymentReceiptPdfController::class)
-    ->middleware('signed')
+    ->middleware('signed:relative')
     ->name('payments.receipt.share');
 
 Route::get('/admin/health', function () {

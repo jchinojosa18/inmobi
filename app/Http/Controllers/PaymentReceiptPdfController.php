@@ -16,7 +16,13 @@ class PaymentReceiptPdfController extends Controller
             ->withoutOrganizationScope()
             ->findOrFail($paymentId);
 
-        if ($request->user() !== null && $request->user()->organization_id !== $payment->organization_id) {
+        // Authenticated PDF download: block cross-tenant access.
+        // Shareable signed links authorize by signature alone (tenants / WhatsApp / other sessions).
+        if (
+            $request->routeIs('payments.receipt.pdf')
+            && $request->user() !== null
+            && (int) $request->user()->organization_id !== (int) $payment->organization_id
+        ) {
             abort(403);
         }
 

@@ -7,7 +7,11 @@ return [
     'size' => 'Tamano',
     'upload_title' => 'Subir documento',
     'allowed_types' => 'Permitidos: JPG, PNG, PDF. Maximo 5 MB.',
+    'allowed_types_contract' => 'Permitidos: PDF. Maximo 10 MB.',
     'upload_button' => 'Subir documento',
+    'choose_file' => 'Elegir archivo',
+    'delete_title' => 'Eliminar documento',
+    'confirm_delete' => '¿Eliminar este documento? Esta acción no se puede deshacer.',
     'uploading' => 'Subiendo archivo...',
     'no_upload_permission' => 'No tienes permiso para subir documentos.',
     'upload_demo_title' => 'Subir evidencia/documento',
@@ -19,10 +23,14 @@ return [
     'download_file' => 'Descargar archivo',
     'uploaded_success' => 'Documento subido correctamente.',
     'audit_uploaded' => 'Documento subido en :type #:id',
+    'audit_deleted' => 'Documento eliminado de :type #:id',
 
     'validation' => [
         'required' => 'Selecciona un archivo para subir.',
         'max' => 'El archivo excede el limite de 5 MB.',
+        'max_contract' => 'El archivo excede el limite de 10 MB.',
         'mimes' => 'Solo se permiten archivos JPG, PNG o PDF.',
+        'category_required' => 'Selecciona el tipo de documento.',
+        'pdf_only' => 'Solo se permiten archivos PDF.',
     ],
 ];

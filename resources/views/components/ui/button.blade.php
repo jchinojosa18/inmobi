@@ -19,10 +19,14 @@
         'accent' => 'bg-indigo-600 text-white hover:bg-indigo-500',
     ];
     $classes = $base.' '.($sizes[$size] ?? $sizes['md']).' '.($variants[$variant] ?? $variants['primary']);
+    // Support both :href="$url" (raw) and href="{{ $url }}" (already escaped) without double-encoding &.
+    $hrefValue = is_string($href)
+        ? html_entity_decode($href, ENT_QUOTES | ENT_HTML5, 'UTF-8')
+        : $href;
 @endphp
 
-@if ($href)
-    <a href="{{ $href }}" {{ $attributes->merge(['class' => $classes]) }}>
+@if ($hrefValue)
+    <a href="{{ $hrefValue }}" {{ $attributes->merge(['class' => $classes]) }}>
         {{ $slot }}
     </a>
 @else

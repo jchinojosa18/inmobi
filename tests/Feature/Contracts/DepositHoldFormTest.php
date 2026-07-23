@@ -113,6 +113,50 @@ class DepositHoldFormTest extends TestCase
         $this->assertSoftDeleted('charges', ['id' => $hold->id]);
     }
 
+    public function test_panel_starts_open_when_deposit_remaining(): void
+    {
+        [$user, $contract] = $this->makeContractWithUser(depositAmount: 1000.0);
+
+        Charge::factory()->create([
+            'organization_id' => $contract->organization_id,
+            'contract_id' => $contract->id,
+            'unit_id' => $contract->unit_id,
+            'type' => Charge::TYPE_DEPOSIT_HOLD,
+            'period' => '2026-03',
+            'charge_date' => '2026-03-01',
+            'amount' => 400,
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(DepositHoldForm::class, ['contract' => $contract])
+            ->assertSeeHtml('x-data="{ open: true }"')
+            ->assertSeeHtml('aria-expanded="true"')
+            ->assertSee('$400.00 / $600.00')
+            ->assertDontSee(__('contracts.deposit_complete_title'), false);
+    }
+
+    public function test_panel_starts_closed_when_deposit_complete(): void
+    {
+        [$user, $contract] = $this->makeContractWithUser(depositAmount: 500.0);
+
+        Charge::factory()->create([
+            'organization_id' => $contract->organization_id,
+            'contract_id' => $contract->id,
+            'unit_id' => $contract->unit_id,
+            'type' => Charge::TYPE_DEPOSIT_HOLD,
+            'period' => '2026-03',
+            'charge_date' => '2026-03-01',
+            'amount' => 500,
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(DepositHoldForm::class, ['contract' => $contract])
+            ->assertSeeHtml('x-data="{ open: false }"')
+            ->assertSeeHtml('aria-expanded="false"')
+            ->assertSee(__('contracts.deposit_complete_title'))
+            ->assertDontSee(__('contracts.register_deposit'));
+    }
+
     /**
      * @return array{0: User, 1: Contract}
      */

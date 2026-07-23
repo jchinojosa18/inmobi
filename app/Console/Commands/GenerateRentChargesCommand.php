@@ -17,12 +17,12 @@ class GenerateRentChargesCommand extends Command
     /**
      * @var string
      */
-    protected $signature = 'inmo:generate-rent {--month= : Mes objetivo en formato YYYY-MM}';
+    protected $signature = 'inmo:generate-rent {--month= : Mes objetivo YYYY-MM (backfill forzado; omitir para modo due-soon diario)}';
 
     /**
      * @var string
      */
-    protected $description = 'Genera cargos de renta mensual para contratos activos de forma idempotente';
+    protected $description = 'Genera cargos de renta: sin --month usa ventana due-soon (5 días); con --month backfill del mes';
 
     public function __construct(
         private readonly GenerateMonthlyRentChargesAction $action
@@ -44,9 +44,19 @@ class GenerateRentChargesCommand extends Command
             return self::SUCCESS;
         }
 
-        $month = (string) $this->option('month');
-
         try {
+            $month = (string) $this->option('month');
+
+            if ($month === '') {
+                $result = $this->action->executeDueSoon();
+
+                $this->info("Generación due-soon completada para {$result['as_of']}.");
+                $this->line("Cargos creados: {$result['created']}");
+                $this->line("Cargos omitidos (ya existentes): {$result['skipped']}");
+
+                return self::SUCCESS;
+            }
+
             if (! $this->isValidMonth($month)) {
                 $this->error('Debes enviar --month con formato YYYY-MM. Ejemplo: --month=2026-03');
 

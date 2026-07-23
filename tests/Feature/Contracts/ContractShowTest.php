@@ -124,6 +124,28 @@ class ContractShowTest extends TestCase
         $response->assertSeeText('$750.00');
     }
 
+    public function test_shareable_link_href_is_not_double_escaped(): void
+    {
+        [$organization, $contract] = $this->createContractGraph();
+
+        Payment::factory()->create([
+            'organization_id' => $organization->id,
+            'contract_id' => $contract->id,
+            'amount' => 500,
+            'receipt_folio' => 'REC-2026-001111',
+            'paid_at' => '2026-03-04 12:00:00',
+        ]);
+
+        $html = $this
+            ->actingAs($this->createUserForOrganization($organization))
+            ->get(route('contracts.show', $contract))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringNotContainsString('&amp;amp;signature=', $html);
+        $this->assertMatchesRegularExpression('/href="[^"]*&amp;signature=[a-f0-9]+"/', $html);
+    }
+
     /**
      * @return array{Organization, Contract}
      */

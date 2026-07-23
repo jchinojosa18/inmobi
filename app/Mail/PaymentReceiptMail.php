@@ -5,13 +5,13 @@ namespace App\Mail;
 use App\Models\Payment;
 use App\Support\OrganizationSettingsService;
 use App\Support\PaymentReceiptDataBuilder;
+use App\Support\PaymentReceiptShareUrl;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\URL;
 
 class PaymentReceiptMail extends Mailable
 {
@@ -30,11 +30,7 @@ class PaymentReceiptMail extends Mailable
     {
         $payment = $this->payment->fresh();
         $receipt = app(PaymentReceiptDataBuilder::class)->build($payment);
-        $shareUrl = URL::temporarySignedRoute(
-            'payments.receipt.share',
-            now()->addDays(7),
-            ['paymentId' => $payment->id]
-        );
+        $shareUrl = PaymentReceiptShareUrl::make($payment->id);
         $settingsService = app(OrganizationSettingsService::class);
         $settings = $settingsService->forOrganization((int) $payment->organization_id);
         $unitName = trim((string) ($payment->contract?->unit?->property?->name.' / '.$payment->contract?->unit?->name));

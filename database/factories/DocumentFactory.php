@@ -2,9 +2,11 @@
 
 namespace Database\Factories;
 
+use App\Models\Contract;
 use App\Models\Document;
 use App\Models\Organization;
 use App\Models\Unit;
+use App\Support\ContractDocumentCategory;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -29,8 +31,19 @@ class DocumentFactory extends Factory
             'mime' => fake()->randomElement(['application/pdf', 'image/jpeg', 'image/png']),
             'size' => fake()->numberBetween(15_000, 2_000_000),
             'type' => fake()->randomElement(['evidence', 'receipt', 'contract', 'other']),
+            'category' => null,
             'tags' => ['demo'],
             'meta' => null,
         ];
+    }
+
+    public function forContractCategory(ContractDocumentCategory $category): static
+    {
+        return $this->state(fn (): array => [
+            'category' => $category->value,
+            'documentable_type' => Contract::class,
+            'type' => 'CONTRACT_DOCUMENT',
+            'mime' => 'application/pdf',
+        ]);
     }
 }

@@ -31,8 +31,8 @@ Schedule::command('inmo:penalties:run')
     ->timezone('America/Tijuana')
     ->withoutOverlapping();
 
-Schedule::command('inmo:generate-rent --month='.now('America/Tijuana')->format('Y-m'))
-    ->monthlyOn(1, '00:10')
+Schedule::command('inmo:generate-rent')
+    ->dailyAt('00:10')
     ->timezone('America/Tijuana')
     ->withoutOverlapping();
 

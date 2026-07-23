@@ -56,6 +56,9 @@ class CreateModal extends Component
         if ($unitId !== null && $unitId > 0) {
             $unit = Unit::query()
                 ->where('status', 'active')
+                ->whereDoesntHave('contracts', function ($query): void {
+                    $query->where('status', Contract::STATUS_ACTIVE);
+                })
                 ->find($unitId);
 
             if ($unit !== null) {
@@ -135,8 +138,12 @@ class CreateModal extends Component
                     : new Contract;
 
                 $contract->organization_id = auth()->user()?->organization_id;
-                $contract->unit()->associate($unit);
-                $contract->tenant()->associate($tenant);
+
+                if ($this->contractId === null) {
+                    $contract->unit()->associate($unit);
+                    $contract->tenant()->associate($tenant);
+                }
+
                 $contract->rent_amount = $validated['rent_amount'];
                 $contract->deposit_amount = $validated['deposit_amount'];
                 $contract->due_day = (int) $validated['due_day'];
@@ -200,17 +207,31 @@ class CreateModal extends Component
 
     public function render(): View
     {
-        $units = Unit::query()
+        $unitsQuery = Unit::query()
             ->where('status', 'active')
             ->with('property:id,name')
             ->orderBy('property_id')
-            ->orderBy('name')
-            ->get(['id', 'property_id', 'name', 'code']);
+            ->orderBy('name');
 
-        $tenants = Tenant::query()
-            ->where('status', 'active')
-            ->orderBy('full_name')
-            ->get(['id', 'full_name', 'email']);
+        if ($this->contractId === null) {
+            $unitsQuery->whereDoesntHave('contracts', function ($query): void {
+                $query->where('status', Contract::STATUS_ACTIVE);
+            });
+        } else {
+            $unitsQuery->whereKey($this->unit_id);
+        }
+
+        $units = $unitsQuery->get(['id', 'property_id', 'name', 'code']);
+
+        $tenantsQuery = Tenant::query()->orderBy('full_name');
+
+        if ($this->contractId === null) {
+            $tenantsQuery->where('status', 'active');
+        } else {
+            $tenantsQuery->whereKey($this->tenant_id);
+        }
+
+        $tenants = $tenantsQuery->get(['id', 'full_name', 'email']);
 
         return view('livewire.contracts.create-modal', [
             'units' => $units,

@@ -53,6 +53,44 @@ class GenerateRentChargesCommandTest extends TestCase
         CarbonImmutable::setTestNow();
     }
 
+    public function test_without_month_runs_due_soon_mode(): void
+    {
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-07-27 00:10:00', 'America/Tijuana'));
+
+        $contract = $this->createDueSoonContract();
+
+        $this->artisan('inmo:generate-rent')
+            ->assertExitCode(0)
+            ->expectsOutputToContain('Cargos creados: 1');
+
+        $charge = Charge::query()
+            ->withoutOrganizationScope()
+            ->where('contract_id', $contract->id)
+            ->where('type', Charge::TYPE_RENT)
+            ->where('period', '2026-08')
+            ->first();
+
+        $this->assertNotNull($charge);
+        $this->assertSame('2026-08-01', $charge->due_date?->format('Y-m-d'));
+
+        CarbonImmutable::setTestNow();
+    }
+
+    public function test_without_month_is_idempotent(): void
+    {
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-07-27 00:10:00', 'America/Tijuana'));
+
+        $this->createDueSoonContract();
+
+        $this->artisan('inmo:generate-rent')->assertExitCode(0);
+
+        $this->artisan('inmo:generate-rent')
+            ->assertExitCode(0)
+            ->expectsOutputToContain('Cargos creados: 0');
+
+        CarbonImmutable::setTestNow();
+    }
+
     public function test_it_is_idempotent_when_command_runs_twice_for_same_month(): void
     {
         $month = '2026-04';
@@ -133,5 +171,39 @@ class GenerateRentChargesCommandTest extends TestCase
         ]);
 
         return [$contractA, $contractB];
+    }
+
+    private function createDueSoonContract(): Contract
+    {
+        $organization = Organization::factory()->create();
+        $property = Property::factory()->create([
+            'organization_id' => $organization->id,
+        ]);
+        $unit = Unit::factory()->create([
+            'organization_id' => $organization->id,
+            'property_id' => $property->id,
+        ]);
+        $tenant = Tenant::factory()->create([
+            'organization_id' => $organization->id,
+        ]);
+        $contract = Contract::factory()->create([
+            'organization_id' => $organization->id,
+            'unit_id' => $unit->id,
+            'tenant_id' => $tenant->id,
+            'status' => Contract::STATUS_ACTIVE,
+            'starts_at' => '2026-01-01',
+            'ends_at' => null,
+            'due_day' => 1,
+            'grace_days' => 5,
+            'rent_amount' => 12000,
+        ]);
+
+        Charge::query()->withoutOrganizationScope()
+            ->where('contract_id', $contract->id)
+            ->where('type', Charge::TYPE_RENT)
+            ->where('period', '2026-08')
+            ->forceDelete();
+
+        return $contract;
     }
 }

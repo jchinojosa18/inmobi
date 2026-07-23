@@ -55,6 +55,45 @@ class RegisterContractPaymentActionTest extends TestCase
         $this->assertNotSame($firstPayment->receipt_folio, $secondPayment->receipt_folio);
     }
 
+    public function test_it_skips_soft_deleted_receipt_folios_when_generating_next(): void
+    {
+        [$organization, $contract] = $this->makeContractGraph();
+        TenantContext::setOrganizationId($organization->id);
+
+        $active = Payment::factory()->create([
+            'organization_id' => $organization->id,
+            'contract_id' => $contract->id,
+            'paid_at' => '2026-03-04 10:00:00',
+            'amount' => 100,
+            'method' => Payment::METHOD_CASH,
+            'receipt_folio' => 'REC-2026-000001',
+            'meta' => [],
+        ]);
+
+        $voided = Payment::factory()->create([
+            'organization_id' => $organization->id,
+            'contract_id' => $contract->id,
+            'paid_at' => '2026-03-05 10:00:00',
+            'amount' => 200,
+            'method' => Payment::METHOD_CASH,
+            'receipt_folio' => 'REC-2026-000002',
+            'meta' => ['source' => 'deposit_hold'],
+        ]);
+        $voided->delete();
+
+        $this->assertSoftDeleted('payments', ['id' => $voided->id]);
+        $this->assertNotSoftDeleted('payments', ['id' => $active->id]);
+
+        $payment = app(RegisterContractPaymentAction::class)->execute($contract, [
+            'amount' => 500,
+            'method' => Payment::METHOD_CASH,
+            'paid_at' => '2026-07-22 06:04:00',
+            'reference' => null,
+        ]);
+
+        $this->assertSame('REC-2026-000003', $payment->receipt_folio);
+    }
+
     public function test_it_applies_allocations_when_registering_payment(): void
     {
         [$organization, $contract, $unit] = $this->makeContractGraph();

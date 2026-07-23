@@ -8,11 +8,11 @@
                 {{ __('common.back_to_contract') }}
             </x-ui.button>
             @if ($payment->receipt_folio !== null)
-                <x-ui.button href="{{ $receiptUrl }}" variant="secondary" target="_blank" rel="noopener noreferrer">
+                <x-ui.button :href="$receiptUrl" variant="secondary" target="_blank" rel="noopener noreferrer">
                     {{ __('finance.payments.view_pdf') }}
                 </x-ui.button>
                 <x-ui.button
-                    href="{{ $whatsAppUrl }}"
+                    :href="$whatsAppUrl"
                     target="_blank"
                     rel="noopener noreferrer"
                     class="!border-0 !bg-emerald-600 !text-white hover:!bg-emerald-500"
@@ -93,7 +93,14 @@
             </div>
             <div>
                 <p class="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">{{ __('finance.payments.shareable_link') }}</p>
-                <textarea readonly rows="4" class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs">{{ $shareUrl }}</textarea>
+                <textarea
+                    readonly
+                    rows="4"
+                    class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs"
+                    x-data
+                    x-ref="share"
+                    x-init="$refs.share.value = @js($shareUrl)"
+                ></textarea>
             </div>
         </div>
     </x-ui.card>

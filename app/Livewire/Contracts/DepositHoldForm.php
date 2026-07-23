@@ -6,9 +6,11 @@ use App\Actions\Contracts\RegisterDepositHoldAction;
 use App\Actions\Contracts\VoidDepositHoldAction;
 use App\Models\Charge;
 use App\Models\Contract;
+use App\Models\Payment;
 use App\Support\DepositBalanceService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -21,11 +23,15 @@ class DepositHoldForm extends Component
 
     public string $deposit_amount = '';
 
+    public string $deposit_method = Payment::METHOD_TRANSFER;
+
     public ?string $deposit_notes = null;
 
     public bool $showVoidConfirm = false;
 
     public ?int $voidingChargeId = null;
+
+    public ?int $evidenceChargeId = null;
 
     public function mount(Contract $contract, DepositBalanceService $depositBalanceService): void
     {
@@ -55,6 +61,7 @@ class DepositHoldForm extends Component
         $validated = $this->validate([
             'deposit_received_at' => ['required', 'date'],
             'deposit_amount' => ['required', 'numeric', 'min:0.01'],
+            'deposit_method' => ['required', Rule::in([Payment::METHOD_CASH, Payment::METHOD_TRANSFER])],
             'deposit_notes' => ['nullable', 'string', 'max:500'],
         ], [
             'deposit_received_at.required' => __('contracts.validation.deposit_received_required'),
@@ -62,6 +69,8 @@ class DepositHoldForm extends Component
             'deposit_amount.required' => __('contracts.validation.deposit_amount_required'),
             'deposit_amount.numeric' => __('contracts.validation.deposit_amount_numeric'),
             'deposit_amount.min' => __('contracts.validation.deposit_amount_min'),
+            'deposit_method.required' => __('contracts.validation.deposit_method_required'),
+            'deposit_method.in' => __('contracts.validation.deposit_method_invalid'),
             'deposit_notes.max' => __('contracts.validation.deposit_notes_max'),
         ]);
 
@@ -72,10 +81,12 @@ class DepositHoldForm extends Component
                 receivedAt: $validated['deposit_received_at'],
                 notes: $validated['deposit_notes'] ?? null,
                 userId: auth()->id(),
+                method: $validated['deposit_method'],
             );
         } catch (ValidationException $exception) {
             $message = $exception->errors()['month_close'][0]
                 ?? $exception->errors()['deposit_amount'][0]
+                ?? $exception->errors()['deposit_method'][0]
                 ?? __('contracts.validation.deposit_failed');
             $this->addError('deposit_general', $message);
 
@@ -137,6 +148,10 @@ class DepositHoldForm extends Component
             return;
         }
 
+        if ($this->evidenceChargeId === $this->voidingChargeId) {
+            $this->evidenceChargeId = null;
+        }
+
         $this->cancelVoidDeposit();
         session()->flash('success', __('contracts.flash.deposit_voided'));
         $this->deposit_amount = number_format(
@@ -146,6 +161,11 @@ class DepositHoldForm extends Component
             ''
         );
         $this->dispatch('deposit-hold-voided');
+    }
+
+    public function toggleEvidence(int $chargeId): void
+    {
+        $this->evidenceChargeId = $this->evidenceChargeId === $chargeId ? null : $chargeId;
     }
 
     public function render(DepositBalanceService $depositBalanceService): View
@@ -164,11 +184,12 @@ class DepositHoldForm extends Component
             'remainingDeposit' => $remaining,
             'depositHolds' => $this->activeDepositHolds($contract),
             'canManageCharges' => auth()->user()?->can('charges.manage') ?? false,
+            'canViewDocuments' => auth()->user()?->can('documents.view') ?? false,
         ]);
     }
 
     /**
-     * @return Collection<int, Charge>
+     * @return Collection<int, array{id:int, charge_date:?string, amount:float, notes:?string, receipt_folio:?string, receipt_url:?string}>
      */
     private function activeDepositHolds(Contract $contract): Collection
     {
@@ -177,6 +198,20 @@ class DepositHoldForm extends Component
             ->where('type', Charge::TYPE_DEPOSIT_HOLD)
             ->orderBy('charge_date')
             ->orderBy('id')
-            ->get();
+            ->get()
+            ->map(function (Charge $hold): array {
+                $folio = data_get($hold->meta, 'deposit_receipt_folio');
+
+                return [
+                    'id' => $hold->id,
+                    'charge_date' => optional($hold->charge_date)->format('Y-m-d'),
+                    'amount' => (float) $hold->amount,
+                    'notes' => data_get($hold->meta, 'notes'),
+                    'receipt_folio' => is_string($folio) ? $folio : null,
+                    'receipt_url' => is_string($folio) && $folio !== ''
+                        ? route('deposits.receipt.pdf', ['chargeId' => $hold->id])
+                        : null,
+                ];
+            });
     }
 }

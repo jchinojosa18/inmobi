@@ -44,19 +44,39 @@ class VoidDepositHoldAction
                 ]);
             }
 
-            $hasAllocations = PaymentAllocation::query()
+            $allocations = PaymentAllocation::query()
                 ->withoutOrganizationScope()
+                ->with(['payment' => fn ($query) => $query->withoutOrganizationScope()])
                 ->where('organization_id', $lockedContract->organization_id)
                 ->where('charge_id', $charge->id)
-                ->exists();
+                ->lockForUpdate()
+                ->get();
 
-            if ($hasAllocations) {
-                throw ValidationException::withMessages([
-                    'deposit_void' => __('contracts.validation.deposit_void_has_payment'),
-                ]);
+            $paymentsToMaybeVoid = [];
+
+            foreach ($allocations as $allocation) {
+                $payment = $allocation->payment;
+                if ($payment !== null && ! $payment->trashed()) {
+                    $paymentsToMaybeVoid[$payment->id] = $payment;
+                }
+
+                $allocation->delete();
+            }
+
+            foreach ($paymentsToMaybeVoid as $payment) {
+                $remainingAllocations = PaymentAllocation::query()
+                    ->withoutOrganizationScope()
+                    ->where('payment_id', $payment->id)
+                    ->count();
+
+                // Only remove payments that existed solely to fund this deposit hold.
+                if ($remainingAllocations === 0) {
+                    $payment->delete();
+                }
             }
 
             $amount = (float) $charge->amount;
+            $folio = data_get($charge->meta, 'deposit_receipt_folio');
             $charge->delete();
 
             $this->auditLogger->log(
@@ -71,6 +91,8 @@ class VoidDepositHoldAction
                     'amount' => $amount,
                     'contract_id' => $lockedContract->id,
                     'charge_id' => $charge->id,
+                    'deposit_receipt_folio' => $folio,
+                    'cleared_payment_ids' => array_keys($paymentsToMaybeVoid),
                 ],
                 actorUserId: $userId,
             );

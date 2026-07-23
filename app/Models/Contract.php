@@ -54,15 +54,19 @@ class Contract extends OrganizationScopedModel
         });
 
         static::updated(function (self $contract): void {
-            if (! $contract->wasChanged('status')) {
-                return;
+            if (
+                $contract->status === self::STATUS_ACTIVE
+                && $contract->wasChanged('status')
+            ) {
+                app(GenerateMonthlyRentChargesAction::class)->ensureCurrentMonthForContract($contract);
             }
 
-            if ($contract->status !== self::STATUS_ACTIVE) {
-                return;
+            if (
+                $contract->status === self::STATUS_ACTIVE
+                && $contract->wasChanged(['due_day', 'grace_days'])
+            ) {
+                app(GenerateMonthlyRentChargesAction::class)->syncOpenRentScheduleForContract($contract);
             }
-
-            app(GenerateMonthlyRentChargesAction::class)->ensureCurrentMonthForContract($contract);
         });
     }
 

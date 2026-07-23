@@ -6,9 +6,9 @@ use App\Mail\PaymentReceiptMail;
 use App\Models\Payment;
 use App\Support\OrganizationSettingsService;
 use App\Support\PaymentReceiptDataBuilder;
+use App\Support\PaymentReceiptShareUrl;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\URL;
 use Livewire\Component;
 
 class Show extends Component
@@ -45,11 +45,7 @@ class Show extends Component
 
         $receipt = $builder->build($payment);
         $receiptUrl = route('payments.receipt.pdf', ['paymentId' => $payment->id]);
-        $shareUrl = URL::temporarySignedRoute(
-            'payments.receipt.share',
-            now()->addDays(7),
-            ['paymentId' => $payment->id]
-        );
+        $shareUrl = PaymentReceiptShareUrl::make($payment->id);
 
         $settings = $settingsService->forOrganization((int) $payment->organization_id);
         $unitName = trim((string) ($payment->contract?->unit?->property?->name.' / '.$payment->contract?->unit?->name));

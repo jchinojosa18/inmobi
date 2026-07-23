@@ -207,6 +207,51 @@ class ApplyPaymentActionTest extends TestCase
         ]);
     }
 
+    public function test_it_does_not_allocate_cobranza_payment_to_deposit_hold(): void
+    {
+        [$organization, $contract, $unit] = $this->makeContractGraph();
+        TenantContext::setOrganizationId($organization->id);
+
+        $depositHold = Charge::factory()->create([
+            'organization_id' => $organization->id,
+            'contract_id' => $contract->id,
+            'unit_id' => $unit->id,
+            'type' => Charge::TYPE_DEPOSIT_HOLD,
+            'amount' => 500,
+            'charge_date' => '2026-01-01',
+            'meta' => [
+                'subtype' => 'RECEIVED',
+                'deposit_receipt_folio' => 'DEP-2026-00001',
+            ],
+        ]);
+
+        $payment = Payment::factory()->create([
+            'organization_id' => $organization->id,
+            'contract_id' => $contract->id,
+            'amount' => 500,
+            'method' => Payment::METHOD_CASH,
+        ]);
+
+        $result = app(ApplyPaymentAction::class)->execute($contract, $payment);
+
+        $this->assertFalse($result->idempotent);
+        $this->assertSame(0.0, $result->allocatedAmount);
+        $this->assertSame(500.0, $result->creditedAmount);
+        $this->assertSame(0, $result->allocationsCount);
+
+        $this->assertDatabaseMissing('payment_allocations', [
+            'payment_id' => $payment->id,
+            'charge_id' => $depositHold->id,
+        ]);
+
+        $this->assertDatabaseHas('credit_balances', [
+            'organization_id' => $organization->id,
+            'contract_id' => $contract->id,
+            'balance' => '500.00',
+            'last_payment_id' => $payment->id,
+        ]);
+    }
+
     /**
      * @return array{0: Organization, 1: Contract, 2: Unit}
      */

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Contracts;
 
+use App\Livewire\Contracts\Show;
 use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\Organization;
@@ -12,6 +13,7 @@ use App\Models\Tenant;
 use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class ContractShowDepositPendingTest extends TestCase
@@ -81,5 +83,52 @@ class ContractShowDepositPendingTest extends TestCase
         // Operational pending is $0; deposit must not inflate the header box.
         $response->assertSeeText('$0.00');
         $response->assertDontSeeText('Pendiente', false);
+    }
+
+    public function test_deposit_hold_row_shows_zero_balance_and_paid_equals_amount(): void
+    {
+        $organization = Organization::factory()->create();
+        $property = Property::factory()->create(['organization_id' => $organization->id]);
+        $unit = Unit::factory()->create([
+            'organization_id' => $organization->id,
+            'property_id' => $property->id,
+        ]);
+        $tenant = Tenant::factory()->create(['organization_id' => $organization->id]);
+        $contract = Contract::factory()->create([
+            'organization_id' => $organization->id,
+            'unit_id' => $unit->id,
+            'tenant_id' => $tenant->id,
+            'status' => Contract::STATUS_ACTIVE,
+            'deposit_amount' => 10000,
+        ]);
+
+        Charge::factory()->create([
+            'organization_id' => $organization->id,
+            'contract_id' => $contract->id,
+            'unit_id' => $unit->id,
+            'type' => Charge::TYPE_DEPOSIT_HOLD,
+            'period' => '2026-07',
+            'charge_date' => '2026-07-21',
+            'amount' => 10000,
+            'meta' => [
+                'subtype' => 'RECEIVED',
+                'deposit_receipt_folio' => 'DEP-2026-00001',
+            ],
+        ]);
+
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+
+        $component = Livewire::actingAs($user)
+            ->test(Show::class, ['contract' => $contract]);
+
+        $depositRow = collect($component->viewData('ledgerGroups'))
+            ->flatMap(fn (array $group) => $group['rows'])
+            ->firstWhere('type', Charge::TYPE_DEPOSIT_HOLD);
+
+        $this->assertNotNull($depositRow);
+        $this->assertSame(10000.0, $depositRow['amount']);
+        $this->assertSame(10000.0, $depositRow['paid']);
+        $this->assertSame(0.0, $depositRow['balance']);
+        $this->assertSame(__('contracts.charge_statuses.guarantee'), $depositRow['status_label']);
     }
 }
