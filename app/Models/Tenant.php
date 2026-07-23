@@ -21,6 +21,7 @@ class Tenant extends OrganizationScopedModel
         'full_name',
         'email',
         'phone',
+        'ine_clave',
         'status',
         'notes',
     ];
@@ -50,6 +51,7 @@ class Tenant extends OrganizationScopedModel
             'full_name',
             'email',
             'phone',
+            'ine_clave',
             'status',
         ];
     }

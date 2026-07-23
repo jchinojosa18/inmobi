@@ -23,6 +23,7 @@ class TenantFactory extends Factory
             'full_name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'phone' => fake()->phoneNumber(),
+            'ine_clave' => null,
             'status' => 'active',
             'notes' => fake()->optional()->sentence(),
         ];
