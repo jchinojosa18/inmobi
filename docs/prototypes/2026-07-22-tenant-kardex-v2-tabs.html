@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Inmo Admin — Prototipo Kardex Inquilino #2 (Tabs)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Figtree', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                    },
+                },
+            },
+        };
+    </script>
+    <style>
+        .proto-banner { font-family: ui-monospace, monospace; }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900 antialiased">
+
+    <div class="proto-banner fixed bottom-4 left-1/2 z-[60] -translate-x-1/2 rounded-full border border-indigo-200 bg-indigo-50 px-4 py-1.5 text-xs font-medium text-indigo-800 shadow-lg">
+        Prototipo #2 — Kardex con pestañas (no conectado a Laravel)
+    </div>
+
+    <div id="overlay" class="fixed inset-0 z-30 bg-black/40 opacity-0 pointer-events-none transition-opacity lg:hidden" aria-hidden="true"></div>
+
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 flex w-64 -translate-x-full flex-col bg-slate-900 transition-transform duration-200 lg:translate-x-0" aria-label="Navegación">
+        <div class="flex h-14 shrink-0 items-center gap-2 border-b border-white/10 px-4">
+            <div class="flex-1">
+                <a href="#" class="block text-base font-semibold tracking-tight text-white">Inmo Admin</a>
+                <p class="truncate text-xs text-slate-400">Inmobiliaria del Norte</p>
+            </div>
+            <button id="sidebar-close" type="button" class="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white lg:hidden" aria-label="Cerrar menú">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <nav class="flex-1 space-y-6 overflow-y-auto px-3 py-4">
+            <div>
+                <p class="mb-1 px-3 text-[11px] font-semibold uppercase tracking-widest text-slate-500">Catálogos</p>
+                <ul class="space-y-0.5">
+                    <li>
+                        <a href="#" class="flex items-center gap-3 rounded-lg bg-white/10 px-3 py-2 text-sm font-medium text-white">
+                            <svg class="h-4 w-4 text-indigo-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
+                            Inquilinos
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </aside>
+
+    <div class="flex min-h-screen flex-col lg:pl-64">
+        <header class="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 border-b border-slate-200/80 bg-white px-4 sm:px-6">
+            <button id="sidebar-open" type="button" class="rounded-lg p-1.5 text-slate-600 hover:bg-slate-100 lg:hidden" aria-label="Abrir menú">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
+            </button>
+            <div class="flex h-9 w-full max-w-xs items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3">
+                <svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+                <span class="text-sm text-slate-400">Buscar…</span>
+            </div>
+            <div class="ml-auto flex items-center gap-2">
+                <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-indigo-600 text-xs font-semibold text-white">J</span>
+                <span class="hidden text-sm font-medium text-slate-800 sm:block">Juan Carlos</span>
+            </div>
+        </header>
+
+        <main class="flex-1 px-4 py-6 sm:px-6">
+            <div class="mb-6 flex flex-wrap items-center gap-2">
+                <a href="./2026-07-22-tenant-kardex.html" class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">← Prototype #1 (scroll)</a>
+                <span class="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white">Prototype #2 (tabs)</span>
+            </div>
+
+            <section class="space-y-6">
+                <!-- Header -->
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h1 class="text-2xl font-semibold tracking-tight text-slate-900">María Fernanda López</h1>
+                            <span class="inline-flex rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">Activo</span>
+                        </div>
+                        <p class="mt-1 text-sm text-slate-500">maria.lopez@email.com · 664 123 4567</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Volver a inquilinos</button>
+                        <button type="button" id="open-edit" class="inline-flex items-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Editar</button>
+                    </div>
+                </div>
+
+                <!-- Stat cards (always visible) -->
+                <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    <article class="rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm">
+                        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Contratos activos</p>
+                        <p class="mt-2 text-2xl font-semibold text-slate-900">1</p>
+                        <p class="mt-1 text-xs text-slate-500">de 2 contratos en total</p>
+                    </article>
+                    <article class="rounded-xl border border-rose-200/80 bg-white p-5 shadow-sm">
+                        <p class="text-xs font-medium uppercase tracking-wide text-rose-700">Saldo pendiente</p>
+                        <p class="mt-2 text-2xl font-semibold text-rose-700">$4,850.00</p>
+                        <p class="mt-1 text-xs text-slate-500">Cargos operativos sin aplicar</p>
+                    </article>
+                    <article class="rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm">
+                        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Saldo a favor</p>
+                        <p class="mt-2 text-2xl font-semibold text-slate-900">$200.00</p>
+                    </article>
+                    <article class="rounded-xl border border-emerald-200/80 bg-white p-5 shadow-sm">
+                        <p class="text-xs font-medium uppercase tracking-wide text-emerald-700">Total pagado</p>
+                        <p class="mt-2 text-2xl font-semibold text-emerald-700">$62,400.00</p>
+                        <p class="mt-1 text-xs text-slate-500">Histórico recibido</p>
+                    </article>
+                </div>
+
+                <!-- Profile card (always visible) -->
+                <div class="rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm">
+                    <h2 class="text-sm font-semibold text-slate-900">Datos del inquilino</h2>
+                    <dl class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <div>
+                            <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Nombre</dt>
+                            <dd class="mt-1 text-sm text-slate-900">María Fernanda López</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Email</dt>
+                            <dd class="mt-1 text-sm text-slate-900">maria.lopez@email.com</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Teléfono</dt>
+                            <dd class="mt-1 text-sm text-slate-900">664 123 4567</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Estado</dt>
+                            <dd class="mt-1 text-sm text-slate-900">Activo</dd>
+                        </div>
+                        <div class="sm:col-span-2 lg:col-span-4">
+                            <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Notas</dt>
+                            <dd class="mt-1 text-sm text-slate-600">Prefiere contacto por WhatsApp. Aval: José López.</dd>
+                        </div>
+                    </dl>
+                </div>
+
+                <!-- Tabbed sections -->
+                <div class="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
+                    <div class="border-b border-slate-200/80 px-2 sm:px-4" role="tablist" aria-label="Secciones del kardex">
+                        <div class="flex gap-1 overflow-x-auto">
+                            <button
+                                type="button"
+                                role="tab"
+                                id="tab-contracts"
+                                aria-controls="panel-contracts"
+                                aria-selected="true"
+                                data-tab="contracts"
+                                class="kardex-tab relative shrink-0 border-b-2 border-indigo-600 px-3 py-3 text-sm font-semibold text-indigo-700 sm:px-4"
+                            >
+                                Contratos
+                                <span class="ml-1.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-indigo-50 px-1.5 py-0.5 text-[11px] font-medium text-indigo-700">2</span>
+                            </button>
+                            <button
+                                type="button"
+                                role="tab"
+                                id="tab-charges"
+                                aria-controls="panel-charges"
+                                aria-selected="false"
+                                data-tab="charges"
+                                class="kardex-tab relative shrink-0 border-b-2 border-transparent px-3 py-3 text-sm font-medium text-slate-500 hover:text-slate-700 sm:px-4"
+                            >
+                                Cargos con saldo
+                                <span class="ml-1.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-rose-50 px-1.5 py-0.5 text-[11px] font-medium text-rose-700">2</span>
+                            </button>
+                            <button
+                                type="button"
+                                role="tab"
+                                id="tab-payments"
+                                aria-controls="panel-payments"
+                                aria-selected="false"
+                                data-tab="payments"
+                                class="kardex-tab relative shrink-0 border-b-2 border-transparent px-3 py-3 text-sm font-medium text-slate-500 hover:text-slate-700 sm:px-4"
+                            >
+                                Pagos recientes
+                                <span class="ml-1.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-600">3</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Panel: Contracts -->
+                    <div id="panel-contracts" role="tabpanel" aria-labelledby="tab-contracts" data-panel="contracts" class="kardex-panel">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-slate-200 text-sm">
+                                <thead class="bg-slate-50/80 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                    <tr>
+                                        <th class="px-4 py-3">Unidad</th>
+                                        <th class="px-4 py-3">Estado</th>
+                                        <th class="px-4 py-3">Inicio</th>
+                                        <th class="px-4 py-3">Fin</th>
+                                        <th class="px-4 py-3 text-right">Renta</th>
+                                        <th class="px-4 py-3 text-right">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <tr class="hover:bg-slate-50/80">
+                                        <td class="px-4 py-3">
+                                            <p class="font-medium text-slate-900">Torre Norte / Depto 402</p>
+                                            <p class="text-xs text-slate-500">Contrato #128</p>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <span class="inline-flex rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">Activo</span>
+                                        </td>
+                                        <td class="px-4 py-3 text-slate-700">01/01/2026</td>
+                                        <td class="px-4 py-3 text-slate-700">31/12/2026</td>
+                                        <td class="px-4 py-3 text-right font-medium text-slate-900">$12,500.00</td>
+                                        <td class="px-4 py-3 text-right">
+                                            <a href="#" title="Ver contrato" aria-label="Ver contrato" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
+                                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                </svg>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-slate-50/80">
+                                        <td class="px-4 py-3">
+                                            <p class="font-medium text-slate-900">Plaza Centro / Local 3</p>
+                                            <p class="text-xs text-slate-500">Contrato #91</p>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-500/20">Finalizado</span>
+                                        </td>
+                                        <td class="px-4 py-3 text-slate-700">01/03/2024</td>
+                                        <td class="px-4 py-3 text-slate-700">28/02/2025</td>
+                                        <td class="px-4 py-3 text-right font-medium text-slate-900">$8,000.00</td>
+                                        <td class="px-4 py-3 text-right">
+                                            <a href="#" title="Ver contrato" aria-label="Ver contrato" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
+                                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                </svg>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Panel: Charges -->
+                    <div id="panel-charges" role="tabpanel" aria-labelledby="tab-charges" data-panel="charges" class="kardex-panel hidden">
+                        <div class="border-b border-slate-100 px-4 py-2">
+                            <p class="text-xs text-slate-500">Operativos · excluye depósito en custodia</p>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-slate-200 text-sm">
+                                <thead class="bg-slate-50/80 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                    <tr>
+                                        <th class="px-4 py-3">Contrato / unidad</th>
+                                        <th class="px-4 py-3">Tipo</th>
+                                        <th class="px-4 py-3">Fecha</th>
+                                        <th class="px-4 py-3 text-right">Monto</th>
+                                        <th class="px-4 py-3 text-right">Pagado</th>
+                                        <th class="px-4 py-3 text-right">Saldo</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <tr class="hover:bg-slate-50/80">
+                                        <td class="px-4 py-3">
+                                            <a href="#" class="font-medium text-indigo-600 hover:underline">#128 · Depto 402</a>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <span class="inline-flex rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-600/20">RENT</span>
+                                        </td>
+                                        <td class="px-4 py-3 text-slate-700">01/07/2026</td>
+                                        <td class="px-4 py-3 text-right text-slate-900">$12,500.00</td>
+                                        <td class="px-4 py-3 text-right text-slate-700">$8,000.00</td>
+                                        <td class="px-4 py-3 text-right font-semibold text-rose-700">$4,500.00</td>
+                                    </tr>
+                                    <tr class="hover:bg-slate-50/80">
+                                        <td class="px-4 py-3">
+                                            <a href="#" class="font-medium text-indigo-600 hover:underline">#128 · Depto 402</a>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <span class="inline-flex rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">PENALTY</span>
+                                        </td>
+                                        <td class="px-4 py-3 text-slate-700">05/07/2026</td>
+                                        <td class="px-4 py-3 text-right text-slate-900">$350.00</td>
+                                        <td class="px-4 py-3 text-right text-slate-700">$0.00</td>
+                                        <td class="px-4 py-3 text-right font-semibold text-rose-700">$350.00</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Panel: Payments -->
+                    <div id="panel-payments" role="tabpanel" aria-labelledby="tab-payments" data-panel="payments" class="kardex-panel hidden">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-slate-200 text-sm">
+                                <thead class="bg-slate-50/80 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                    <tr>
+                                        <th class="px-4 py-3">Folio</th>
+                                        <th class="px-4 py-3">Fecha</th>
+                                        <th class="px-4 py-3">Método</th>
+                                        <th class="px-4 py-3">Contrato</th>
+                                        <th class="px-4 py-3 text-right">Monto</th>
+                                        <th class="px-4 py-3 text-right">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <tr class="hover:bg-slate-50/80">
+                                        <td class="px-4 py-3 font-medium text-slate-900">REC-2026-0142</td>
+                                        <td class="px-4 py-3 text-slate-700">03/07/2026</td>
+                                        <td class="px-4 py-3 text-slate-700">Transferencia</td>
+                                        <td class="px-4 py-3 text-slate-700">#128</td>
+                                        <td class="px-4 py-3 text-right font-medium text-slate-900">$8,000.00</td>
+                                        <td class="px-4 py-3 text-right">
+                                            <a href="#" title="Ver pago" aria-label="Ver pago" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
+                                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                </svg>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-slate-50/80">
+                                        <td class="px-4 py-3 font-medium text-slate-900">REC-2026-0118</td>
+                                        <td class="px-4 py-3 text-slate-700">01/06/2026</td>
+                                        <td class="px-4 py-3 text-slate-700">Efectivo</td>
+                                        <td class="px-4 py-3 text-slate-700">#128</td>
+                                        <td class="px-4 py-3 text-right font-medium text-slate-900">$12,500.00</td>
+                                        <td class="px-4 py-3 text-right">
+                                            <a href="#" title="Ver pago" aria-label="Ver pago" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
+                                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                </svg>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-slate-50/80">
+                                        <td class="px-4 py-3 font-medium text-slate-900">REC-2025-0088</td>
+                                        <td class="px-4 py-3 text-slate-700">01/02/2025</td>
+                                        <td class="px-4 py-3 text-slate-700">Transferencia</td>
+                                        <td class="px-4 py-3 text-slate-700">#91</td>
+                                        <td class="px-4 py-3 text-right font-medium text-slate-900">$8,000.00</td>
+                                        <td class="px-4 py-3 text-right">
+                                            <a href="#" title="Ver pago" aria-label="Ver pago" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
+                                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                </svg>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Edit modal -->
+    <div id="edit-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4" aria-hidden="true">
+        <div class="absolute inset-0 bg-black/40" data-close-modal></div>
+        <div class="relative w-full max-w-2xl rounded-2xl border border-slate-200/80 bg-white p-6 shadow-lg" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+            <h2 id="edit-title" class="text-lg font-semibold text-slate-900">Editar inquilino</h2>
+            <form class="mt-4 grid gap-4 md:grid-cols-2" onsubmit="return false;">
+                <div class="md:col-span-2">
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Nombre completo *</label>
+                    <input type="text" value="María Fernanda López" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Email</label>
+                    <input type="email" value="maria.lopez@email.com" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Teléfono</label>
+                    <input type="text" value="664 123 4567" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Estado *</label>
+                    <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                        <option selected>Activo</option>
+                        <option>Inactivo</option>
+                    </select>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Notas</label>
+                    <textarea rows="3" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">Prefiere contacto por WhatsApp. Aval: José López.</textarea>
+                </div>
+                <div class="md:col-span-2 flex justify-end gap-2">
+                    <button type="button" data-close-modal class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancelar</button>
+                    <button type="button" data-close-modal class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const modal = document.getElementById('edit-modal');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const tabs = document.querySelectorAll('.kardex-tab');
+        const panels = document.querySelectorAll('.kardex-panel');
+
+        function activateTab(name) {
+            tabs.forEach((tab) => {
+                const active = tab.dataset.tab === name;
+                tab.setAttribute('aria-selected', active ? 'true' : 'false');
+                tab.classList.toggle('border-indigo-600', active);
+                tab.classList.toggle('text-indigo-700', active);
+                tab.classList.toggle('font-semibold', active);
+                tab.classList.toggle('border-transparent', !active);
+                tab.classList.toggle('text-slate-500', !active);
+                tab.classList.toggle('font-medium', !active);
+            });
+            panels.forEach((panel) => {
+                panel.classList.toggle('hidden', panel.dataset.panel !== name);
+            });
+        }
+
+        tabs.forEach((tab) => {
+            tab.addEventListener('click', () => activateTab(tab.dataset.tab));
+        });
+
+        document.getElementById('open-edit').addEventListener('click', () => {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            modal.setAttribute('aria-hidden', 'false');
+        });
+
+        document.querySelectorAll('[data-close-modal]').forEach((el) => {
+            el.addEventListener('click', () => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                modal.setAttribute('aria-hidden', 'true');
+            });
+        });
+
+        document.getElementById('sidebar-open')?.addEventListener('click', () => {
+            sidebar.classList.remove('-translate-x-full');
+            overlay.classList.remove('opacity-0', 'pointer-events-none');
+        });
+        document.getElementById('sidebar-close')?.addEventListener('click', () => {
+            sidebar.classList.add('-translate-x-full');
+            overlay.classList.add('opacity-0', 'pointer-events-none');
+        });
+        overlay?.addEventListener('click', () => {
+            sidebar.classList.add('-translate-x-full');
+            overlay.classList.add('opacity-0', 'pointer-events-none');
+        });
+
+        const hash = location.hash.replace('#', '');
+        if (['contracts', 'charges', 'payments'].includes(hash)) {
+            activateTab(hash);
+        }
+    </script>
+</body>
+</html>

@@ -4,8 +4,8 @@
         :description="'#'. $payment->contract_id .' · '. $payment->contract->tenant->full_name"
     >
         <x-slot:actions>
-            <x-ui.button href="{{ route('contracts.show', $payment->contract_id) }}" variant="secondary">
-                {{ __('common.back_to_contract') }}
+            <x-ui.button href="{{ $backUrl }}" variant="secondary">
+                {{ $backLabel }}
             </x-ui.button>
             @if ($payment->receipt_folio !== null && $receiptViewerItem)
                 <x-ui.file-viewer-trigger

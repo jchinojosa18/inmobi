@@ -96,7 +96,9 @@
             @forelse ($tenants as $tenant)
                 <tr wire:key="tenant-row-{{ $tenant->id }}" class="transition hover:bg-slate-50/80">
                     <td class="px-4 py-3">
-                        <p class="font-medium text-slate-900">{{ $tenant->full_name }}</p>
+                        <a href="{{ route('tenants.show', $tenant) }}" class="font-medium text-indigo-600 hover:text-indigo-500 hover:underline">
+                            {{ $tenant->full_name }}
+                        </a>
                         <p class="text-xs text-slate-500">
                             {{ $tenant->email ?: __('common.no_email') }}
                             @if ($tenant->phone)

@@ -8,12 +8,14 @@ use App\Models\Contract;
 use App\Models\Payment;
 use App\Models\PaymentAllocation;
 use App\Support\DepositBalanceService;
+use App\Support\NavigationReturn;
 use App\Support\PaymentReceiptShareUrl;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\On;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 class Show extends Component
@@ -29,6 +31,12 @@ class Show extends Component
     public function onDepositHoldChanged(): void {}
 
     public Contract $contract;
+
+    #[Url(as: 'return', except: '')]
+    public string $returnUrl = '';
+
+    #[Url(as: 'return_label', except: '')]
+    public string $returnLabel = '';
 
     public string $adjustment_amount = '';
 
@@ -48,6 +56,8 @@ class Show extends Component
 
         $this->contract = $contract;
         $this->adjustment_charge_date = now('America/Tijuana')->toDateString();
+        $this->returnUrl = NavigationReturn::sanitizeUrl($this->returnUrl) ?? '';
+        $this->returnLabel = NavigationReturn::sanitizeLabel($this->returnLabel) ?? '';
     }
 
     public function createAdjustment(): void
@@ -134,13 +144,23 @@ class Show extends Component
         $creditTotal = (float) ($contract->creditBalance?->balance ?? 0);
         $pendingBalance = max(0, round((float) $operationalRows->sum('balance'), 2));
 
+        $back = NavigationReturn::resolve(
+            $this->returnUrl !== '' ? $this->returnUrl : null,
+            $this->returnLabel !== '' ? $this->returnLabel : null,
+            route('contracts.index', absolute: false),
+            __('common.back_to_contracts'),
+        );
+
+        $contractReturnLabel = __('common.back_to_contract');
+        $contractReturnUrl = route('contracts.show', $contract, false);
+
         $payments = Payment::query()
             ->where('contract_id', $contract->id)
             ->withSum('allocations as allocated_amount', 'amount')
             ->latest('paid_at')
             ->limit(10)
             ->get()
-            ->map(function (Payment $payment): array {
+            ->map(function (Payment $payment) use ($contractReturnUrl, $contractReturnLabel): array {
                 $shareUrl = PaymentReceiptShareUrl::make($payment->id);
 
                 return [
@@ -150,7 +170,11 @@ class Show extends Component
                     'method' => $payment->method,
                     'amount' => (float) $payment->amount,
                     'allocated_amount' => (float) ($payment->allocated_amount ?? 0),
-                    'show_url' => route('payments.show', $payment),
+                    'show_url' => NavigationReturn::append(
+                        route('payments.show', $payment),
+                        $contractReturnUrl,
+                        $contractReturnLabel,
+                    ),
                     'receipt_url' => route('payments.receipt.pdf', ['paymentId' => $payment->id]),
                     'share_url' => $shareUrl,
                 ];
@@ -158,6 +182,8 @@ class Show extends Component
 
         return view('livewire.contracts.show', [
             'contract' => $contract,
+            'backUrl' => $back['url'],
+            'backLabel' => $back['label'],
             'chargesTotal' => $chargesTotal,
             'allocatedTotal' => $allocatedTotal,
             'creditTotal' => $creditTotal,

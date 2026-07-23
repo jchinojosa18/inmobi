@@ -5,20 +5,30 @@ namespace App\Livewire\Payments;
 use App\Mail\PaymentReceiptMail;
 use App\Models\Payment;
 use App\Support\FileViewerItem;
+use App\Support\NavigationReturn;
 use App\Support\OrganizationSettingsService;
 use App\Support\PaymentReceiptDataBuilder;
 use App\Support\PaymentReceiptShareUrl;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Mail;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 class Show extends Component
 {
     public Payment $payment;
 
+    #[Url(as: 'return', except: '')]
+    public string $returnUrl = '';
+
+    #[Url(as: 'return_label', except: '')]
+    public string $returnLabel = '';
+
     public function mount(Payment $payment): void
     {
         $this->payment = $payment;
+        $this->returnUrl = NavigationReturn::sanitizeUrl($this->returnUrl) ?? '';
+        $this->returnLabel = NavigationReturn::sanitizeLabel($this->returnLabel) ?? '';
     }
 
     public function sendEmail(): void
@@ -88,8 +98,17 @@ class Show extends Component
             ? FileViewerItem::fromPdfRoute('payments.receipt.pdf', ['paymentId' => $payment->id], __('finance.payments.view_pdf'))
             : null;
 
+        $back = NavigationReturn::resolve(
+            $this->returnUrl !== '' ? $this->returnUrl : null,
+            $this->returnLabel !== '' ? $this->returnLabel : null,
+            route('contracts.show', $payment->contract_id, false),
+            __('common.back_to_contract'),
+        );
+
         return view('livewire.payments.show', [
             'payment' => $payment,
+            'backUrl' => $back['url'],
+            'backLabel' => $back['label'],
             'receipt' => $receipt,
             'receiptUrl' => $receiptUrl,
             'receiptViewerItem' => $receiptViewerItem,

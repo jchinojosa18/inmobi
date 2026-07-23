@@ -4,8 +4,8 @@
         :description="$contract->tenant->full_name.' · '.$contract->unit->property->name.' / '.$contract->unit->name"
     >
         <x-slot:actions>
-            <x-ui.button href="{{ route('contracts.index') }}" variant="secondary">
-                {{ __('common.back_to_contracts') }}
+            <x-ui.button href="{{ $backUrl }}" variant="secondary">
+                {{ $backLabel }}
             </x-ui.button>
             @if ($canCreatePayments)
                 <x-ui.button

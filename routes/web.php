@@ -29,6 +29,7 @@ use App\Livewire\Settings\InvitationsIndex as SettingsInvitationsIndex;
 use App\Livewire\Settings\PlazasIndex as SettingsPlazasIndex;
 use App\Livewire\Settings\RolePreview as SettingsRolePreview;
 use App\Livewire\Tenants\Index as TenantsIndex;
+use App\Livewire\Tenants\Show as TenantsShow;
 use App\Livewire\Units\Index as UnitsIndex;
 use App\Livewire\Units\Show as UnitsShow;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -142,6 +143,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/tenants', TenantsIndex::class)
         ->middleware('permission:tenants.view')
         ->name('tenants.index');
+    Route::get('/tenants/{tenant}', TenantsShow::class)
+        ->middleware('permission:tenants.view')
+        ->name('tenants.show');
     Route::get('/expenses', ExpensesIndex::class)
         ->middleware('permission:expenses.view')
         ->name('expenses.index');

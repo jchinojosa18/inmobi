@@ -302,6 +302,7 @@ Definidas en [`routes/web.php`](../routes/web.php) (todas auth salvo donde se in
 - `/houses/create` -> [`Houses\Create`](../app/Livewire/Houses/Create.php)
 - `/houses/{property}` -> [`Houses\Show`](../app/Livewire/Houses/Show.php)
 - `/tenants` -> [`Tenants\Index`](../app/Livewire/Tenants/Index.php)
+- `/tenants/{tenant}` -> [`Tenants\Show`](../app/Livewire/Tenants/Show.php) (kardex)
 - `/contracts` -> [`Contracts\Index`](../app/Livewire/Contracts/Index.php)
 - `/contracts/create|{contract}/edit` -> [`Contracts\Form`](../app/Livewire/Contracts/Form.php)
 - `/contracts/{contract}` -> [`Contracts\Show`](../app/Livewire/Contracts/Show.php)
