@@ -50,6 +50,7 @@ return [
         'edit_tenant' => 'Editar inquilino',
         'search_placeholder' => 'Nombre, email o teléfono...',
         'empty' => 'No hay inquilinos con los filtros actuales.',
+        'ine_clave' => 'Clave de elector (INE)',
         'kardex' => [
             'page_title' => 'Kardex de inquilino',
             'back_to_tenants' => 'Volver a inquilinos',
@@ -159,6 +160,8 @@ return [
         'email_invalid' => 'Ingresa un correo electrónico válido.',
         'email_max' => 'El correo no debe exceder 160 caracteres.',
         'phone_max' => 'El teléfono no debe exceder 50 caracteres.',
+        'ine_clave_format' => 'La clave de elector debe tener exactamente 18 caracteres alfanuméricos.',
+        'ine_clave_unique' => 'Esta clave de elector ya está registrada en la organización.',
         'numbering_distinct' => 'Selecciona una nomenclatura distinta a la actual del edificio.',
         'numbering_invalid' => 'La nomenclatura seleccionada no es válida.',
         'property_code_required' => 'La propiedad debe tener un código para generar unidades.',

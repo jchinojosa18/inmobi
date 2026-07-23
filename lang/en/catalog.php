@@ -50,6 +50,7 @@ return [
         'edit_tenant' => 'Edit tenant',
         'search_placeholder' => 'Name, email or phone...',
         'empty' => 'No tenants match the current filters.',
+        'ine_clave' => 'Voter ID key (INE)',
         'kardex' => [
             'page_title' => 'Tenant kardex',
             'back_to_tenants' => 'Back to tenants',
@@ -159,6 +160,8 @@ return [
         'email_invalid' => 'Enter a valid email address.',
         'email_max' => 'Email must not exceed 160 characters.',
         'phone_max' => 'Phone must not exceed 50 characters.',
+        'ine_clave_format' => 'The voter ID key must be exactly 18 alphanumeric characters.',
+        'ine_clave_unique' => 'This voter ID key is already registered in the organization.',
         'numbering_distinct' => 'Select a numbering scheme different from the building\'s current one.',
         'numbering_invalid' => 'The selected numbering scheme is not valid.',
         'property_code_required' => 'The property must have a code to generate units.',
