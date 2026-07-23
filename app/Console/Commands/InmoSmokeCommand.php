@@ -205,23 +205,13 @@ class InmoSmokeCommand extends Command
             ]);
         }
 
-        $depositHold = $this->registerDepositHoldAction->execute(
+        $this->registerDepositHoldAction->execute(
             contract: $contract,
             amount: (float) $contract->deposit_amount,
             receivedAt: $targetDate->toDateString(),
             notes: 'Depósito smoke',
             userId: $userId,
         );
-
-        $pendingDepositHold = $this->pendingChargeBalance($depositHold);
-        if ($pendingDepositHold > 0) {
-            $this->registerPaymentAction->execute($contract, [
-                'amount' => $pendingDepositHold,
-                'method' => Payment::METHOD_TRANSFER,
-                'paid_at' => $targetDate->setTime(14, 0)->toDateTimeString(),
-                'reference' => 'SMOKE-B-DEPOSIT-'.$targetDate->format('Ymd'),
-            ]);
-        }
 
         $result = $this->settlementAction->execute(
             contract: $contract,
@@ -240,16 +230,6 @@ class InmoSmokeCommand extends Command
             'deposit_applied' => $result->depositApplied,
             'deposit_refund' => $result->depositRefund,
         ];
-    }
-
-    private function pendingChargeBalance(Charge $charge): float
-    {
-        $allocated = (float) PaymentAllocation::query()
-            ->withoutOrganizationScope()
-            ->where('charge_id', $charge->id)
-            ->sum('amount');
-
-        return round(max((float) $charge->amount - $allocated, 0), 2);
     }
 
     private function summarizePenaltyBaseTrend(int $contractId, CarbonImmutable $targetDate, CarbonImmutable $nextDay): string

@@ -87,7 +87,18 @@ class InmoSmokeCommandTest extends TestCase
                 ])
                 ->sum('payment_allocations.amount');
 
-            $this->assertGreaterThan(0, $depositAllocations);
+            $registeredDepositHolds = (float) Charge::query()
+                ->withoutOrganizationScope()
+                ->where('organization_id', $organization->id)
+                ->where('type', Charge::TYPE_DEPOSIT_HOLD)
+                ->whereBetween('charge_date', [
+                    $dateFrom->toDateString(),
+                    $dateTo->toDateString(),
+                ])
+                ->sum('amount');
+
+            $this->assertGreaterThan(0, $registeredDepositHolds);
+            $this->assertSame(0.0, $depositAllocations);
 
             $allAllocations = (float) PaymentAllocation::query()
                 ->withoutOrganizationScope()
@@ -99,7 +110,7 @@ class InmoSmokeCommandTest extends TestCase
                 ])
                 ->sum('payment_allocations.amount');
 
-            $this->assertGreaterThan($operatingIncome, $allAllocations);
+            $this->assertGreaterThan(0, $allAllocations);
 
             $includedAllocations = (float) PaymentAllocation::query()
                 ->withoutOrganizationScope()
