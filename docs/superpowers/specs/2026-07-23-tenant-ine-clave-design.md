@@ -41,9 +41,11 @@ On save (create and edit):
 3. Empty string → `null`
 4. If not null:
    - Must match `/^[A-Z0-9]{18}$/` (exactly 18 alphanumeric after normalization)
-   - Must be unique within the organization (`Rule::unique('tenants', 'ine_clave')->where(...)->ignore($id)`), respecting soft deletes via the existing SoftDeletes / unique query pattern used in the app
+   - Must be unique within the organization via `Rule::unique('tenants', 'ine_clave')->where('organization_id', …)->ignore($editingId)` (create: no ignore)
 
-Validation messages live in `lang/{es,en}/catalog.php` under `validation.*` and a label under `catalog.tenants` / `common` as appropriate (e.g. `ine_clave` → “Clave de elector (INE)”).
+Uniqueness matches the DB unique index: soft-deleted tenants still occupy their `ine_clave` while the row exists. Reuse after soft-delete is out of scope for this change.
+
+Labels/messages in `lang/{es,en}/catalog.php` (e.g. label “Clave de elector (INE)”, validation for format/unique).
 
 ## UI
 
@@ -57,7 +59,7 @@ Validation messages live in `lang/{es,en}/catalog.php` under `validation.*` and 
 ### Kardex profile (`livewire/tenants/show.blade.php`)
 
 - Add a definition row in the profile card for clave de elector
-- Value: `$tenant->ine_clave` or em dash / existing empty placeholder pattern used for missing phone/email
+- Value: `$tenant->ine_clave ?: __('common.n_a')` (same empty pattern as phone)
 
 ### Not in this change
 
