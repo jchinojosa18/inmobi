@@ -17,7 +17,7 @@ Pantalla de consulta 360° del inquilino (`/tenants/{tenant}`) con cards de resu
 | Propósito | Consulta 360° (no centro operativo) |
 | Alcance v1 | Datos + KPIs + contratos + cargos pendientes + pagos recientes |
 | KPIs | Contratos activos · saldo pendiente · saldo a favor · total pagado |
-| Entrada | Desde listado `/tenants` (nombre → show) |
+| Entrada | Desde listado `/tenants`: botón **Ver** en acciones → show |
 | Edición | Botón Editar en kardex abre modal (mismos campos que el índice) |
 | Layout UI | Prototype #2: header/cards/datos fijos + pestañas para listados |
 | Arquitectura | `Tenants\Show` + `App\Support\TenantKardexSummary` |
@@ -92,7 +92,7 @@ Alineada a `Contracts\Show` / `Units\Show` y design system (`x-ui.*`). Layout of
 
 Pestaña activa puede persistir en query string (`?tab=contracts|charges|payments`) opcional en implementación.
 
-En el índice: el nombre es link a `tenants.show`; el botón Editar del listado se mantiene.
+En el índice: botón **Ver** en acciones abre `tenants.show`; el nombre es texto plano; el botón Editar del listado se mantiene.
 
 ## Permissions & errors
 

@@ -93,7 +93,7 @@ class TenantKardexShowTest extends TestCase
         $this->assertSame('Nombre Nuevo', $tenant->fresh()->full_name);
     }
 
-    public function test_index_name_links_to_kardex(): void
+    public function test_index_view_button_links_to_kardex(): void
     {
         $organization = Organization::factory()->create();
         $tenant = Tenant::factory()->create([
@@ -105,7 +105,9 @@ class TenantKardexShowTest extends TestCase
         $this->actingAs($user)
             ->get(route('tenants.index'))
             ->assertOk()
-            ->assertSee('href="'.route('tenants.show', $tenant).'"', false);
+            ->assertSee('href="'.route('tenants.show', $tenant).'"', false)
+            ->assertSeeText(__('common.view'))
+            ->assertDontSee('<a href="'.route('tenants.show', $tenant).'" class="font-medium text-indigo-600', false);
     }
 
     public function test_contract_and_payment_opened_from_kardex_return_to_tenant(): void

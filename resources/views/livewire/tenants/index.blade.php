@@ -96,9 +96,7 @@
             @forelse ($tenants as $tenant)
                 <tr wire:key="tenant-row-{{ $tenant->id }}" class="transition hover:bg-slate-50/80">
                     <td class="px-4 py-3">
-                        <a href="{{ route('tenants.show', $tenant) }}" class="font-medium text-indigo-600 hover:text-indigo-500 hover:underline">
-                            {{ $tenant->full_name }}
-                        </a>
+                        <p class="font-medium text-slate-900">{{ $tenant->full_name }}</p>
                         <p class="text-xs text-slate-500">
                             {{ $tenant->email ?: __('common.no_email') }}
                             @if ($tenant->phone)
@@ -113,7 +111,10 @@
                     </td>
                     <td class="px-4 py-3 text-right font-medium text-slate-700">{{ $tenant->contracts_count }}</td>
                     <td class="px-4 py-3">
-                        <div class="flex justify-end">
+                        <div class="flex justify-end gap-2">
+                            <x-ui.button href="{{ route('tenants.show', $tenant) }}" variant="secondary" size="sm">
+                                {{ __('common.view') }}
+                            </x-ui.button>
                             @if ($canManageTenants)
                                 <x-ui.button type="button" variant="secondary" size="sm" wire:click="startEdit({{ $tenant->id }})">
                                     {{ __('common.edit') }}
