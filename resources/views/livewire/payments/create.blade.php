@@ -59,15 +59,15 @@
             </div>
 
             <div class="md:col-span-2">
-                <x-ui.input
+                <x-ui.file-input
                     id="payment-evidence"
-                    :label="__('finance.payments.evidence_optional')"
-                    type="file"
                     wire:model="evidence"
                     accept=".jpg,.jpeg,.png,.pdf"
+                    :label="__('finance.payments.evidence_optional')"
+                    :hint="__('finance.payments.evidence_types')"
+                    loading-target="evidence"
                 />
                 @error('evidence') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-                <p class="mt-1 text-xs text-slate-500">{{ __('finance.payments.evidence_types') }}</p>
             </div>
 
             <div class="md:col-span-2 flex justify-end">

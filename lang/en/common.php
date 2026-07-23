@@ -62,6 +62,8 @@ return [
     'back_to_contract' => 'Back to contract',
     'back_to_contracts' => 'Back to contracts',
     'evidence' => 'Evidence',
+    'choose_file' => 'Choose file',
+    'uploading_file' => 'Uploading file...',
     'applied' => 'Applied',
     'credit_balance' => 'Credit balance',
     'showing_count' => 'Showing :count records',

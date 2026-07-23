@@ -85,6 +85,7 @@ class QuickRegisterModal extends Component
         $this->notes = '';
         $this->evidenceFile = null;
         $this->resetValidation();
+        $this->dispatch('expense-evidence-reset');
     }
 
     public function updatedUnitQuery(): void

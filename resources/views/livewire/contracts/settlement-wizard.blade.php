@@ -85,8 +85,13 @@
                             </div>
                             <div class="md:col-span-3">
                                 @php $evidenceInputId = 'settlement-evidence-'.$index; @endphp
-                                <label for="{{ $evidenceInputId }}" class="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">{{ __('contracts.evidence_photo') }}</label>
-                                <input id="{{ $evidenceInputId }}" type="file" wire:model="evidenceFiles.{{ $index }}" accept=".jpg,.jpeg,.png,.webp" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                                <x-ui.file-input
+                                    :id="$evidenceInputId"
+                                    wire:model="evidenceFiles.{{ $index }}"
+                                    accept=".jpg,.jpeg,.png,.webp"
+                                    :label="__('contracts.evidence_photo')"
+                                    :loading-target="'evidenceFiles.'.$index"
+                                />
                                 @error('evidenceFiles.'.$index) <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                             </div>
                             <div class="flex items-end justify-end md:col-span-1">

@@ -99,6 +99,7 @@ class QuickRegisterModal extends Component
         $this->whatsAppUrl = null;
         $this->savedPaymentId = null;
         $this->resetValidation();
+        $this->dispatch('payment-evidence-reset');
     }
 
     public function updatedQ(): void

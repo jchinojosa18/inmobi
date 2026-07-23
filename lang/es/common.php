@@ -62,6 +62,8 @@ return [
     'back_to_contract' => 'Volver al contrato',
     'back_to_contracts' => 'Volver a contratos',
     'evidence' => 'Evidencia',
+    'choose_file' => 'Elegir archivo',
+    'uploading_file' => 'Subiendo archivo...',
     'applied' => 'Aplicado',
     'credit_balance' => 'Saldo a favor',
     'showing_count' => 'Mostrando :count registros',

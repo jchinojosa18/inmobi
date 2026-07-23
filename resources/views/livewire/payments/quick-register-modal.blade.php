@@ -165,13 +165,17 @@
                         @endif
 
                         <div>
-                            <label class="mb-1 block text-xs font-medium text-slate-700">{{ __('finance.payments.evidence_label') }} <span class="text-slate-400">{{ __('finance.expenses.evidence_hint') }}</span></label>
-                            <input
-                                type="file"
+                            <x-ui.file-input
+                                id="qpm-evidence"
                                 wire:model="evidence"
                                 accept=".jpg,.jpeg,.png,.pdf"
-                                class="w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-slate-700 hover:file:bg-slate-200"
+                                reset-event="payment-evidence-reset"
+                                loading-target="evidence"
                             >
+                                <x-slot:labelSlot>
+                                    {{ __('finance.payments.evidence_label') }} <span class="text-slate-400">{{ __('finance.expenses.evidence_hint') }}</span>
+                                </x-slot:labelSlot>
+                            </x-ui.file-input>
                             @error('evidence') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                         </div>
 

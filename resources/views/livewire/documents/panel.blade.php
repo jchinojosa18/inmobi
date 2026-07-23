@@ -150,51 +150,23 @@
                     </div>
                 @endif
 
-                <div class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4">
-                    <p class="mb-2 text-sm font-medium text-slate-700">{{ __('documents.file') }}</p>
-                    @php
-                        $documentInputId = 'document-upload-'.$documentableId.'-'.$uploadInputKey;
-                    @endphp
-                    <div
-                        wire:key="document-upload-wrap-{{ $documentableId }}-{{ $uploadInputKey }}"
-                        x-data="{ fileLabel: '' }"
-                        x-on:document-upload-reset.window="fileLabel = ''"
-                        class="flex flex-col gap-2"
-                    >
-                        <input
-                            id="{{ $documentInputId }}"
-                            type="file"
-                            wire:model="document"
-                            accept="{{ $variant === 'contract' ? '.pdf' : '.jpg,.jpeg,.png,.pdf' }}"
-                            x-on:change="
-                                const files = Array.from($event.target.files || []);
-                                fileLabel = files.map(file => file.name).join(', ');
-                            "
-                            class="sr-only"
-                        >
-                        <label
-                            for="{{ $documentInputId }}"
-                            class="inline-flex min-h-10 w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-offset-2"
-                        >
-                            <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                            </svg>
-                            {{ __('documents.choose_file') }}
-                        </label>
-                        <p
-                            x-show="fileLabel"
-                            x-text="fileLabel"
-                            x-cloak
-                            class="truncate text-xs text-slate-500"
-                        ></p>
-                    </div>
+                <div wire:key="document-upload-wrap-{{ $documentableId }}-{{ $uploadInputKey }}">
+                    <x-ui.file-input
+                        :id="'document-upload-'.$documentableId.'-'.$uploadInputKey"
+                        wire:model="document"
+                        :accept="$variant === 'contract' ? '.pdf' : '.jpg,.jpeg,.png,.pdf'"
+                        boxed
+                        :label="__('documents.file')"
+                        reset-event="document-upload-reset"
+                        loading-target="document"
+                        :uploading-label="__('documents.uploading')"
+                    />
                     @error('document')
                         <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
                     @enderror
                     @error('month_close')
                         <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
                     @enderror
-                    <p wire:loading wire:target="document" class="mt-2 text-xs text-slate-500">{{ __('documents.uploading') }}</p>
                 </div>
 
                 <div class="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 pt-4">

@@ -28,6 +28,15 @@ alwaysApply: false
 
 Morph en `Document`; disk `DOCUMENTS_DISK` (default `public`). Validar tipos/tamaño como en flujos existentes.
 
+## Subida de archivos
+
+- **Siempre** usar `<x-ui.file-input>` para inputs de imagen, PDF o evidencia. **Nunca** `<input type="file">` nativo ni `x-ui.input type="file"`.
+- Patrón: input oculto (`sr-only`), botón estilizado con icono y texto `common.choose_file`, nombre del archivo seleccionado debajo.
+- Props habituales: `wire:model`, `accept`, `loading-target`, `reset-event` (y `clear-event` si el formulario se limpia tras guardar).
+- Variante `boxed` para secciones con borde punteado (documentos, inventario).
+- Slot opcional para acciones adyacentes (ej. botón «Subir» en inventario).
+- Referencias: `components/ui/file-input.blade.php`, `Documents/Panel`, `Units/InventoryPanel`, `Payments/QuickRegisterModal`.
+
 ## Visualización de archivos
 
 - **Nunca** abrir archivos internos con `target="_blank"` ni navegación directa a PDF/imagen en vistas autenticadas.
