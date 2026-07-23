@@ -127,4 +127,17 @@
             </ul>
         </x-ui.card>
     @endif
+
+    <div
+        x-data="{ show: false }"
+        x-on:payment-receipt-email-sent.window="show = true; setTimeout(() => show = false, 2500)"
+        x-show="show"
+        x-cloak
+        x-transition.opacity
+        class="pointer-events-none fixed bottom-6 right-6 z-[70] rounded-lg bg-slate-800/95 px-4 py-2 text-sm font-medium text-white shadow-lg"
+        role="status"
+        aria-live="polite"
+    >
+        {{ __('finance.flash.receipt_sent') }}
+    </div>
 </section>

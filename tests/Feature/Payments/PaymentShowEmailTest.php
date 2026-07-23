@@ -46,7 +46,8 @@ class PaymentShowEmailTest extends TestCase
         Livewire::actingAs($admin)
             ->test(Show::class, ['payment' => $payment])
             ->call('sendEmail')
-            ->assertHasNoErrors();
+            ->assertHasNoErrors()
+            ->assertDispatched('payment-receipt-email-sent');
 
         Mail::assertSent(PaymentReceiptMail::class, function (PaymentReceiptMail $mail) {
             return $mail->hasTo('tenant@example.com');
