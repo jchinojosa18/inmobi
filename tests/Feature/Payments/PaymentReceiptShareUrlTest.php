@@ -45,6 +45,18 @@ class PaymentReceiptShareUrlTest extends TestCase
             ->assertOk();
     }
 
+    public function test_shared_receipt_streams_inline_for_browser_viewing(): void
+    {
+        $payment = $this->makePaymentWithFolio();
+        $shareUrl = PaymentReceiptShareUrl::make($payment->id);
+        $pathWithQuery = parse_url($shareUrl, PHP_URL_PATH).'?'.parse_url($shareUrl, PHP_URL_QUERY);
+
+        $response = $this->get($pathWithQuery);
+
+        $response->assertOk();
+        $this->assertStringContainsString('inline', (string) $response->headers->get('content-disposition'));
+    }
+
     public function test_shared_receipt_rejects_unsigned_url(): void
     {
         $payment = $this->makePaymentWithFolio();

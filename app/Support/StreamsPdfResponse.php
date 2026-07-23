@@ -10,7 +10,7 @@ trait StreamsPdfResponse
 {
     protected function streamPdf(PDF $pdf, Request $request, string $filename): Response
     {
-        if ($request->boolean('inline')) {
+        if ($request->routeIs('payments.receipt.share') || $request->boolean('inline')) {
             return $pdf->stream($filename);
         }
 

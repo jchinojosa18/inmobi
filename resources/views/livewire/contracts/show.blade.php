@@ -238,8 +238,13 @@
                                         >
                                             {{ __('common.receipt_pdf') }}
                                         </x-ui.file-viewer-trigger>
-                                        <x-ui.button :href="$payment['share_url']" size="sm" target="_blank" rel="noopener noreferrer">
-                                            {{ __('contracts.shareable_link') }}
+                                        <x-ui.button
+                                            type="button"
+                                            size="sm"
+                                            x-data="{ copied: false }"
+                                            x-on:click="navigator.clipboard.writeText({{ \Illuminate\Support\Js::from($payment['share_url']) }}); copied = true; setTimeout(() => copied = false, 2000)"
+                                        >
+                                            <span x-text="copied ? @js(__('finance.payments.copied')) : @js(__('contracts.shareable_link'))"></span>
                                         </x-ui.button>
                                     @endif
                                 @endif

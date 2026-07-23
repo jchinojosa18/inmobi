@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Contracts;
 
+use App\Livewire\Contracts\Show;
 use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\CreditBalance;
@@ -13,6 +14,7 @@ use App\Models\Tenant;
 use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class ContractShowTest extends TestCase
@@ -124,7 +126,7 @@ class ContractShowTest extends TestCase
         $response->assertSeeText('$750.00');
     }
 
-    public function test_shareable_link_href_is_not_double_escaped(): void
+    public function test_shareable_link_button_copies_signed_url(): void
     {
         [$organization, $contract] = $this->createContractGraph();
 
@@ -136,14 +138,15 @@ class ContractShowTest extends TestCase
             'paid_at' => '2026-03-04 12:00:00',
         ]);
 
-        $html = $this
-            ->actingAs($this->createUserForOrganization($organization))
-            ->get(route('contracts.show', $contract))
-            ->assertOk()
-            ->getContent();
+        $user = $this->createUserForOrganization($organization);
 
-        $this->assertStringNotContainsString('&amp;amp;signature=', $html);
-        $this->assertMatchesRegularExpression('/href="[^"]*&amp;signature=[a-f0-9]+"/', $html);
+        $component = Livewire::actingAs($user)
+            ->test(Show::class, ['contract' => $contract]);
+
+        $component
+            ->assertSee(__('contracts.shareable_link'))
+            ->assertSeeHtml('navigator.clipboard.writeText')
+            ->assertSeeHtml('shared.pdf');
     }
 
     /**
