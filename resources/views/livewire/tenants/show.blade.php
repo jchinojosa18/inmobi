@@ -2,9 +2,7 @@
     @php
         $pendingBalance = $summary->pendingBalance();
         $activeContractsCount = $summary->activeContractsCount();
-        $contractsTotal = $contracts->count();
         $creditBalance = $summary->creditBalance();
-        $totalPaid = $summary->totalPaid();
         $headerDescription = collect([
             $tenant->email ?: __('common.no_email'),
             $tenant->phone,
@@ -24,29 +22,20 @@
         </x-slot:actions>
     </x-ui.page-header>
 
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <x-ui.stat-card
             :label="__('catalog.tenants.kardex.active_contracts')"
             :value="$activeContractsCount"
-            :hint="__('catalog.tenants.kardex.active_contracts_hint', ['total' => $contractsTotal])"
         />
         <x-ui.stat-card
             :label="__('catalog.tenants.kardex.pending_balance')"
             :value="'$'.number_format($pendingBalance, 2)"
-            :hint="__('catalog.tenants.kardex.pending_balance_hint')"
             :tone="$pendingBalance > 0 ? 'danger' : 'default'"
             :valueClass="$pendingBalance > 0 ? 'text-rose-700' : null"
         />
         <x-ui.stat-card
             :label="__('catalog.tenants.kardex.credit_balance')"
             :value="'$'.number_format($creditBalance, 2)"
-        />
-        <x-ui.stat-card
-            :label="__('catalog.tenants.kardex.total_paid')"
-            :value="'$'.number_format($totalPaid, 2)"
-            :hint="__('catalog.tenants.kardex.total_paid_hint')"
-            tone="success"
-            valueClass="text-emerald-700"
         />
     </div>
 

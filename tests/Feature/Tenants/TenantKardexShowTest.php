@@ -61,10 +61,9 @@ class TenantKardexShowTest extends TestCase
             ->assertSeeText(__('catalog.tenants.kardex.active_contracts'))
             ->assertSeeText(__('catalog.tenants.kardex.pending_balance'))
             ->assertSeeText(__('catalog.tenants.kardex.credit_balance'))
-            ->assertSeeText(__('catalog.tenants.kardex.total_paid'))
+            ->assertDontSeeText(__('catalog.tenants.kardex.total_paid'))
             ->assertSeeText('$4,500.00')
             ->assertSeeText('$200.00')
-            ->assertSeeText('$16,000.00')
             ->assertSeeText(__('catalog.tenants.kardex.tab_contracts'))
             ->assertSeeText(__('catalog.tenants.kardex.tab_charges'))
             ->assertSeeText(__('catalog.tenants.kardex.tab_payments'));
