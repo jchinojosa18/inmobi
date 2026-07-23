@@ -7,6 +7,7 @@ use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\Payment;
 use App\Models\PaymentAllocation;
+use App\Support\DepositBalanceService;
 use App\Support\PaymentReceiptShareUrl;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
@@ -111,11 +112,16 @@ class Show extends Component
         session()->flash('success', __('contracts.flash.adjustment_created'));
     }
 
-    public function render(): View
+    public function render(DepositBalanceService $depositBalanceService): View
     {
         $contract = Contract::query()
             ->with(['unit.property', 'tenant', 'creditBalance'])
             ->findOrFail($this->contract->id);
+
+        $contractDepositAmount = round((float) $contract->deposit_amount, 2);
+        $registeredDeposit = $depositBalanceService->registeredDepositHoldAmount($contract);
+        $remainingDeposit = $depositBalanceService->remainingDepositHoldAmount($contract);
+        $depositIsComplete = $remainingDeposit <= 0;
 
         $ledgerRows = $this->buildLedgerRows($contract);
         $groupedLedger = $this->groupLedgerRows($ledgerRows);
@@ -163,6 +169,10 @@ class Show extends Component
             'canManageCharges' => auth()->user()?->can('charges.manage') ?? false,
             'canViewPayments' => auth()->user()?->can('payments.view') ?? false,
             'canSettleContracts' => auth()->user()?->can('contracts.settle') ?? false,
+            'contractDepositAmount' => $contractDepositAmount,
+            'registeredDeposit' => $registeredDeposit,
+            'remainingDeposit' => $remainingDeposit,
+            'depositIsComplete' => $depositIsComplete,
         ])->layout('layouts.app', [
             'title' => __('contracts.show_page_title'),
         ]);

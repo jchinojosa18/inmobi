@@ -27,10 +27,11 @@ class SettlementWizardAccordionTest extends TestCase
             ->assertSeeHtml('aria-expanded="false"')
             ->assertSee(__('contracts.settlement_title'))
             ->assertSee(__('contracts.deposit_paid'))
+            ->assertSee(__('contracts.current_outstanding'))
+            ->assertSee('$0.00')
             ->assertSee(__('contracts.deposit_applied'))
             ->assertSee(__('contracts.deposit_refunded'))
             ->assertSee(__('contracts.available'))
-            ->assertSee(__('contracts.current_outstanding'))
             ->assertSee(__('contracts.settlement_description'));
     }
 

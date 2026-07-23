@@ -4,6 +4,9 @@
         :description="$contract->tenant->full_name.' · '.$contract->unit->property->name.' / '.$contract->unit->name"
     >
         <x-slot:actions>
+            <x-ui.button href="{{ route('contracts.index') }}" variant="secondary">
+                {{ __('common.back_to_contracts') }}
+            </x-ui.button>
             @if ($canCreatePayments)
                 <x-ui.button
                     type="button"
@@ -24,10 +27,18 @@
         </x-slot:actions>
     </x-ui.page-header>
 
-    <div class="grid gap-4 md:grid-cols-4">
+    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <x-ui.stat-card
             :label="__('contracts.status')"
             :value="$contract->status === 'active' ? __('common.active') : __('common.finished')"
+        />
+        <x-ui.stat-card
+            :label="__('contracts.deposit_paid')"
+            :value="$depositIsComplete
+                ? '$'.number_format($registeredDeposit, 2)
+                : '$'.number_format($registeredDeposit, 2).' / $'.number_format($contractDepositAmount, 2)"
+            :tone="$depositIsComplete ? 'success' : 'danger'"
+            :valueClass="$depositIsComplete ? 'text-emerald-700' : 'text-rose-700'"
         />
         <x-ui.stat-card :label="__('contracts.accumulated_charges')" :value="'$'.number_format($chargesTotal, 2)" />
         <x-ui.stat-card :label="__('contracts.applied')" :value="'$'.number_format($allocatedTotal, 2)" />

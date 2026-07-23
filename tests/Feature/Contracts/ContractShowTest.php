@@ -82,6 +82,7 @@ class ContractShowTest extends TestCase
             ->get(route('contracts.show', $contract));
 
         $response->assertOk();
+        $response->assertSee(__('common.back_to_contracts'));
         $response->assertSeeText('Estado de cuenta');
         $response->assertSeeText('$1,500.00');
         $response->assertSeeText('$900.00');

@@ -2,7 +2,7 @@
     <div x-data="{ open: false }">
         <button
             type="button"
-            class="flex w-full items-start justify-between gap-3 text-left"
+            class="flex w-full items-center justify-between gap-3 text-left"
             @click="open = !open"
             :aria-expanded="open.toString()"
             aria-controls="settlement-panel"
@@ -11,16 +11,14 @@
         >
             <div class="min-w-0 flex-1">
                 <h2 class="text-lg font-semibold text-slate-900">{{ __('contracts.settlement_title') }}</h2>
-                <div class="mt-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
-                    <p>{{ __('contracts.deposit_paid') }}: <strong>${{ number_format($paidDeposit, 2) }}</strong></p>
-                    <p>{{ __('contracts.deposit_applied') }}: <strong>${{ number_format($appliedDeposit, 2) }}</strong></p>
-                    <p>{{ __('contracts.deposit_refunded') }}: <strong>${{ number_format($refundedDeposit, 2) }}</strong></p>
-                    <p>{{ __('contracts.available') }}: <strong>${{ number_format($availableDeposit, 2) }}</strong></p>
-                    <p>{{ __('contracts.current_outstanding') }}: <strong>${{ number_format($currentOutstanding, 2) }}</strong></p>
-                </div>
+                <p x-show="!open" class="mt-0.5 text-sm text-slate-600">
+                    {{ __('contracts.deposit_paid') }}: <strong class="font-medium text-slate-900">${{ number_format($paidDeposit, 2) }}</strong>
+                    <span class="text-slate-400">/</span>
+                    {{ __('contracts.current_outstanding') }}: <strong class="font-medium text-slate-900">${{ number_format($currentOutstanding, 2) }}</strong>
+                </p>
             </div>
             <svg
-                class="mt-1 h-5 w-5 shrink-0 text-slate-500 transition-transform"
+                class="h-5 w-5 shrink-0 text-slate-500 transition-transform"
                 :class="{ 'rotate-180': open }"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
@@ -34,7 +32,15 @@
         </button>
 
         <div id="settlement-panel" x-show="open" x-cloak class="mt-4">
-            <p class="text-sm text-slate-600">
+            <div class="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                <p>{{ __('contracts.deposit_paid') }}: <strong>${{ number_format($paidDeposit, 2) }}</strong></p>
+                <p>{{ __('contracts.deposit_applied') }}: <strong>${{ number_format($appliedDeposit, 2) }}</strong></p>
+                <p>{{ __('contracts.deposit_refunded') }}: <strong>${{ number_format($refundedDeposit, 2) }}</strong></p>
+                <p>{{ __('contracts.available') }}: <strong>${{ number_format($availableDeposit, 2) }}</strong></p>
+                <p>{{ __('contracts.current_outstanding') }}: <strong>${{ number_format($currentOutstanding, 2) }}</strong></p>
+            </div>
+
+            <p class="mt-4 text-sm text-slate-600">
                 {{ __('contracts.settlement_description') }}
             </p>
 

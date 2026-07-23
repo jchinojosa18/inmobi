@@ -60,6 +60,7 @@ return [
     'no_address' => 'Sin dirección registrada',
     'back_to_properties' => 'Volver a propiedades',
     'back_to_contract' => 'Volver al contrato',
+    'back_to_contracts' => 'Volver a contratos',
     'evidence' => 'Evidencia',
     'applied' => 'Aplicado',
     'credit_balance' => 'Saldo a favor',

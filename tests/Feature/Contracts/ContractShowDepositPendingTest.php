@@ -131,4 +131,80 @@ class ContractShowDepositPendingTest extends TestCase
         $this->assertSame(0.0, $depositRow['balance']);
         $this->assertSame(__('contracts.charge_statuses.guarantee'), $depositRow['status_label']);
     }
+
+    public function test_deposit_stat_card_shows_complete_in_green(): void
+    {
+        $organization = Organization::factory()->create();
+        $property = Property::factory()->create(['organization_id' => $organization->id]);
+        $unit = Unit::factory()->create([
+            'organization_id' => $organization->id,
+            'property_id' => $property->id,
+        ]);
+        $tenant = Tenant::factory()->create(['organization_id' => $organization->id]);
+        $contract = Contract::factory()->create([
+            'organization_id' => $organization->id,
+            'unit_id' => $unit->id,
+            'tenant_id' => $tenant->id,
+            'status' => Contract::STATUS_ACTIVE,
+            'deposit_amount' => 10000,
+        ]);
+
+        Charge::factory()->create([
+            'organization_id' => $organization->id,
+            'contract_id' => $contract->id,
+            'unit_id' => $unit->id,
+            'type' => Charge::TYPE_DEPOSIT_HOLD,
+            'period' => '2026-07',
+            'charge_date' => '2026-07-21',
+            'amount' => 10000,
+        ]);
+
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+
+        $this->actingAs($user)
+            ->get(route('contracts.show', $contract))
+            ->assertOk()
+            ->assertSee(__('contracts.deposit_paid'))
+            ->assertSee('$10,000.00')
+            ->assertSee('border-emerald-200/80', false)
+            ->assertSee('text-emerald-700', false);
+    }
+
+    public function test_deposit_stat_card_shows_incomplete_in_red(): void
+    {
+        $organization = Organization::factory()->create();
+        $property = Property::factory()->create(['organization_id' => $organization->id]);
+        $unit = Unit::factory()->create([
+            'organization_id' => $organization->id,
+            'property_id' => $property->id,
+        ]);
+        $tenant = Tenant::factory()->create(['organization_id' => $organization->id]);
+        $contract = Contract::factory()->create([
+            'organization_id' => $organization->id,
+            'unit_id' => $unit->id,
+            'tenant_id' => $tenant->id,
+            'status' => Contract::STATUS_ACTIVE,
+            'deposit_amount' => 10000,
+        ]);
+
+        Charge::factory()->create([
+            'organization_id' => $organization->id,
+            'contract_id' => $contract->id,
+            'unit_id' => $unit->id,
+            'type' => Charge::TYPE_DEPOSIT_HOLD,
+            'period' => '2026-07',
+            'charge_date' => '2026-07-21',
+            'amount' => 6500,
+        ]);
+
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+
+        $this->actingAs($user)
+            ->get(route('contracts.show', $contract))
+            ->assertOk()
+            ->assertSee(__('contracts.deposit_paid'))
+            ->assertSee('$6,500.00 / $10,000.00')
+            ->assertSee('border-rose-200/80', false)
+            ->assertSee('text-rose-700', false);
+    }
 }

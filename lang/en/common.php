@@ -60,6 +60,7 @@ return [
     'no_address' => 'No address on file',
     'back_to_properties' => 'Back to properties',
     'back_to_contract' => 'Back to contract',
+    'back_to_contracts' => 'Back to contracts',
     'evidence' => 'Evidence',
     'applied' => 'Applied',
     'credit_balance' => 'Credit balance',
