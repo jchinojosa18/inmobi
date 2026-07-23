@@ -29,6 +29,8 @@ class Show extends Component
 
     public ?string $phone = null;
 
+    public ?string $ine_clave = null;
+
     public string $formStatus = 'active';
 
     public ?string $notes = null;
@@ -68,6 +70,7 @@ class Show extends Component
         $this->full_name = $this->tenant->full_name;
         $this->email = $this->tenant->email;
         $this->phone = $this->tenant->phone;
+        $this->ine_clave = $this->tenant->ine_clave;
         $this->formStatus = $this->tenant->status;
         $this->notes = $this->tenant->notes;
         $this->showForm = true;
@@ -86,10 +89,21 @@ class Show extends Component
             abort(403);
         }
 
+        $this->ine_clave = $this->normalizeIneClave($this->ine_clave);
+
         $validated = $this->validate([
             'full_name' => ['required', 'string', 'max:160'],
             'email' => ['nullable', 'email', 'max:160'],
             'phone' => ['nullable', 'string', 'max:50'],
+            'ine_clave' => [
+                'nullable',
+                'string',
+                'size:18',
+                'regex:/^[A-Z0-9]{18}$/',
+                Rule::unique('tenants', 'ine_clave')
+                    ->where(fn ($query) => $query->where('organization_id', auth()->user()?->organization_id))
+                    ->ignore($this->tenant->id),
+            ],
             'formStatus' => ['required', Rule::in(['active', 'inactive'])],
             'notes' => ['nullable', 'string', 'max:1000'],
         ], [
@@ -98,6 +112,9 @@ class Show extends Component
             'email.email' => __('catalog.validation.email_invalid'),
             'email.max' => __('catalog.validation.email_max'),
             'phone.max' => __('catalog.validation.phone_max'),
+            'ine_clave.size' => __('catalog.validation.ine_clave_format'),
+            'ine_clave.regex' => __('catalog.validation.ine_clave_format'),
+            'ine_clave.unique' => __('catalog.validation.ine_clave_unique'),
             'formStatus.required' => __('catalog.validation.status_required'),
             'formStatus.in' => __('catalog.validation.status_invalid'),
             'notes.max' => __('catalog.validation.notes_max'),
@@ -107,6 +124,7 @@ class Show extends Component
             'full_name' => $validated['full_name'],
             'email' => $validated['email'] ?: null,
             'phone' => $validated['phone'] ?: null,
+            'ine_clave' => $validated['ine_clave'] ?? null,
             'status' => $validated['formStatus'],
             'notes' => $validated['notes'] ?: null,
         ]);
@@ -149,5 +167,16 @@ class Show extends Component
     private function normalizeTab(string $tab): string
     {
         return in_array($tab, self::TABS, true) ? $tab : self::DEFAULT_TAB;
+    }
+
+    private function normalizeIneClave(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $normalized = strtoupper(trim($value));
+
+        return $normalized === '' ? null : $normalized;
     }
 }
