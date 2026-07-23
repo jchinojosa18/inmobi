@@ -273,6 +273,12 @@ class TenantKardexShowTest extends TestCase
             ->assertSee($contractShowUrl, false);
 
         $this->actingAs($user)
+            ->get(route('tenants.show', ['tenant' => $tenant, 'tab' => 'charges']))
+            ->assertOk()
+            ->assertSee($contractShowUrl, false)
+            ->assertSee('aria-label="'.__('catalog.tenants.kardex.view_contract').'"', false);
+
+        $this->actingAs($user)
             ->get(route('tenants.show', ['tenant' => $tenant, 'tab' => 'payments']))
             ->assertOk()
             ->assertSee($paymentShowUrl, false);

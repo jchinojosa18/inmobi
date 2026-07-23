@@ -202,18 +202,13 @@
                     <th class="px-4 py-3 text-right">{{ __('common.amount') }}</th>
                     <th class="px-4 py-3 text-right">{{ __('contracts.paid') }}</th>
                     <th class="px-4 py-3 text-right">{{ __('common.balance') }}</th>
+                    <th class="px-4 py-3 text-right">{{ __('common.actions') }}</th>
                 </x-slot:head>
                 <x-slot:body>
                     @forelse ($charges as $charge)
                         <tr wire:key="kardex-charge-{{ $charge['contract_id'] }}-{{ $charge['charge_date'] }}-{{ $charge['type'] }}" class="transition hover:bg-slate-50/80">
                             <td class="px-4 py-3">
-                                @if ($canViewContracts)
-                                    <a href="{{ $charge['contract_show_url'] }}" class="font-medium text-indigo-600 hover:underline">
-                                        {{ $charge['unit_label'] }}
-                                    </a>
-                                @else
-                                    <span class="font-medium text-slate-900">{{ $charge['unit_label'] }}</span>
-                                @endif
+                                <p class="font-medium text-slate-900">{{ $charge['unit_label'] }}</p>
                             </td>
                             <td class="px-4 py-3">
                                 <x-ui.badge variant="info">{{ $charge['type'] }}</x-ui.badge>
@@ -222,9 +217,24 @@
                             <td class="px-4 py-3 text-right text-slate-900">${{ number_format($charge['amount'], 2) }}</td>
                             <td class="px-4 py-3 text-right text-slate-700">${{ number_format($charge['paid'], 2) }}</td>
                             <td class="px-4 py-3 text-right font-semibold text-rose-700">${{ number_format($charge['balance'], 2) }}</td>
+                            <td class="px-4 py-3 text-right">
+                                @if ($canViewContracts)
+                                    <a
+                                        href="{{ $charge['contract_show_url'] }}"
+                                        title="{{ __('catalog.tenants.kardex.view_contract') }}"
+                                        aria-label="{{ __('catalog.tenants.kardex.view_contract') }}"
+                                        class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+                                    >
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                        </svg>
+                                    </a>
+                                @endif
+                            </td>
                         </tr>
                     @empty
-                        <x-ui.empty-state :title="__('catalog.tenants.kardex.empty_charges')" :colspan="6" />
+                        <x-ui.empty-state :title="__('catalog.tenants.kardex.empty_charges')" :colspan="7" />
                     @endforelse
                 </x-slot:body>
             </x-ui.table>
