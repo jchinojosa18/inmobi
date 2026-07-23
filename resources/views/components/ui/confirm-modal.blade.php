@@ -20,14 +20,15 @@
 @endphp
 
 @if ($open)
-    <div
-        {{ $attributes->class('fixed inset-0 z-[70] flex items-center justify-center p-4 sm:p-6') }}
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby="confirm-modal-title"
-        @if ($ariaLabel) aria-label="{{ $ariaLabel }}" @endif
-        @include('components.ui.partials.modal-focus-trap')
-    >
+    @teleport('body')
+        <div
+            {{ $attributes->class('fixed inset-0 z-[70] flex items-center justify-center p-4 sm:p-6') }}
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="confirm-modal-title"
+            @if ($ariaLabel) aria-label="{{ $ariaLabel }}" @endif
+            @include('components.ui.partials.modal-focus-trap')
+        >
             <div
                 class="absolute inset-0 bg-slate-900/60 backdrop-blur-[1px]"
                 wire:click="{{ $cancelAction }}"
@@ -80,4 +81,5 @@
                 </div>
             </div>
         </div>
+    @endteleport
 @endif
