@@ -2,9 +2,12 @@
 
 namespace Tests\Feature\Tenants;
 
+use App\Livewire\Tenants\Index;
 use App\Models\Organization;
 use App\Models\Tenant;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class TenantIneClaveTest extends TestCase
@@ -36,6 +39,130 @@ class TenantIneClaveTest extends TestCase
 
         $this->assertDatabaseHas('tenants', [
             'id' => $without->id,
+            'ine_clave' => null,
+        ]);
+    }
+
+    public function test_index_creates_tenant_without_ine_clave(): void
+    {
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->create(['organization_id' => $organization->id]);
+
+        Livewire::actingAs($admin)
+            ->test(Index::class)
+            ->call('startCreate')
+            ->set('full_name', 'Sin Ine')
+            ->set('formStatus', 'active')
+            ->set('ine_clave', '')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('tenants', [
+            'organization_id' => $organization->id,
+            'full_name' => 'Sin Ine',
+            'ine_clave' => null,
+        ]);
+    }
+
+    public function test_index_creates_tenant_with_normalized_ine_clave(): void
+    {
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->create(['organization_id' => $organization->id]);
+
+        Livewire::actingAs($admin)
+            ->test(Index::class)
+            ->call('startCreate')
+            ->set('full_name', 'Con Ine')
+            ->set('formStatus', 'active')
+            ->set('ine_clave', ' abcd120101hdfrrn09 ')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('tenants', [
+            'organization_id' => $organization->id,
+            'full_name' => 'Con Ine',
+            'ine_clave' => 'ABCD120101HDFRRN09',
+        ]);
+    }
+
+    public function test_index_rejects_invalid_ine_clave_format(): void
+    {
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->create(['organization_id' => $organization->id]);
+
+        Livewire::actingAs($admin)
+            ->test(Index::class)
+            ->call('startCreate')
+            ->set('full_name', 'Bad Ine')
+            ->set('formStatus', 'active')
+            ->set('ine_clave', 'TOO-SHORT')
+            ->call('save')
+            ->assertHasErrors(['ine_clave']);
+    }
+
+    public function test_index_rejects_duplicate_ine_clave_in_same_organization(): void
+    {
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->create(['organization_id' => $organization->id]);
+        Tenant::factory()->create([
+            'organization_id' => $organization->id,
+            'ine_clave' => 'ABCD120101HDFRRN09',
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(Index::class)
+            ->call('startCreate')
+            ->set('full_name', 'Dup Ine')
+            ->set('formStatus', 'active')
+            ->set('ine_clave', 'ABCD120101HDFRRN09')
+            ->call('save')
+            ->assertHasErrors(['ine_clave']);
+    }
+
+    public function test_index_allows_same_ine_clave_in_different_organization(): void
+    {
+        $orgA = Organization::factory()->create();
+        $orgB = Organization::factory()->create();
+        Tenant::factory()->create([
+            'organization_id' => $orgA->id,
+            'ine_clave' => 'ABCD120101HDFRRN09',
+        ]);
+        $adminB = User::factory()->create(['organization_id' => $orgB->id]);
+
+        Livewire::actingAs($adminB)
+            ->test(Index::class)
+            ->call('startCreate')
+            ->set('full_name', 'Other Org')
+            ->set('formStatus', 'active')
+            ->set('ine_clave', 'ABCD120101HDFRRN09')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('tenants', [
+            'organization_id' => $orgB->id,
+            'full_name' => 'Other Org',
+            'ine_clave' => 'ABCD120101HDFRRN09',
+        ]);
+    }
+
+    public function test_index_edit_can_clear_ine_clave(): void
+    {
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->create(['organization_id' => $organization->id]);
+        $tenant = Tenant::factory()->create([
+            'organization_id' => $organization->id,
+            'ine_clave' => 'ABCD120101HDFRRN09',
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(Index::class)
+            ->call('startEdit', $tenant->id)
+            ->set('ine_clave', '')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('tenants', [
+            'id' => $tenant->id,
             'ine_clave' => null,
         ]);
     }
