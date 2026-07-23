@@ -178,6 +178,7 @@ class DashboardControlCenterTest extends TestCase
         $response->assertSeeText('#'.$contractGrace->id);
         $response->assertSeeText('REC-DASH-0001');
         $response->assertSeeHtml('open-quick-payment');
-        $response->assertSee(route('payments.receipt.pdf', ['paymentId' => $payment->id]), false);
+        $response->assertSeeHtml('open-file-viewer');
+        $response->assertSee(__('common.receipt_pdf'));
     }
 }

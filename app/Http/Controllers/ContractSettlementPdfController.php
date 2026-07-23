@@ -5,12 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\Expense;
+use App\Support\StreamsPdfResponse;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
 class ContractSettlementPdfController extends Controller
 {
-    public function __invoke(Contract $contract, string $batch): Response
+    use StreamsPdfResponse;
+
+    public function __invoke(Request $request, Contract $contract, string $batch): Response
     {
         $contract = Contract::query()
             ->with(['tenant', 'unit.property'])
@@ -50,6 +54,6 @@ class ContractSettlementPdfController extends Controller
             'refundExpense' => $refundExpense,
         ])->setPaper('letter', 'portrait');
 
-        return $pdf->stream('finiquito-'.$contract->id.'-'.$batch.'.pdf');
+        return $this->streamPdf($pdf, $request, 'finiquito-'.$contract->id.'-'.$batch.'.pdf');
     }
 }

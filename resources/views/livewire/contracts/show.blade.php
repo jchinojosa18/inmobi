@@ -200,7 +200,7 @@
             <h2 class="text-lg font-semibold text-slate-900">{{ __('contracts.recent_payments') }}</h2>
         </div>
 
-        <x-ui.table>
+        <x-ui.table flush>
             <x-slot:head>
                 <th class="px-4 py-3">{{ __('common.folio') }}</th>
                 <th class="px-4 py-3">{{ __('common.date') }}</th>
@@ -224,9 +224,20 @@
                                         {{ __('common.view_payment') }}
                                     </x-ui.button>
                                     @if ($payment['folio'] !== null)
-                                        <x-ui.button :href="$payment['receipt_url']" variant="secondary" size="sm" target="_blank" rel="noopener noreferrer">
+                                        @php
+                                            $receiptViewerItem = \App\Support\FileViewerItem::fromUrl(
+                                                $payment['receipt_url'],
+                                                __('common.receipt_pdf'),
+                                            );
+                                        @endphp
+                                        <x-ui.file-viewer-trigger
+                                            :items="[$receiptViewerItem]"
+                                            :index="0"
+                                            variant="secondary"
+                                            size="sm"
+                                        >
                                             {{ __('common.receipt_pdf') }}
-                                        </x-ui.button>
+                                        </x-ui.file-viewer-trigger>
                                         <x-ui.button :href="$payment['share_url']" size="sm" target="_blank" rel="noopener noreferrer">
                                             {{ __('contracts.shareable_link') }}
                                         </x-ui.button>

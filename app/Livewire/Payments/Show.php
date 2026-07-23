@@ -4,6 +4,7 @@ namespace App\Livewire\Payments;
 
 use App\Mail\PaymentReceiptMail;
 use App\Models\Payment;
+use App\Support\FileViewerItem;
 use App\Support\OrganizationSettingsService;
 use App\Support\PaymentReceiptDataBuilder;
 use App\Support\PaymentReceiptShareUrl;
@@ -69,13 +70,29 @@ class Show extends Component
                 'id' => $document->id,
                 'path' => $document->path,
                 'url' => route('documents.download', $document),
+                'mime' => $document->mime,
             ];
         });
+
+        $documentViewerItems = $documents
+            ->map(fn (array $document): array => FileViewerItem::fromDocumentRoute(
+                $document['id'],
+                basename($document['path']),
+                $document['mime'],
+            ))
+            ->values()
+            ->all();
+
+        $receiptViewerItem = $payment->receipt_folio !== null
+            ? FileViewerItem::fromPdfRoute('payments.receipt.pdf', ['paymentId' => $payment->id], __('finance.payments.view_pdf'))
+            : null;
 
         return view('livewire.payments.show', [
             'payment' => $payment,
             'receipt' => $receipt,
             'receiptUrl' => $receiptUrl,
+            'receiptViewerItem' => $receiptViewerItem,
+            'documentViewerItems' => $documentViewerItems,
             'whatsAppUrl' => $whatsAppUrl,
             'shareUrl' => $shareUrl,
             'documents' => $documents,

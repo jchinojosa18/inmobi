@@ -192,6 +192,31 @@ class ContractDocumentsPanelTest extends TestCase
                 && array_key_exists('guarantor', $options));
     }
 
+    public function test_contract_list_uses_view_icon_in_actions_column(): void
+    {
+        [$organization, $contract] = $this->createContractGraph();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+
+        Document::factory()->create([
+            'organization_id' => $organization->id,
+            'documentable_type' => Contract::class,
+            'documentable_id' => $contract->id,
+            'category' => ContractDocumentCategory::Contract->value,
+            'path' => 'documents/contract/'.$organization->id.'/contrato.pdf',
+            'mime' => 'application/pdf',
+            'meta' => ['disk' => 'local'],
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(Panel::class, [
+                'documentableType' => Contract::class,
+                'documentableId' => $contract->id,
+                'variant' => 'contract',
+            ])
+            ->assertSee(__('documents.view_document'))
+            ->assertSeeHtml('open-file-viewer');
+    }
+
     /**
      * @return array{Organization, Contract}
      */

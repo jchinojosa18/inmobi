@@ -101,11 +101,23 @@
             @endif
 
             @if ($lastSettlementPdfUrl)
+                @php
+                    $settlementViewerItem = \App\Support\FileViewerItem::fromUrl(
+                        $lastSettlementPdfUrl,
+                        __('contracts.view_settlement_pdf'),
+                    );
+                @endphp
                 <div class="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
                     <p>{{ $lastSettlementSummary }}</p>
-                    <a href="{{ $lastSettlementPdfUrl }}" target="_blank" rel="noopener noreferrer" class="mt-2 inline-flex rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-600">
+                    <x-ui.file-viewer-trigger
+                        :items="[$settlementViewerItem]"
+                        :index="0"
+                        variant="emerald"
+                        size="sm"
+                        class="mt-2 !rounded-lg !px-3 !py-1.5 !text-xs"
+                    >
                         {{ __('contracts.view_settlement_pdf') }}
-                    </a>
+                    </x-ui.file-viewer-trigger>
                 </div>
             @endif
         </div>

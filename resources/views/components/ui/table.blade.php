@@ -1,6 +1,12 @@
-@props(['compact' => false])
+@props(['compact' => false, 'flush' => false])
 
-<div {{ $attributes->merge(['class' => 'overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm']) }}>
+@php
+    $wrapperClass = $flush
+        ? 'overflow-hidden'
+        : 'overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm';
+@endphp
+
+<div {{ $attributes->merge(['class' => $wrapperClass]) }}>
     @isset($header)
         <div class="border-b border-slate-100 px-4 py-3">
             {{ $header }}

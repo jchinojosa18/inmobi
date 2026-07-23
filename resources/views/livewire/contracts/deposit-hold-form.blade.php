@@ -94,15 +94,20 @@
                                         <td class="px-4 py-3">
                                             <div class="flex flex-wrap justify-end gap-2">
                                                 @if ($hold['receipt_url'] && $canManageCharges)
-                                                    <x-ui.button
-                                                        href="{{ $hold['receipt_url'] }}"
+                                                    @php
+                                                        $depositReceiptViewerItem = \App\Support\FileViewerItem::fromUrl(
+                                                            $hold['receipt_url'],
+                                                            __('contracts.deposit_receipt_pdf'),
+                                                        );
+                                                    @endphp
+                                                    <x-ui.file-viewer-trigger
+                                                        :items="[$depositReceiptViewerItem]"
+                                                        :index="0"
                                                         variant="secondary"
                                                         size="sm"
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
                                                     >
                                                         {{ __('contracts.deposit_receipt_pdf') }}
-                                                    </x-ui.button>
+                                                    </x-ui.file-viewer-trigger>
                                                 @endif
                                                 @if ($canViewDocuments)
                                                     <x-ui.button

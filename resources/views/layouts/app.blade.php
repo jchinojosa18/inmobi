@@ -80,6 +80,9 @@
     {{-- Contract Create/Edit Modal (montado globalmente) --}}
     <livewire:contracts.create-modal />
 
+    {{-- Visor global de archivos (documentos, PDFs, imágenes) --}}
+    <x-ui.file-viewer />
+
     @livewireScripts
 
     {{-- ─────────────────────────────────────────────────────────────────── --}}

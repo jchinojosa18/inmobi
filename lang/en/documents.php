@@ -10,6 +10,7 @@ return [
     'allowed_types_contract' => 'Allowed: PDF. Maximum 10 MB.',
     'upload_button' => 'Upload document',
     'choose_file' => 'Choose file',
+    'view_document' => 'View document',
     'delete_title' => 'Delete document',
     'confirm_delete' => 'Delete this document? This action cannot be undone.',
     'uploading' => 'Uploading file...',

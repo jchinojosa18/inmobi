@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\Charge;
 use App\Support\DepositReceiptDataBuilder;
+use App\Support\StreamsPdfResponse;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class DepositReceiptPdfController extends Controller
 {
+    use StreamsPdfResponse;
+
     public function __invoke(Request $request, int $chargeId, DepositReceiptDataBuilder $builder): Response
     {
         $charge = Charge::query()
@@ -31,8 +34,9 @@ class DepositReceiptPdfController extends Controller
 
         $receipt = $builder->build($charge);
 
-        return Pdf::loadView('pdf.deposit-receipt', ['receipt' => $receipt])
-            ->setPaper('letter', 'portrait')
-            ->stream('deposit-receipt-'.$folio.'.pdf');
+        $pdf = Pdf::loadView('pdf.deposit-receipt', ['receipt' => $receipt])
+            ->setPaper('letter', 'portrait');
+
+        return $this->streamPdf($pdf, $request, 'deposit-receipt-'.$folio.'.pdf');
     }
 }

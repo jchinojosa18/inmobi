@@ -7,10 +7,14 @@
             <x-ui.button href="{{ route('contracts.show', $payment->contract_id) }}" variant="secondary">
                 {{ __('common.back_to_contract') }}
             </x-ui.button>
-            @if ($payment->receipt_folio !== null)
-                <x-ui.button :href="$receiptUrl" variant="secondary" target="_blank" rel="noopener noreferrer">
+            @if ($payment->receipt_folio !== null && $receiptViewerItem)
+                <x-ui.file-viewer-trigger
+                    :items="[$receiptViewerItem]"
+                    :index="0"
+                    variant="secondary"
+                >
                     {{ __('finance.payments.view_pdf') }}
-                </x-ui.button>
+                </x-ui.file-viewer-trigger>
                 <x-ui.button
                     :href="$whatsAppUrl"
                     target="_blank"
@@ -112,9 +116,12 @@
             <ul class="mt-3 space-y-2 text-sm">
                 @foreach ($documents as $document)
                     <li>
-                        <a href="{{ $document['url'] }}" target="_blank" rel="noopener noreferrer" class="text-blue-700 underline">
+                        <x-ui.file-viewer-trigger
+                            :items="$documentViewerItems"
+                            :index="$loop->index"
+                        >
                             {{ $document['path'] }}
-                        </a>
+                        </x-ui.file-viewer-trigger>
                     </li>
                 @endforeach
             </ul>

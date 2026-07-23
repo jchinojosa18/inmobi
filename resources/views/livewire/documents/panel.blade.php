@@ -1,80 +1,119 @@
-<x-ui.card>
-    <div class="flex flex-wrap items-start justify-between gap-3">
-        <h2 class="text-lg font-semibold text-slate-900">{{ $title }}</h2>
+<x-ui.card :padding="$variant !== 'contract'">
+    @if ($variant === 'contract')
+        <div class="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
+            <h2 class="text-lg font-semibold text-slate-900">{{ $title }}</h2>
 
-        @if ($canUploadDocuments)
-            <x-ui.button
-                type="button"
-                wire:click="openUploadModal"
-                :disabled="! $canOpenUpload"
-            >
-                {{ __('documents.upload_button') }}
-            </x-ui.button>
-        @endif
-    </div>
+            @if ($canUploadDocuments)
+                <x-ui.button
+                    type="button"
+                    wire:click="openUploadModal"
+                    :disabled="! $canOpenUpload"
+                >
+                    {{ __('documents.upload_button') }}
+                </x-ui.button>
+            @endif
+        </div>
 
-    <div class="mt-4">
         @if ($documents->isEmpty())
-            <p class="rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            <p class="px-5 py-6 text-center text-sm text-slate-600">
                 {{ __('documents.empty') }}
             </p>
         @else
-            <x-ui.table>
+            <x-ui.table flush>
                 <x-slot:head>
-                    @if ($variant === 'contract')
-                        <th class="px-4 py-3">{{ __('contracts.document_category') }}</th>
-                    @endif
-                    <th class="px-4 py-3">{{ __('documents.file') }}</th>
-                    @if ($variant !== 'contract')
-                        <th class="px-4 py-3">{{ __('common.type') }}</th>
-                    @endif
-                    <th class="px-4 py-3">{{ __('documents.size') }}</th>
+                    <th class="px-4 py-3">{{ __('contracts.document_category') }}</th>
                     <th class="px-4 py-3">{{ __('common.date') }}</th>
-                    @if ($variant === 'contract' && $canUploadDocuments)
-                        <th class="px-4 py-3">{{ __('common.actions') }}</th>
-                    @endif
+                    <th class="px-4 py-3 text-right">{{ __('common.actions') }}</th>
                 </x-slot:head>
                 <x-slot:body>
                     @foreach ($documents as $item)
                         <tr>
-                            @if ($variant === 'contract')
-                                <td class="px-4 py-3 font-medium text-slate-900">
-                                    {{ $item['category_label'] ?? '—' }}
-                                </td>
-                            @endif
-                            <td class="px-4 py-3">
-                                <a
-                                    href="{{ $item['url'] }}"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    class="font-medium text-blue-700 underline"
-                                >
-                                    {{ $item['file_name'] }}
-                                </a>
+                            <td class="px-4 py-3 font-medium text-slate-900">
+                                {{ $item['category_label'] ?? '—' }}
                             </td>
-                            @if ($variant !== 'contract')
-                                <td class="px-4 py-3 text-slate-700">{{ $item['mime'] }}</td>
-                            @endif
-                            <td class="px-4 py-3 text-slate-700">{{ $this->formatFileSize($item['size']) }}</td>
                             <td class="px-4 py-3 text-slate-700">{{ optional($item['created_at'])->format('Y-m-d H:i') }}</td>
-                            @if ($variant === 'contract' && $canUploadDocuments)
-                                <td class="px-4 py-3">
-                                    <x-ui.button
-                                        type="button"
-                                        variant="danger"
+                            <td class="px-4 py-3">
+                                <div class="flex justify-end gap-2">
+                                    <x-ui.file-viewer-trigger
+                                        :items="$viewerItems"
+                                        :index="$loop->index"
+                                        variant="secondary"
                                         size="sm"
-                                        wire:click="confirmDeleteDocument({{ $item['id'] }})"
+                                        class="!px-2"
+                                        :title="__('documents.view_document')"
+                                        :aria-label="__('documents.view_document')"
                                     >
-                                        {{ __('contracts.delete_document') }}
-                                    </x-ui.button>
-                                </td>
-                            @endif
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                        </svg>
+                                    </x-ui.file-viewer-trigger>
+                                    @if ($canUploadDocuments)
+                                        <x-ui.button
+                                            type="button"
+                                            variant="danger"
+                                            size="sm"
+                                            wire:click="confirmDeleteDocument({{ $item['id'] }})"
+                                        >
+                                            {{ __('contracts.delete_document') }}
+                                        </x-ui.button>
+                                    @endif
+                                </div>
+                            </td>
                         </tr>
                     @endforeach
                 </x-slot:body>
             </x-ui.table>
         @endif
-    </div>
+    @else
+        <div class="flex flex-wrap items-start justify-between gap-3">
+            <h2 class="text-lg font-semibold text-slate-900">{{ $title }}</h2>
+
+            @if ($canUploadDocuments)
+                <x-ui.button
+                    type="button"
+                    wire:click="openUploadModal"
+                    :disabled="! $canOpenUpload"
+                >
+                    {{ __('documents.upload_button') }}
+                </x-ui.button>
+            @endif
+        </div>
+
+        <div class="mt-4">
+            @if ($documents->isEmpty())
+                <p class="rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                    {{ __('documents.empty') }}
+                </p>
+            @else
+                <x-ui.table>
+                    <x-slot:head>
+                        <th class="px-4 py-3">{{ __('documents.file') }}</th>
+                        <th class="px-4 py-3">{{ __('common.type') }}</th>
+                        <th class="px-4 py-3">{{ __('documents.size') }}</th>
+                        <th class="px-4 py-3">{{ __('common.date') }}</th>
+                    </x-slot:head>
+                    <x-slot:body>
+                        @foreach ($documents as $item)
+                            <tr>
+                                <td class="px-4 py-3">
+                                    <x-ui.file-viewer-trigger
+                                        :items="$viewerItems"
+                                        :index="$loop->index"
+                                    >
+                                        {{ $item['file_name'] }}
+                                    </x-ui.file-viewer-trigger>
+                                </td>
+                                <td class="px-4 py-3 text-slate-700">{{ $item['mime'] }}</td>
+                                <td class="px-4 py-3 text-slate-700">{{ $this->formatFileSize($item['size']) }}</td>
+                                <td class="px-4 py-3 text-slate-700">{{ optional($item['created_at'])->format('Y-m-d H:i') }}</td>
+                            </tr>
+                        @endforeach
+                    </x-slot:body>
+                </x-ui.table>
+            @endif
+        </div>
+    @endif
 
     @if ($showUploadModal && $canUploadDocuments)
         <x-ui.modal

@@ -28,6 +28,15 @@ alwaysApply: false
 
 Morph en `Document`; disk `DOCUMENTS_DISK` (default `public`). Validar tipos/tamaño como en flujos existentes.
 
+## Visualización de archivos
+
+- **Nunca** abrir archivos internos con `target="_blank"` ni navegación directa a PDF/imagen en vistas autenticadas.
+- Usar `<x-ui.file-viewer-trigger>` o `$dispatch('open-file-viewer', { items, index })`.
+- El visor global (`x-ui.file-viewer` en `app.blade.php`) solo permite **ver** y **descargar**; eliminar/editar fuera del visor.
+- PDFs: `viewUrl` con `?inline=1`; `downloadUrl` sin inline. Construir ítems con `App\Support\FileViewerItem`.
+- Galería: pasar todos los ítems del contexto (lista, galería, tabla) y el `index` del clicado.
+- Excepción documentada: enlaces compartibles firmados (`payments.receipt.share`) pueden abrir en pestaña nueva.
+
 ## Confirmaciones destructivas
 
 - **Nunca** usar `wire:confirm`, `window.confirm()` ni `alert()` del navegador para eliminar o acciones irreversibles.

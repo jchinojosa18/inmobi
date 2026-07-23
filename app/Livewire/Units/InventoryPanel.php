@@ -6,6 +6,7 @@ use App\Models\Document;
 use App\Models\Unit;
 use App\Models\UnitInventoryItem;
 use App\Support\AuditLogger;
+use App\Support\FileViewerItem;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -462,23 +463,24 @@ class InventoryPanel extends Component
     }
 
     /**
-     * @return list<array{id: int, url: string}>
+     * @return list<array{label: string, viewUrl: string, downloadUrl: string, mime: string, kind: string}>
      */
     private function galleryPhotosPayload(UnitInventoryItem $item): array
     {
         return $item->documents
-            ->map(fn (Document $document): array => [
-                'id' => $document->id,
-                'url' => route('documents.download', $document),
-            ])
+            ->map(fn (Document $document): array => FileViewerItem::fromDocumentRoute(
+                $document->id,
+                basename($document->path),
+                $document->mime ?: 'image/jpeg',
+            ))
             ->values()
             ->all();
     }
 
     private function dispatchPhotoViewerSync(?UnitInventoryItem $item): void
     {
-        $photos = $item !== null ? $this->galleryPhotosPayload($item) : [];
+        $items = $item !== null ? $this->galleryPhotosPayload($item) : [];
 
-        $this->dispatch('inventory-photo-viewer-sync', photos: $photos);
+        $this->dispatch('file-viewer-sync', items: $items);
     }
 }

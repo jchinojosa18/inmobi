@@ -10,6 +10,7 @@ use App\Models\Payment;
 use App\Models\Unit;
 use App\Support\AuditLogger;
 use App\Support\ContractDocumentCategory;
+use App\Support\FileViewerItem;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
@@ -285,6 +286,14 @@ class Panel extends Component
 
         return view('livewire.documents.panel', [
             'documents' => $documents,
+            'viewerItems' => $documents
+                ->map(fn (array $item): array => FileViewerItem::fromDocumentRoute(
+                    $item['id'],
+                    $item['file_name'],
+                    $item['mime'],
+                ))
+                ->values()
+                ->all(),
             'canUploadDocuments' => auth()->user()?->can('documents.upload') ?? false,
             'variant' => $this->variant,
             'availableCategories' => $this->isContractVariant()

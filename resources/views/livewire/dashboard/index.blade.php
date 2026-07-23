@@ -282,7 +282,21 @@
                         <div class="inline-flex items-center gap-2">
                             <x-ui.button href="{{ route('payments.show', $payment->payment_id) }}" variant="secondary" size="sm">{{ __('common.view_payment') }}</x-ui.button>
                             @if ($payment->receipt_folio !== null)
-                                <x-ui.button href="{{ route('payments.receipt.pdf', ['paymentId' => $payment->payment_id]) }}" variant="secondary" size="sm">{{ __('common.receipt_pdf') }}</x-ui.button>
+                                @php
+                                    $receiptViewerItem = \App\Support\FileViewerItem::fromPdfRoute(
+                                        'payments.receipt.pdf',
+                                        ['paymentId' => $payment->payment_id],
+                                        __('common.receipt_pdf'),
+                                    );
+                                @endphp
+                                <x-ui.file-viewer-trigger
+                                    :items="[$receiptViewerItem]"
+                                    :index="0"
+                                    variant="secondary"
+                                    size="sm"
+                                >
+                                    {{ __('common.receipt_pdf') }}
+                                </x-ui.file-viewer-trigger>
                             @endif
                         </div>
                     </td>

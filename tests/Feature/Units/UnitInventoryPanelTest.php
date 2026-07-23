@@ -321,7 +321,7 @@ class UnitInventoryPanelTest extends TestCase
             ->call('openPhotoGallery', $item->id)
             ->call('deletePhoto', $document->id)
             ->assertSet('showPhotoGallery', true)
-            ->assertDispatched('inventory-photo-viewer-sync', photos: []);
+            ->assertDispatched('file-viewer-sync', items: []);
     }
 
     public function test_it_blocks_photo_delete_without_documents_delete_permission(): void
