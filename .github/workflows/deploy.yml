@@ -47,6 +47,7 @@ jobs:
       SSH_PORT: ${{ secrets.HOSTINGER_SSH_PORT != '' && secrets.HOSTINGER_SSH_PORT || '65002' }}
       DEPLOY_PATH: ${{ secrets.HOSTINGER_PATH }}
       SSH_TARGET: ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}
+      SSH_OPTS: -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new
 
     steps:
       - name: Checkout
@@ -83,11 +84,12 @@ jobs:
         env:
           SSH_PRIVATE_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
         run: |
+          set -euo pipefail
           install -m 700 -d ~/.ssh
           deploy_key=~/.ssh/deploy_key
 
           if printf '%s' "$SSH_PRIVATE_KEY" | grep -q 'BEGIN.*PRIVATE KEY'; then
-            printf '%s\n' "$SSH_PRIVATE_KEY" > "$deploy_key"
+            printf '%b\n' "$SSH_PRIVATE_KEY" > "$deploy_key"
           elif printf '%s' "$SSH_PRIVATE_KEY" | tr -d '\r\n' | base64 -d > "$deploy_key" 2>/dev/null; then
             :
           else
@@ -100,23 +102,26 @@ jobs:
             echo "::error::HOSTINGER_SSH_KEY no es una clave privada valida. Regenera el secret con: scripts/set-hostinger-ssh-secret.sh"
             exit 1
           fi
-          ssh-keyscan -p "${SSH_PORT}" -H "${{ secrets.HOSTINGER_HOST }}" >> ~/.ssh/known_hosts
+
+          if ! ssh-keyscan -p "${SSH_PORT}" -H "${{ secrets.HOSTINGER_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null; then
+            echo "::warning::ssh-keyscan fallo; se usara StrictHostKeyChecking=accept-new en la conexion SSH"
+          fi
 
       - name: Test SSH connection
         run: |
-          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT}" -o BatchMode=yes -o ConnectTimeout=20 "${SSH_TARGET}" \
+          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT}" ${SSH_OPTS} "${SSH_TARGET}" \
             "cd '${DEPLOY_PATH}' && php artisan --version"
 
       - name: Backup production
         continue-on-error: true
         run: |
-          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT}" -o BatchMode=yes "${SSH_TARGET}" \
+          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT}" ${SSH_OPTS} "${SSH_TARGET}" \
             "cd '${DEPLOY_PATH}' && php artisan inmo:backup --keep=14"
 
       - name: Rsync to server
         run: |
           rsync -avz --delete \
-            -e "ssh -i ~/.ssh/deploy_key -p ${SSH_PORT} -o BatchMode=yes" \
+            -e "ssh -i ~/.ssh/deploy_key -p ${SSH_PORT} ${SSH_OPTS}" \
             --exclude '.env' \
             --exclude '.git' \
             --exclude '.github' \
@@ -135,7 +140,7 @@ jobs:
 
       - name: Run migrations and warm caches
         run: |
-          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT}" -o BatchMode=yes "${SSH_TARGET}" \
+          ssh -i ~/.ssh/deploy_key -p "${SSH_PORT}" ${SSH_OPTS} "${SSH_TARGET}" \
             "cd '${DEPLOY_PATH}' && \
             if grep -q '^APP_NAME=' .env; then sed -i 's/^APP_NAME=.*/APP_NAME=AXIS/' .env; else echo 'APP_NAME=AXIS' >> .env; fi && \
             php artisan migrate --force && (php artisan storage:link || true) && php artisan config:cache && php artisan route:cache && php artisan view:cache"
