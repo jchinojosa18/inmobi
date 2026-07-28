@@ -179,15 +179,15 @@
         />
     </div>
 
-    <div class="grid gap-6 xl:grid-cols-2">
+    <div class="space-y-6">
         <x-ui.table>
             <x-slot:header>
                 <h2 class="text-sm font-semibold text-slate-900">{{ __('dashboard.overdue_top10') }}</h2>
             </x-slot:header>
             <x-slot:head>
                 <th class="px-4 py-3">{{ __('common.contract') }}</th>
-                <th class="px-4 py-3">{{ __('common.unit') }}</th>
                 <th class="px-4 py-3">{{ __('common.tenant') }}</th>
+                <th class="px-4 py-3">{{ __('common.unit') }}</th>
                 <th class="px-4 py-3 text-right">{{ __('dashboard.overdue_days') }}</th>
                 <th class="px-4 py-3 text-right">{{ __('common.balance') }}</th>
                 <th class="px-4 py-3 text-right">{{ __('common.action') }}</th>
@@ -197,11 +197,11 @@
                     <tr wire:key="dashboard-overdue-{{ $row->contract_id }}" class="transition hover:bg-slate-50/80">
                         <td class="px-4 py-3 text-slate-700">#{{ $row->contract_id }}</td>
                         <td class="px-4 py-3 text-slate-700">
-                            {{ $row->property_name }} / {{ $row->unit_name ?? ($row->unit_code ?? '-') }}
-                        </td>
-                        <td class="px-4 py-3 text-slate-700">
                             {{ $row->tenant_name }}
                             <p class="text-xs text-slate-500">{{ $row->tenant_phone ?: ($row->tenant_email ?: __('common.no_contact')) }}</p>
+                        </td>
+                        <td class="px-4 py-3 text-slate-700">
+                            {{ $row->property_name }} / {{ $row->unit_name ?? ($row->unit_code ?? '-') }}
                         </td>
                         <td class="px-4 py-3 text-right">
                             <x-ui.badge variant="warning">{{ (int) $row->overdue_days }} {{ __('common.days') }}</x-ui.badge>
@@ -227,6 +227,7 @@
             </x-slot:header>
             <x-slot:head>
                 <th class="px-4 py-3">{{ __('common.contract') }}</th>
+                <th class="px-4 py-3">{{ __('common.tenant') }}</th>
                 <th class="px-4 py-3">{{ __('common.unit') }}</th>
                 <th class="px-4 py-3">{{ __('dashboard.due_grace') }}</th>
                 <th class="px-4 py-3 text-right">{{ __('common.balance') }}</th>
@@ -236,6 +237,10 @@
                 @forelse ($graceContracts as $row)
                     <tr wire:key="dashboard-grace-{{ $row->contract_id }}" class="transition hover:bg-slate-50/80">
                         <td class="px-4 py-3 text-slate-700">#{{ $row->contract_id }}</td>
+                        <td class="px-4 py-3 text-slate-700">
+                            {{ $row->tenant_name }}
+                            <p class="text-xs text-slate-500">{{ $row->tenant_phone ?: ($row->tenant_email ?: __('common.no_contact')) }}</p>
+                        </td>
                         <td class="px-4 py-3 text-slate-700">{{ $row->property_name }} / {{ $row->unit_name ?? ($row->unit_code ?? '-') }}</td>
                         <td class="px-4 py-3 text-slate-700">
                             {{ \Carbon\Carbon::parse($row->due_date)->format('Y-m-d') }}
@@ -251,7 +256,7 @@
                         </td>
                     </tr>
                 @empty
-                    <x-ui.empty-state :title="__('dashboard.no_grace')" :colspan="5" />
+                    <x-ui.empty-state :title="__('dashboard.no_grace')" :colspan="6" />
                 @endforelse
             </x-slot:body>
         </x-ui.table>
