@@ -31,7 +31,7 @@
                             <td class="px-4 py-3 font-medium text-slate-900">
                                 {{ $item['category_label'] ?? '—' }}
                             </td>
-                            <td class="px-4 py-3 text-slate-700">{{ optional($item['created_at'])->format('Y-m-d H:i') }}</td>
+                            <td class="px-4 py-3 text-slate-700"><x-ui.display-date :value="$item['created_at']" time /></td>
                             <td class="px-4 py-3">
                                 <div class="flex justify-end gap-2">
                                     <x-ui.file-viewer-trigger
@@ -106,7 +106,7 @@
                                 </td>
                                 <td class="px-4 py-3 text-slate-700">{{ $item['mime'] }}</td>
                                 <td class="px-4 py-3 text-slate-700">{{ $this->formatFileSize($item['size']) }}</td>
-                                <td class="px-4 py-3 text-slate-700">{{ optional($item['created_at'])->format('Y-m-d H:i') }}</td>
+                                <td class="px-4 py-3 text-slate-700"><x-ui.display-date :value="$item['created_at']" time /></td>
                             </tr>
                         @endforeach
                     </x-slot:body>

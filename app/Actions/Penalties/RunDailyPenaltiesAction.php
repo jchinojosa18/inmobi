@@ -189,6 +189,12 @@ class RunDailyPenaltiesAction
                 return 'not_applicable';
             }
 
+            $sourceRentPeriod = $this->resolveSourceRentPeriod(
+                $lockedContract,
+                $cutoffDate,
+                $cutoffTimestampStorage,
+            );
+
             $meta = [
                 'base_amount' => $baseAmount,
                 'rate_daily' => $rateDaily,
@@ -196,6 +202,7 @@ class RunDailyPenaltiesAction
                 'algorithm_version' => self::ALGORITHM_VERSION,
                 'cutoff_timestamp' => $cutoffTimestampLocal->toIso8601String(),
                 'cutoff_timestamp_storage' => $cutoffTimestampStorage->toIso8601String(),
+                'source_rent_period' => $sourceRentPeriod,
             ];
 
             try {
@@ -277,6 +284,48 @@ class RunDailyPenaltiesAction
         } finally {
             TenantContext::setOrganizationId($previousOrganizationId);
         }
+    }
+
+    private function resolveSourceRentPeriod(
+        Contract $contract,
+        CarbonImmutable $cutoffDate,
+        CarbonImmutable $cutoffTimestampStorage,
+    ): ?string {
+        $cutoffDateString = $cutoffDate->toDateString();
+        $cutoffTimestampString = $cutoffTimestampStorage->format('Y-m-d H:i:s');
+
+        $overdueRents = Charge::query()
+            ->withoutOrganizationScope()
+            ->where('organization_id', $contract->organization_id)
+            ->where('contract_id', $contract->id)
+            ->where('type', Charge::TYPE_RENT)
+            ->whereNotNull('grace_until')
+            ->whereDate('grace_until', '<=', $cutoffDateString)
+            ->orderBy('period')
+            ->get(['id', 'period', 'amount']);
+
+        foreach ($overdueRents as $rent) {
+            $allocated = (float) PaymentAllocation::query()
+                ->withoutOrganizationScope()
+                ->join('payments', 'payments.id', '=', 'payment_allocations.payment_id')
+                ->where('payment_allocations.organization_id', $contract->organization_id)
+                ->where('payments.organization_id', $contract->organization_id)
+                ->whereNull('payment_allocations.deleted_at')
+                ->whereNull('payments.deleted_at')
+                ->where('payment_allocations.charge_id', $rent->id)
+                ->where('payments.paid_at', '<=', $cutoffTimestampString)
+                ->sum('payment_allocations.amount');
+
+            if (round((float) $rent->amount - $allocated, 2) <= 0) {
+                continue;
+            }
+
+            $period = is_string($rent->period) ? trim($rent->period) : '';
+
+            return $period !== '' ? $period : null;
+        }
+
+        return null;
     }
 
     private function hasOverdueRentBalance(

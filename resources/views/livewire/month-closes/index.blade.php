@@ -60,7 +60,7 @@
                         @endif
                     </td>
                     <td class="px-4 py-3 text-slate-700">{{ $row['closed_by'] ?? '-' }}</td>
-                    <td class="px-4 py-3 text-slate-700">{{ optional($row['closed_at'])->format('Y-m-d H:i') ?? '-' }}</td>
+                    <td class="px-4 py-3 text-slate-700"><x-ui.display-date :value="$row['closed_at']" time :empty="'-'" /></td>
                     <td class="px-4 py-3">
                         <div class="flex justify-end gap-2">
                             @if (! $row['is_closed'])

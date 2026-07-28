@@ -243,8 +243,8 @@
                         </td>
                         <td class="px-4 py-3 text-slate-700">{{ $row->property_name }} / {{ $row->unit_name ?? ($row->unit_code ?? '-') }}</td>
                         <td class="px-4 py-3 text-slate-700">
-                            {{ \Carbon\Carbon::parse($row->due_date)->format('Y-m-d') }}
-                            <p class="text-xs text-slate-500">{{ __('dashboard.grace_until', ['date' => \Carbon\Carbon::parse($row->grace_until)->format('Y-m-d')]) }}</p>
+                            <x-ui.display-date :value="$row->due_date" />
+                            <p class="text-xs text-slate-500">{{ __('dashboard.grace_until', ['date' => \App\Support\DateDisplay::formatDate($row->grace_until)]) }}</p>
                         </td>
                         <td class="px-4 py-3 text-right font-medium text-slate-900">${{ number_format((float) $row->pending_balance, 2) }}</td>
                         <td class="px-4 py-3 text-right">
@@ -277,7 +277,7 @@
             @forelse ($recentPayments as $payment)
                 <tr wire:key="dashboard-payment-{{ $payment->id }}" class="transition hover:bg-slate-50/80">
                     <td class="px-4 py-3 text-slate-700">{{ $payment->receipt_folio ?? __('common.n_a') }}</td>
-                    <td class="px-4 py-3 text-slate-700">{{ \Carbon\Carbon::parse($payment->paid_at)->timezone('America/Tijuana')->format('Y-m-d H:i') }}</td>
+                    <td class="px-4 py-3 text-slate-700"><x-ui.display-date :value="$payment->paid_at" time /></td>
                     <td class="px-4 py-3 text-slate-700">
                         #{{ $payment->contract_id }} · {{ $payment->tenant_name }}
                         <p class="text-xs text-slate-500">{{ $payment->property_name }} / {{ $payment->unit_name ?? ($payment->unit_code ?? '-') }}</p>

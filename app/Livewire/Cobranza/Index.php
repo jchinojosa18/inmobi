@@ -6,6 +6,7 @@ use App\Models\Contract;
 use App\Models\Property;
 use App\Models\Unit;
 use App\Support\ContractOverdueQuery;
+use App\Support\DateDisplay;
 use App\Support\OrganizationSettingsService;
 use App\Support\PaymentReceiptShareUrl;
 use App\Support\TenantContext;
@@ -126,10 +127,10 @@ class Index extends Component
             $unitLabel = trim((string) ($row->property_name.' / '.($row->unit_name ?: ($row->unit_code ?: 'N/D'))));
             $pendingBalance = round((float) ($row->pending_balance ?? 0), 2);
             $dueDate = $row->due_date
-                ? \Carbon\Carbon::parse((string) $row->due_date)->format('Y-m-d')
+                ? DateDisplay::formatDate((string) $row->due_date, __('cobranza.whatsapp.no_due_date'))
                 : __('cobranza.whatsapp.no_due_date');
             $graceUntil = $row->grace_until
-                ? \Carbon\Carbon::parse((string) $row->grace_until)->format('Y-m-d')
+                ? DateDisplay::formatDate((string) $row->grace_until, __('cobranza.whatsapp.no_grace'))
                 : __('cobranza.whatsapp.no_grace');
             $message = $settingsService->renderTemplate(
                 (string) $settings['whatsapp_template'],

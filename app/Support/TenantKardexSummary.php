@@ -106,8 +106,8 @@ final class TenantKardexSummary
                     'id' => $contract->id,
                     'status' => $contract->status,
                     'rent_amount' => round((float) $contract->rent_amount, 2),
-                    'starts_at' => optional($contract->starts_at)->format('Y-m-d'),
-                    'ends_at' => optional($contract->ends_at)->format('Y-m-d'),
+                    'starts_at' => DateDisplay::formatDate($contract->starts_at, ''),
+                    'ends_at' => DateDisplay::formatDate($contract->ends_at, ''),
                     'unit_label' => $unitLabel !== '' ? $unitLabel : __('common.n_a'),
                     'show_url' => $this->urlBackToKardex(route('contracts.show', $contract)),
                 ];
@@ -165,7 +165,7 @@ final class TenantKardexSummary
                     'contract_id' => (int) $charge->contract_id,
                     'unit_label' => $unitLabel !== '' ? $unitLabel : '#'.$charge->contract_id,
                     'type' => $charge->type,
-                    'charge_date' => optional($charge->charge_date)->format('Y-m-d'),
+                    'charge_date' => DateDisplay::formatDate($charge->charge_date, ''),
                     'amount' => $amount,
                     'paid' => $paid,
                     'balance' => $balance,
@@ -203,7 +203,7 @@ final class TenantKardexSummary
             ->map(fn (Payment $payment): array => [
                 'id' => $payment->id,
                 'folio' => $payment->receipt_folio,
-                'paid_at' => optional($payment->paid_at)->format('Y-m-d'),
+                'paid_at' => DateDisplay::formatDateTime($payment->paid_at, ''),
                 'method' => $payment->method,
                 'amount' => round((float) $payment->amount, 2),
                 'contract_id' => (int) $payment->contract_id,

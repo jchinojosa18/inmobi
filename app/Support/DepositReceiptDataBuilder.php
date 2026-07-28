@@ -25,9 +25,10 @@ class DepositReceiptDataBuilder
 
         return [
             'folio' => (string) data_get($charge->meta, 'deposit_receipt_folio', ''),
-            'received_at' => (string) (data_get($charge->meta, 'received_at')
-                ?: optional($charge->charge_date)->format('Y-m-d')
-                ?: ''),
+            'received_at' => DateDisplay::formatDate(
+                data_get($charge->meta, 'received_at') ?: $charge->charge_date,
+                '',
+            ),
             'method' => (string) data_get($charge->meta, 'method', ''),
             'amount' => (float) $charge->amount,
             'notes' => data_get($charge->meta, 'notes'),

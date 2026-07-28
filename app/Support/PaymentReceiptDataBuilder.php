@@ -32,7 +32,7 @@ class PaymentReceiptDataBuilder
                 return [
                     'charge_type' => (string) $allocation->charge?->type,
                     'period' => $allocation->charge?->period,
-                    'charge_date' => optional($allocation->charge?->charge_date)->format('Y-m-d') ?? '',
+                    'charge_date' => DateDisplay::formatDate($allocation->charge?->charge_date, ''),
                     'amount' => (float) $allocation->amount,
                 ];
             })
@@ -41,7 +41,7 @@ class PaymentReceiptDataBuilder
 
         return [
             'folio' => $payment->receipt_folio,
-            'paid_at' => optional($payment->paid_at)->format('Y-m-d H:i') ?? '',
+            'paid_at' => DateDisplay::formatDateTime($payment->paid_at, ''),
             'method' => $payment->method,
             'amount' => (float) $payment->amount,
             'reference' => $payment->reference,

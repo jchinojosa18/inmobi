@@ -242,7 +242,7 @@ Route::get('/pdf/sample-receipt', function () {
         'nombre' => 'Juan Perez',
         'unidad' => 'Torre A - Depto 203',
         'monto' => 12500.00,
-        'fecha' => now()->format('Y-m-d H:i'),
+        'fecha' => \App\Support\DateDisplay::formatDateTime(now()),
     ];
 
     return Pdf::loadView('pdf.sample-receipt', ['receipt' => $receipt])

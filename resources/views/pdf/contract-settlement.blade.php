@@ -21,7 +21,7 @@
 
     <div class="box">
         <strong>Resumen</strong><br>
-        Fecha salida: {{ data_get($summary, 'move_out_date', optional($contract->ends_at)->format('Y-m-d')) }}<br>
+        Fecha salida: {{ data_get($summary, 'move_out_date', \App\Support\DateDisplay::formatDate($contract->ends_at)) }}<br>
         Depósito disponible: ${{ number_format((float) data_get($summary, 'deposit_available', 0), 2) }}<br>
         Depósito aplicado: ${{ number_format((float) data_get($summary, 'deposit_applied', abs((float) ($depositApply?->amount ?? 0))), 2) }}<br>
         Devolución de depósito: ${{ number_format((float) data_get($summary, 'deposit_refund', (float) ($refundExpense?->amount ?? 0)), 2) }}<br>
@@ -44,7 +44,7 @@
                     <tr>
                         <td>{{ $index + 1 }}</td>
                         <td>{{ data_get($charge->meta, 'subtype', 'MOVEOUT') }}</td>
-                        <td>{{ optional($charge->charge_date)->format('Y-m-d') }}</td>
+                        <td>{{ \App\Support\DateDisplay::formatDate($charge->charge_date) }}</td>
                         <td class="text-right">${{ number_format((float) $charge->amount, 2) }}</td>
                     </tr>
                 @empty

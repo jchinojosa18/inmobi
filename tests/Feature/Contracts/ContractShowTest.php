@@ -127,6 +127,47 @@ class ContractShowTest extends TestCase
         $response->assertSeeText('$750.00');
     }
 
+    public function test_penalties_are_nested_under_parent_rent_with_month_label(): void
+    {
+        [$organization, $contract] = $this->createContractGraph();
+
+        Charge::factory()->create([
+            'organization_id' => $organization->id,
+            'contract_id' => $contract->id,
+            'unit_id' => $contract->unit_id,
+            'type' => Charge::TYPE_RENT,
+            'period' => '2026-07',
+            'charge_date' => '2026-07-01',
+            'due_date' => '2026-07-15',
+            'grace_until' => '2026-07-20',
+            'amount' => 8000,
+        ]);
+
+        Charge::factory()->create([
+            'organization_id' => $organization->id,
+            'contract_id' => $contract->id,
+            'unit_id' => $contract->unit_id,
+            'type' => Charge::TYPE_PENALTY,
+            'period' => null,
+            'charge_date' => '2026-07-21',
+            'penalty_date' => '2026-07-21',
+            'amount' => 240,
+            'meta' => [
+                'source_rent_period' => '2026-07',
+            ],
+        ]);
+
+        $response = $this
+            ->actingAs($this->createUserForOrganization($organization))
+            ->get(route('contracts.show', $contract));
+
+        $response->assertOk();
+        $response->assertSeeText('Julio 2026');
+        $response->assertSeeText('PENALTY');
+        $response->assertDontSeeText('Sin periodo');
+        $response->assertSeeHtml('text-rose-600');
+    }
+
     public function test_shareable_link_button_copies_signed_url(): void
     {
         [$organization, $contract] = $this->createContractGraph();

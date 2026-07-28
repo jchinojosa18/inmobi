@@ -138,8 +138,8 @@
 
                     <td class="px-4 py-3 align-top">
                         @if ($nextDueDate)
-                            <p class="font-medium text-slate-900">{{ $nextDueDate->format('Y-m-d') }}</p>
-                            <p class="text-xs text-slate-500">{{ __('contracts.grace_until', ['date' => $graceUntil?->format('Y-m-d')]) }}</p>
+                            <p class="font-medium text-slate-900"><x-ui.display-date :value="$nextDueDate" /></p>
+                            <p class="text-xs text-slate-500">{{ __('contracts.grace_until', ['date' => \App\Support\DateDisplay::formatDate($graceUntil)]) }}</p>
                             <x-ui.badge :variant="$overdueBadgeVariant" class="mt-1">
                                 {{ $overdueStatusLabel }}
                             </x-ui.badge>

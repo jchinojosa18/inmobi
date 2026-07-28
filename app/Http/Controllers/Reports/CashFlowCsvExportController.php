@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
 use App\Models\Expense;
+use App\Support\DateDisplay;
 use App\Support\OperatingIncomeService;
 use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
@@ -67,7 +68,7 @@ class CashFlowCsvExportController extends Controller
             fputcsv($output, ['fecha_pago', 'folio', 'contract_id', 'inquilino', 'propiedad', 'unidad', 'tipo', 'monto']);
             foreach ($incomeDetails as $row) {
                 fputcsv($output, [
-                    CarbonImmutable::parse($row['paid_at'])->timezone('America/Tijuana')->format('Y-m-d H:i'),
+                    DateDisplay::formatDateTime($row['paid_at']),
                     $row['receipt_folio'] ?? '',
                     $row['contract_id'],
                     $row['tenant_name'] ?? '',
@@ -90,7 +91,7 @@ class CashFlowCsvExportController extends Controller
             fputcsv($output, ['fecha', 'categoria', 'propiedad', 'unidad', 'proveedor', 'monto']);
             foreach ($expenses as $expense) {
                 fputcsv($output, [
-                    optional($expense->spent_at)->format('Y-m-d'),
+                    DateDisplay::formatDate($expense->spent_at),
                     $expense->category,
                     $expense->unit?->property?->name ?? '',
                     $expense->unit?->name ?? '',

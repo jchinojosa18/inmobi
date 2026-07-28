@@ -7,6 +7,7 @@ use App\Actions\Contracts\VoidDepositHoldAction;
 use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\Payment;
+use App\Support\DateDisplay;
 use App\Support\DepositBalanceService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
@@ -204,7 +205,7 @@ class DepositHoldForm extends Component
 
                 return [
                     'id' => $hold->id,
-                    'charge_date' => optional($hold->charge_date)->format('Y-m-d'),
+                    'charge_date' => DateDisplay::formatDate($hold->charge_date),
                     'amount' => (float) $hold->amount,
                     'notes' => data_get($hold->meta, 'notes'),
                     'receipt_folio' => is_string($folio) ? $folio : null,

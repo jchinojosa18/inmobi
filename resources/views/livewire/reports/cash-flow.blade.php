@@ -110,7 +110,7 @@
         <x-slot:body>
             @forelse ($incomeDetails as $row)
                 <tr class="transition hover:bg-slate-50/80">
-                    <td class="px-4 py-3 text-slate-700">{{ \Carbon\Carbon::parse($row['paid_at'])->timezone('America/Tijuana')->format('Y-m-d H:i') }}</td>
+                    <td class="px-4 py-3 text-slate-700"><x-ui.display-date :value="$row['paid_at']" time /></td>
                     <td class="px-4 py-3 text-slate-700">{{ $row['receipt_folio'] ?? '-' }}</td>
                     <td class="px-4 py-3 text-slate-700">
                         #{{ $row['contract_id'] }}
@@ -145,7 +145,7 @@
         <x-slot:body>
             @forelse ($expenses as $expense)
                 <tr class="transition hover:bg-slate-50/80">
-                    <td class="px-4 py-3 text-slate-700">{{ optional($expense->spent_at)->format('Y-m-d') }}</td>
+                    <td class="px-4 py-3 text-slate-700"><x-ui.display-date :value="$expense->spent_at" /></td>
                     <td class="px-4 py-3 text-slate-700">{{ $expense->category }}</td>
                     <td class="px-4 py-3 text-slate-700">{{ $expense->unit?->property?->name }} / {{ $expense->unit?->name ?? '-' }}</td>
                     <td class="px-4 py-3 text-slate-700">{{ $expense->vendor ?: '-' }}</td>

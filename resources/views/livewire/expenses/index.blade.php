@@ -55,7 +55,7 @@
         <x-slot:body>
             @forelse ($expenses as $expense)
                 <tr wire:key="expense-row-{{ $expense->id }}" class="transition hover:bg-slate-50/80">
-                    <td class="px-4 py-3">{{ optional($expense->spent_at)->format('Y-m-d') }}</td>
+                    <td class="px-4 py-3"><x-ui.display-date :value="$expense->spent_at" /></td>
                     <td class="px-4 py-3 font-medium text-slate-900">{{ $expense->category }}</td>
                     <td class="px-4 py-3 text-slate-700">
                         {{ $expense->unit?->name ?: __('finance.expenses.general') }}

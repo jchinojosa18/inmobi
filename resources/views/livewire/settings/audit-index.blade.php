@@ -54,7 +54,7 @@
             @forelse ($events as $event)
                 <tr class="hover:bg-slate-50/80">
                     <td class="px-4 py-2 whitespace-nowrap text-xs text-slate-500">
-                        {{ $event->occurred_at->timezone('America/Tijuana')->format('Y-m-d H:i') }}
+                        <x-ui.display-date :value="$event->occurred_at" time />
                     </td>
                     <td class="px-4 py-2">
                         @if ($event->actor)
@@ -99,7 +99,7 @@
                     <div>
                         <h2 class="text-base font-semibold">{{ __('settings.event_detail') }}</h2>
                         <p class="text-xs text-slate-500">
-                            {{ $selectedEvent->occurred_at->timezone('America/Tijuana')->format('Y-m-d H:i:s') }}
+                            <x-ui.display-date :value="$selectedEvent->occurred_at" time />
                         </p>
                     </div>
                     <button type="button" wire:click="closeEvent" class="rounded p-1 text-slate-400 hover:bg-slate-100">

@@ -105,7 +105,7 @@
                 <tr>
                     <td class="px-4 py-2">{{ $invitation->email }}</td>
                     <td class="px-4 py-2">{{ $invitation->role }}</td>
-                    <td class="px-4 py-2">{{ optional($invitation->expires_at)->timezone('America/Tijuana')->format('Y-m-d H:i') }}</td>
+                    <td class="px-4 py-2"><x-ui.display-date :value="$invitation->expires_at" time /></td>
                     <td class="px-4 py-2 text-right">
                         <x-ui.button type="button" wire:click="revokeInvitation({{ $invitation->id }})" variant="secondary" size="sm">
                             {{ __('settings.revoke') }}

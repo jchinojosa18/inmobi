@@ -93,8 +93,8 @@
                     <td class="px-4 py-3 text-slate-700">
                         <p>{{ $row->overdue_period ?: __('cobranza.no_period') }}</p>
                         <p class="text-xs text-slate-500">
-                            {{ __('cobranza.due') }}: {{ $row->due_date ? \Carbon\Carbon::parse($row->due_date)->format('Y-m-d') : __('cobranza.nd') }}
-                            · {{ __('cobranza.grace') }}: {{ $row->grace_until ? \Carbon\Carbon::parse($row->grace_until)->format('Y-m-d') : __('cobranza.nd') }}
+                            {{ __('cobranza.due') }}: {{ $row->due_date ? \App\Support\DateDisplay::formatDate($row->due_date, __('cobranza.nd')) : __('cobranza.nd') }}
+                            · {{ __('cobranza.grace') }}: {{ $row->grace_until ? \App\Support\DateDisplay::formatDate($row->grace_until, __('cobranza.nd')) : __('cobranza.nd') }}
                         </p>
                     </td>
                     <td class="px-4 py-3 text-right">

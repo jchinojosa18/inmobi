@@ -170,29 +170,10 @@
                             </thead>
                             <tbody class="divide-y divide-slate-100 bg-white">
                                 @foreach ($group['rows'] as $row)
-                                    <tr>
-                                        <td class="px-4 py-3">{{ $row['period_label'] }}</td>
-                                        <td class="px-4 py-3 font-medium text-slate-900">{{ $row['type'] }}</td>
-                                        <td class="px-4 py-3">{{ $row['charge_date'] ?: '-' }}</td>
-                                        <td class="px-4 py-3">{{ $row['due_date'] }}</td>
-                                        <td class="px-4 py-3 text-right">${{ number_format($row['amount'], 2) }}</td>
-                                        <td class="px-4 py-3 text-right">${{ number_format($row['paid'], 2) }}</td>
-                                        <td class="px-4 py-3 text-right font-medium text-slate-900">${{ number_format($row['balance'], 2) }}</td>
-                                        <td class="px-4 py-3">
-                                            @php
-                                                $statusVariant = match ($row['status_tone']) {
-                                                    'red' => 'danger',
-                                                    'amber' => 'warning',
-                                                    'emerald' => 'success',
-                                                    'blue' => 'info',
-                                                    default => 'neutral',
-                                                };
-                                            @endphp
-                                            <x-ui.badge :variant="$statusVariant">
-                                                {{ $row['status_label'] }}
-                                            </x-ui.badge>
-                                        </td>
-                                    </tr>
+                                    @include('livewire.contracts.partials.ledger-row', ['row' => $row, 'nested' => false])
+                                    @foreach ($row['children'] ?? [] as $child)
+                                        @include('livewire.contracts.partials.ledger-row', ['row' => $child, 'nested' => true])
+                                    @endforeach
                                 @endforeach
                             </tbody>
                         </table>
@@ -224,7 +205,7 @@
                 @forelse ($payments as $payment)
                     <tr>
                         <td class="px-4 py-3 font-medium text-slate-900">{{ $payment['folio'] ?? __('common.n_a') }}</td>
-                        <td class="px-4 py-3">{{ optional($payment['paid_at'])->format('Y-m-d H:i') }}</td>
+                        <td class="px-4 py-3"><x-ui.display-date :value="$payment['paid_at']" time /></td>
                         <td class="px-4 py-3">{{ $payment['method'] }}</td>
                         <td class="px-4 py-3 text-right">${{ number_format($payment['amount'], 2) }}</td>
                         <td class="px-4 py-3 text-right">${{ number_format($payment['allocated_amount'], 2) }}</td>

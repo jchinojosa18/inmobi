@@ -7,6 +7,7 @@ use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\Payment;
 use App\Models\PaymentAllocation;
+use App\Support\DateDisplay;
 use App\Support\DepositBalanceService;
 use App\Support\NavigationReturn;
 use App\Support\PaymentReceiptShareUrl;
@@ -135,7 +136,9 @@ class Show extends Component
 
         $ledgerRows = $this->buildLedgerRows($contract);
         $groupedLedger = $this->groupLedgerRows($ledgerRows);
-        $operationalRows = $ledgerRows->reject(
+        $operationalRows = $ledgerRows->flatMap(function (array $row): Collection {
+            return collect([$row])->merge($row['children'] ?? []);
+        })->reject(
             fn (array $row): bool => $this->isDepositLedgerType($row['type'])
         );
 
@@ -216,7 +219,22 @@ class Show extends Component
      *     paid:float,
      *     balance:float,
      *     status_label:string,
-     *     status_tone:string
+     *     status_tone:string,
+     *     is_penalty:bool,
+     *     children:list<array{
+     *         id:int,
+     *         period_key:string,
+     *         period_label:string,
+     *         type:string,
+     *         charge_date:string,
+     *         due_date:string,
+     *         amount:float,
+     *         paid:float,
+     *         balance:float,
+     *         status_label:string,
+     *         status_tone:string,
+     *         is_penalty:bool
+     *     }>
      * }>
      */
     private function buildLedgerRows(Contract $contract): Collection
@@ -238,7 +256,69 @@ class Show extends Component
             ->orderBy('charges.id')
             ->get();
 
-        return $charges->map(fn (Charge $charge): array => $this->mapChargeToLedgerRow($contract, $charge));
+        $rentChargesByPeriod = $charges
+            ->where('type', Charge::TYPE_RENT)
+            ->keyBy(fn (Charge $charge): string => (string) $charge->period);
+
+        $rowsById = [];
+        $orderedParentIds = [];
+
+        foreach ($charges as $charge) {
+            if ($charge->type === Charge::TYPE_PENALTY) {
+                continue;
+            }
+
+            $row = $this->mapChargeToLedgerRow($contract, $charge);
+            $row['is_penalty'] = false;
+            $row['children'] = [];
+            $rowsById[$charge->id] = $row;
+            $orderedParentIds[] = $charge->id;
+        }
+
+        foreach ($charges as $charge) {
+            if ($charge->type !== Charge::TYPE_PENALTY) {
+                continue;
+            }
+
+            $sourcePeriod = $this->resolvePenaltySourcePeriod($contract, $charge);
+            $parentId = $this->resolvePenaltyParentChargeId($charge, $sourcePeriod, $rentChargesByPeriod);
+            $parentRow = $parentId !== null ? ($rowsById[$parentId] ?? null) : null;
+
+            if ($parentRow !== null && $parentRow['period_key'] !== 'sin-periodo') {
+                $sourcePeriod = $parentRow['period_key'];
+            }
+
+            $childRow = $this->mapChargeToLedgerRow($contract, $charge, $sourcePeriod);
+            $childRow['is_penalty'] = true;
+
+            if ($parentId !== null && isset($rowsById[$parentId])) {
+                $rowsById[$parentId]['children'][] = $childRow;
+
+                continue;
+            }
+
+            $childRow['children'] = [];
+            $rowsById['penalty-'.$charge->id] = $childRow;
+            $orderedParentIds[] = 'penalty-'.$charge->id;
+        }
+
+        return collect($orderedParentIds)
+            ->map(function (int|string $rowId) use ($rowsById): ?array {
+                $row = $rowsById[$rowId] ?? null;
+
+                if ($row === null) {
+                    return null;
+                }
+
+                usort(
+                    $row['children'],
+                    fn (array $left, array $right): int => [$left['charge_date'], $left['id']] <=> [$right['charge_date'], $right['id']],
+                );
+
+                return $row;
+            })
+            ->filter()
+            ->values();
     }
 
     /**
@@ -275,13 +355,19 @@ class Show extends Component
         return $ledgerRows
             ->groupBy('period_key')
             ->map(function (Collection $rows): array {
-                $operationalRows = $rows->reject(
+                $flattenedRows = $rows->flatMap(function (array $row): Collection {
+                    return collect([$row])->merge($row['children'] ?? []);
+                });
+
+                $operationalRows = $flattenedRows->reject(
                     fn (array $row): bool => $this->isDepositLedgerType($row['type'])
                 );
 
+                $periodLabel = (string) $rows->first()['period_label'];
+
                 return [
                     'period_key' => (string) $rows->first()['period_key'],
-                    'period_label' => (string) $rows->first()['period_label'],
+                    'period_label' => $periodLabel,
                     'charges_total' => round((float) $operationalRows->sum('amount'), 2),
                     'paid_total' => round((float) $operationalRows->sum('paid'), 2),
                     'balance_total' => round((float) $operationalRows->sum('balance'), 2),
@@ -308,10 +394,12 @@ class Show extends Component
      *     paid:float,
      *     balance:float,
      *     status_label:string,
-     *     status_tone:string
+     *     status_tone:string,
+     *     is_penalty:bool,
+     *     children:list<array<string, mixed>>
      * }
      */
-    private function mapChargeToLedgerRow(Contract $contract, Charge $charge): array
+    private function mapChargeToLedgerRow(Contract $contract, Charge $charge, ?string $periodOverride = null): array
     {
         $amount = round((float) $charge->amount, 2);
 
@@ -328,22 +416,77 @@ class Show extends Component
         $graceUntil = $this->resolveGraceUntil($charge, $contract, $dueDate);
         $status = $this->resolveChargeStatus($charge, $balance, $paid, $dueDate, $graceUntil);
 
-        $periodValue = (string) ($charge->period ?? '');
-        $periodLabel = $periodValue !== '' ? $periodValue : __('contracts.no_period');
+        $periodValue = $periodOverride ?? (string) ($charge->period ?? '');
+        if ($charge->type === Charge::TYPE_PENALTY && $periodValue === '') {
+            $periodValue = $this->resolvePenaltySourcePeriod($contract, $charge) ?? '';
+        }
+
+        $periodKey = $periodValue !== '' ? $periodValue : 'sin-periodo';
+        $periodLabel = $this->formatPeriodLabel($periodValue !== '' ? $periodValue : null);
 
         return [
             'id' => $charge->id,
-            'period_key' => $periodValue !== '' ? $periodValue : 'sin-periodo',
+            'period_key' => $periodKey,
             'period_label' => $periodLabel,
             'type' => $charge->type,
-            'charge_date' => optional($charge->charge_date)->format('Y-m-d') ?? '',
-            'due_date' => $dueDate?->format('Y-m-d') ?? '-',
+            'charge_date' => DateDisplay::formatDate($charge->charge_date, ''),
+            'due_date' => $dueDate !== null ? DateDisplay::formatDate($dueDate) : '-',
             'amount' => $amount,
             'paid' => $paid,
             'balance' => $balance,
             'status_label' => $status['label'],
             'status_tone' => $status['tone'],
+            'is_penalty' => $charge->type === Charge::TYPE_PENALTY,
         ];
+    }
+
+    /**
+     * @param  Collection<string, Charge>  $rentChargesByPeriod
+     */
+    private function resolvePenaltyParentChargeId(
+        Charge $penalty,
+        ?string $sourcePeriod,
+        Collection $rentChargesByPeriod,
+    ): ?int {
+        if (! is_string($sourcePeriod) || $sourcePeriod === '') {
+            return null;
+        }
+
+        $rentCharge = $rentChargesByPeriod->get($sourcePeriod);
+
+        return $rentCharge?->id;
+    }
+
+    private function resolvePenaltySourcePeriod(Contract $contract, Charge $penalty): ?string
+    {
+        $metaPeriod = data_get($penalty->meta, 'source_rent_period');
+
+        if (is_string($metaPeriod) && preg_match('/^\d{4}-\d{2}$/', $metaPeriod) === 1) {
+            return $metaPeriod;
+        }
+
+        if ($penalty->penalty_date !== null) {
+            return CarbonImmutable::parse($penalty->penalty_date)->format('Y-m');
+        }
+
+        if ($penalty->charge_date !== null) {
+            return CarbonImmutable::parse($penalty->charge_date)->format('Y-m');
+        }
+
+        return null;
+    }
+
+    private function formatPeriodLabel(?string $period): string
+    {
+        if ($period === null || $period === '' || preg_match('/^\d{4}-\d{2}$/', $period) !== 1) {
+            return __('contracts.no_period');
+        }
+
+        return ucfirst(
+            CarbonImmutable::createFromFormat('Y-m', $period)
+                ->locale(app()->getLocale())
+                ->translatedFormat('F Y')
+        );
     }
 
     private function resolveDueDate(Charge $charge): ?CarbonImmutable

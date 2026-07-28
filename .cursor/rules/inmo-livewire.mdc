@@ -18,6 +18,13 @@ alwaysApply: false
 - Layout principal: `resources/views/layouts/app.blade.php`.
 - Tailwind CSS; assets vía Vite (`@vite`).
 
+## Formato de fechas (UI)
+
+- **Regla:** toda fecha mostrada al usuario usa `d/m/Y`; con hora, `d/m/Y H:i`.
+- Servicio: `App\Support\DateDisplay` (`formatDate`, `formatDateTime`).
+- Blade: `<x-ui.display-date :value="$model->date" />` o `time` para datetime.
+- **No** usar `format('Y-m-d')` en vistas/PDFs/correos. Los inputs `type="date"` y persistencia en BD siguen en `Y-m-d`.
+
 ## Al agregar pantallas
 
 1. Registrar ruta en `routes/web.php` con middleware auth + permiso.

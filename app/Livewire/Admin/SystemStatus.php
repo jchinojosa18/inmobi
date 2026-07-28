@@ -2,7 +2,9 @@
 
 namespace App\Livewire\Admin;
 
+use App\Support\DateDisplay;
 use App\Support\SystemHeartbeatService;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
@@ -142,7 +144,7 @@ class SystemStatus extends Component
     private function checkScheduler(SystemHeartbeatService $heartbeatService): array
     {
         $heartbeat = $heartbeatService->get('scheduler');
-        $lastRun = $heartbeat?->last_ran_at?->toDateTimeString();
+        $lastRun = $this->formatHeartbeatLastRun($heartbeat?->last_ran_at);
 
         if ($heartbeatService->isFresh($heartbeat, 5)) {
             return [
@@ -167,7 +169,7 @@ class SystemStatus extends Component
     private function checkQueueWorker(SystemHeartbeatService $heartbeatService): array
     {
         $heartbeat = $heartbeatService->get('queue_worker');
-        $lastRun = $heartbeat?->last_ran_at?->toDateTimeString();
+        $lastRun = $this->formatHeartbeatLastRun($heartbeat?->last_ran_at);
 
         if ($heartbeatService->isFresh($heartbeat, 30) && $heartbeat?->status === 'ok') {
             return [
@@ -201,7 +203,7 @@ class SystemStatus extends Component
     private function checkBackup(SystemHeartbeatService $heartbeatService): array
     {
         $heartbeat = $heartbeatService->get('backup');
-        $lastRun = $heartbeat?->last_ran_at?->toDateTimeString();
+        $lastRun = $this->formatHeartbeatLastRun($heartbeat?->last_ran_at);
 
         if ($heartbeat !== null && $heartbeat->status === 'ok') {
             return [
@@ -222,7 +224,9 @@ class SystemStatus extends Component
         }
 
         $logPath = storage_path('logs/laravel.log');
-        $logLastRun = is_file($logPath) ? date('Y-m-d H:i:s', (int) filemtime($logPath)) : null;
+        $logLastRun = is_file($logPath)
+            ? DateDisplay::formatDateTime(CarbonImmutable::createFromTimestamp((int) filemtime($logPath)))
+            : null;
 
         return [
             'ok' => false,
@@ -230,5 +234,14 @@ class SystemStatus extends Component
             'last_run' => $logLastRun,
             'source' => __('admin.log_source'),
         ];
+    }
+
+    private function formatHeartbeatLastRun(mixed $lastRanAt): ?string
+    {
+        if ($lastRanAt === null) {
+            return null;
+        }
+
+        return DateDisplay::formatDateTime($lastRanAt);
     }
 }

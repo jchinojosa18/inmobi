@@ -12,6 +12,7 @@ use App\Models\Property;
 use App\Models\Tenant;
 use App\Models\Unit;
 use App\Support\ContractOverdueQuery;
+use App\Support\DateDisplay;
 use App\Support\MonthCloseGuard;
 use App\Support\OperatingIncomeService;
 use App\Support\OrganizationSettingsService;
@@ -52,7 +53,7 @@ class Index extends Component
         session()->flash(
             'success',
             __('dashboard.flash.checklist_hidden', [
-                'date' => $dismissedUntil->timezone('America/Tijuana')->format('Y-m-d'),
+                'date' => DateDisplay::formatDate($dismissedUntil),
             ])
         );
     }

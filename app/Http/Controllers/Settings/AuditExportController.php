@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditEvent;
+use App\Support\DateDisplay;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -45,7 +46,7 @@ class AuditExportController extends Controller
             $query->chunk(500, function ($events) use ($handle): void {
                 foreach ($events as $event) {
                     fputcsv($handle, [
-                        $event->occurred_at->timezone('America/Tijuana')->format('Y-m-d H:i:s'),
+                        DateDisplay::formatDateTime($event->occurred_at),
                         $event->actor?->name ?? 'Sistema',
                         $event->actor?->email ?? '',
                         $event->action,

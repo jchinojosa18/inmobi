@@ -4,6 +4,7 @@ namespace App\Mail;
 
 use App\Models\OrganizationInvitation;
 use App\Models\User;
+use App\Support\DateDisplay;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -32,7 +33,7 @@ class OrganizationInvitationMail extends Mailable
     public function content(): Content
     {
         $acceptUrl = route('invitations.accept', ['token' => $this->plainToken]);
-        $expiresAt = $this->invitation->expires_at?->timezone('America/Tijuana')->format('Y-m-d H:i');
+        $expiresAt = DateDisplay::formatDateTime($this->invitation->expires_at, '');
 
         return new Content(
             view: 'emails.organization-invitation',
