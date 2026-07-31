@@ -41,7 +41,8 @@ class ContractOverdueQueryTest extends TestCase
         $query = new ContractOverdueQuery;
 
         $this->assertStringContainsString('MAX(', $query->pendingAmountExpression());
-        $this->assertStringContainsString('MAX(SUM(', $query->contractPendingAmountExpression());
+        // Clamp per charge, then sum — not the other way around.
+        $this->assertStringContainsString('SUM(MAX(', $query->contractPendingAmountExpression());
     }
 
     public function test_oldest_pending_rent_subquery_can_include_period_column(): void

@@ -151,15 +151,13 @@ class ContractOverdueQuery
         return "GREATEST({$rawPending}, 0)";
     }
 
+    /**
+     * Clamps each charge before summing: a settled negative ADJUSTMENT already reduced the
+     * charges it credited, so its raw negative pending would double-count the discount.
+     */
     public function contractPendingAmountExpression(): string
     {
-        $rawPending = $this->rawPendingAmountExpression();
-
-        if ($this->databaseDriver() === 'sqlite') {
-            return "MAX(SUM({$rawPending}), 0)";
-        }
-
-        return "GREATEST(SUM({$rawPending}), 0)";
+        return 'SUM('.$this->pendingAmountExpression().')';
     }
 
     private function overdueDiffExpression(string $todayDate): string

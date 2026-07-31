@@ -306,10 +306,7 @@ class QuickRegisterModal extends Component
 
     private function computePendingBalance(int $contractId): float
     {
-        $rawPending = 'charges.amount - COALESCE(alloc.allocated_total, 0)';
-        $pendingExpression = $this->databaseDriver() === 'sqlite'
-            ? "MAX(SUM({$rawPending}), 0)"
-            : "GREATEST(SUM({$rawPending}), 0)";
+        $pendingExpression = $this->contractPendingAmountExpression();
 
         $allocationSubquery = PaymentAllocation::query()
             ->selectRaw('payment_allocations.charge_id, SUM(payment_allocations.amount) as allocated_total')
@@ -391,15 +388,19 @@ class QuickRegisterModal extends Component
         return ['status' => 'current', 'days' => 0];
     }
 
+    /**
+     * Clamps each charge before summing: a settled negative ADJUSTMENT already reduced the
+     * charges it credited, so its raw negative pending would double-count the discount.
+     */
     private function contractPendingAmountExpression(): string
     {
         $rawPending = 'charges.amount - COALESCE(alloc.allocated_total, 0)';
 
-        if ($this->databaseDriver() === 'sqlite') {
-            return "MAX(SUM({$rawPending}), 0)";
-        }
+        $clamped = $this->databaseDriver() === 'sqlite'
+            ? "MAX({$rawPending}, 0)"
+            : "GREATEST({$rawPending}, 0)";
 
-        return "GREATEST(SUM({$rawPending}), 0)";
+        return "SUM({$clamped})";
     }
 
     private function databaseDriver(): string
