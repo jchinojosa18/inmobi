@@ -98,7 +98,15 @@ class Show extends Component
                 createdByUserId: auth()->id(),
             );
         } catch (ValidationException $exception) {
-            $message = $exception->errors()['month_close'][0] ?? __('contracts.validation.adjustment_failed');
+            $errors = $exception->errors();
+
+            if (isset($errors['adjustment_amount'][0])) {
+                $this->addError('adjustment_amount', $errors['adjustment_amount'][0]);
+
+                return;
+            }
+
+            $message = $errors['month_close'][0] ?? __('contracts.validation.adjustment_failed');
             $this->addError('adjustment_month_close', $message);
 
             return;

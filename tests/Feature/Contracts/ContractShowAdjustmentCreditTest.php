@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Contracts;
 
+use App\Actions\MonthCloses\CloseMonthAction;
 use App\Livewire\Contracts\Show;
 use App\Models\Charge;
 use App\Models\Contract;
@@ -128,6 +129,19 @@ class ContractShowAdjustmentCreditTest extends TestCase
         $this->assertSame(-50.0, $row['paid']);
         $this->assertSame(0.0, $row['balance']);
         $this->assertSame(__('contracts.charge_statuses.applied'), $row['status_label']);
+
+        $group = collect($groups)->first(
+            fn (array $g): bool => collect($g['rows'])->contains(fn (array $r): bool => $r['id'] === $row['id'])
+        );
+
+        $this->assertNotNull($group);
+        $this->assertSame(-50.0, $group['charges_total']);
+        $this->assertSame(-50.0, $group['paid_total']);
+        $this->assertSame(0.0, $group['balance_total']);
+        $this->assertSame(
+            round($group['charges_total'] - $group['paid_total'], 2),
+            $group['balance_total']
+        );
     }
 
     public function test_creating_negative_adjustment_applies_credit_to_pending_rent(): void
@@ -151,9 +165,90 @@ class ContractShowAdjustmentCreditTest extends TestCase
         $allocated = (float) PaymentAllocation::query()->where('charge_id', $rent->id)->sum('amount');
         $this->assertSame(200.0, $allocated);
 
+        $adjustment = Charge::query()
+            ->where('contract_id', $contract->id)
+            ->where('type', Charge::TYPE_ADJUSTMENT)
+            ->firstOrFail();
+
+        // The discount lives in the credit that paid the rent, never as an allocation on itself.
+        $this->assertSame(
+            0,
+            PaymentAllocation::query()->where('charge_id', $adjustment->id)->count()
+        );
+        $this->assertTrue((bool) data_get($adjustment->meta, 'settled_as_credit'));
+        $this->assertSame(200.0, (float) data_get($adjustment->meta, 'credit_amount'));
+
         $this->assertSame(
             0.0,
             (float) CreditBalance::query()->where('contract_id', $contract->id)->value('balance')
+        );
+
+        $groups = Livewire::actingAs($user)
+            ->test(Show::class, ['contract' => $contract])
+            ->viewData('ledgerGroups');
+
+        $adjustmentRow = collect($groups)->flatMap(fn ($g) => $g['rows'])->first(
+            fn (array $r): bool => $r['id'] === $adjustment->id
+        );
+
+        $this->assertNotNull($adjustmentRow);
+        $this->assertSame(-200.0, $adjustmentRow['paid']);
+        $this->assertSame(0.0, $adjustmentRow['balance']);
+        $this->assertSame(__('contracts.charge_statuses.applied'), $adjustmentRow['status_label']);
+    }
+
+    public function test_creating_negative_adjustment_succeeds_when_charge_month_is_closed(): void
+    {
+        [$user, $contract] = $this->makeContractWithCredit(credit: 0.0);
+
+        app(CloseMonthAction::class)->execute(
+            organizationId: (int) $contract->organization_id,
+            userId: (int) $user->id,
+            month: '2026-03',
+        );
+
+        Livewire::actingAs($user)
+            ->test(Show::class, ['contract' => $contract])
+            ->set('adjustment_amount', '-120')
+            ->set('adjustment_charge_date', '2026-03-20')
+            ->set('adjustment_reason', 'Corrección en mes cerrado')
+            ->call('createAdjustment')
+            ->assertHasNoErrors();
+
+        $adjustment = Charge::query()
+            ->where('contract_id', $contract->id)
+            ->where('type', Charge::TYPE_ADJUSTMENT)
+            ->firstOrFail();
+
+        $this->assertSame('2026-03', $adjustment->period);
+        $this->assertSame(-120.0, (float) $adjustment->amount);
+        $this->assertTrue((bool) data_get($adjustment->meta, 'settled_as_credit'));
+        $this->assertSame(120.0, (float) data_get($adjustment->meta, 'credit_amount'));
+
+        $this->assertSame(
+            120.0,
+            (float) CreditBalance::query()->where('contract_id', $contract->id)->value('balance')
+        );
+    }
+
+    public function test_amount_that_rounds_to_zero_surfaces_validation_error(): void
+    {
+        [$user, $contract] = $this->makeContractWithCredit(credit: 0.0);
+
+        Livewire::actingAs($user)
+            ->test(Show::class, ['contract' => $contract])
+            ->set('adjustment_amount', '0.004')
+            ->set('adjustment_charge_date', '2026-07-15')
+            ->set('adjustment_reason', 'Monto inválido')
+            ->call('createAdjustment')
+            ->assertHasErrors('adjustment_amount');
+
+        $this->assertSame(
+            0,
+            Charge::query()
+                ->where('contract_id', $contract->id)
+                ->where('type', Charge::TYPE_ADJUSTMENT)
+                ->count()
         );
     }
 

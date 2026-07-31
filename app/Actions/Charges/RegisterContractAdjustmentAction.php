@@ -8,6 +8,7 @@ use App\Models\Contract;
 use App\Models\CreditBalance;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class RegisterContractAdjustmentAction
 {
@@ -27,7 +28,9 @@ class RegisterContractAdjustmentAction
         $amount = round($amount, 2);
 
         if ($amount == 0.0) {
-            throw new \InvalidArgumentException('Adjustment amount cannot be zero.');
+            throw ValidationException::withMessages([
+                'adjustment_amount' => __('contracts.validation.adjustment_amount_not_zero'),
+            ]);
         }
 
         return DB::transaction(function () use (
@@ -41,6 +44,8 @@ class RegisterContractAdjustmentAction
         ): Charge {
             $contract = Contract::query()->lockForUpdate()->findOrFail($contract->id);
 
+            $creditAmount = $amount < 0 ? round(abs($amount), 2) : null;
+
             $meta = [
                 'reason' => trim($reason),
                 'comment' => trim((string) ($comment ?? '')),
@@ -48,6 +53,13 @@ class RegisterContractAdjustmentAction
                 'created_from' => 'contract_show_adjustment',
                 'created_by_user_id' => $createdByUserId,
             ];
+
+            if ($creditAmount !== null) {
+                // Credit metadata goes in the initial insert: a follow-up update would be
+                // rejected by MonthCloseGuard when charge_date falls in a closed month.
+                $meta['settled_as_credit'] = true;
+                $meta['credit_amount'] = $creditAmount;
+            }
 
             /** @var Charge $charge */
             $charge = Charge::query()->create([
@@ -61,15 +73,8 @@ class RegisterContractAdjustmentAction
                 'meta' => $meta,
             ]);
 
-            if ($amount < 0) {
-                $creditAmount = round(abs($amount), 2);
+            if ($creditAmount !== null) {
                 $this->creditFromAdjustment($contract, $charge, $creditAmount);
-
-                $chargeMeta = is_array($charge->meta) ? $charge->meta : [];
-                $chargeMeta['settled_as_credit'] = true;
-                $chargeMeta['credit_amount'] = $creditAmount;
-                $charge->meta = $chargeMeta;
-                $charge->save();
             }
 
             $this->applyCreditBalanceAction->execute($contract);
@@ -103,7 +108,9 @@ class RegisterContractAdjustmentAction
             $meta['settled_as_credit'] = true;
             $meta['credit_amount'] = $creditAmount;
             $charge->meta = $meta;
-            $charge->save();
+            // Quiet save: this backfill only stamps credit metadata on an existing ADJUSTMENT,
+            // so MonthCloseGuard must not block it when charge_date is in a closed month.
+            $charge->saveQuietly();
 
             $this->applyCreditBalanceAction->execute($contract);
 
