@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Charge;
 use App\Models\Expense;
 use App\Models\MonthClose;
 use Carbon\CarbonImmutable;
@@ -27,7 +28,10 @@ class CashFlowReportService
      *     expensesByCategory: Collection<string, float>,
      *     operatingChargeTypes: list<string>,
      *     closedMonthSnapshot: ?array<string, mixed>,
-     *     snapshotMatches: ?bool
+     *     snapshotMatches: ?bool,
+     *     depositsReceivedTotal: float,
+     *     depositsReceivedCount: int,
+     *     grossCashInTotal: float
      * }
      */
     public function build(
@@ -80,6 +84,11 @@ class CashFlowReportService
 
         $netTotal = round($incomeTotal - $expenseTotal, 2);
 
+        $deposits = $this->depositsReceivedForRange($organizationId, $dateFrom, $dateTo, $plazaId);
+        $depositsReceivedTotal = $deposits['total'];
+        $depositsReceivedCount = $deposits['count'];
+        $grossCashInTotal = round($incomeTotal + $depositsReceivedTotal, 2);
+
         $closedMonthSnapshot = $this->resolveClosedMonthSnapshot(
             $organizationId,
             $dateFrom,
@@ -106,6 +115,48 @@ class CashFlowReportService
             'operatingChargeTypes' => $this->operatingIncomeService->operatingChargeTypes(),
             'closedMonthSnapshot' => $closedMonthSnapshot,
             'snapshotMatches' => $snapshotMatches,
+            'depositsReceivedTotal' => $depositsReceivedTotal,
+            'depositsReceivedCount' => $depositsReceivedCount,
+            'grossCashInTotal' => $grossCashInTotal,
+        ];
+    }
+
+    /**
+     * @return array{total: float, count: int}
+     */
+    private function depositsReceivedForRange(
+        int $organizationId,
+        CarbonImmutable $dateFrom,
+        CarbonImmutable $dateTo,
+        ?int $plazaId
+    ): array {
+        $query = Charge::query()
+            ->withoutOrganizationScope()
+            ->where('charges.organization_id', $organizationId)
+            ->where('charges.type', Charge::TYPE_DEPOSIT_HOLD)
+            ->whereBetween('charges.charge_date', [
+                $dateFrom->toDateString(),
+                $dateTo->toDateString(),
+            ])
+            ->when($plazaId !== null, function (Builder $builder) use ($plazaId, $organizationId): void {
+                $builder->whereHas('unit', function (Builder $unitQuery) use ($plazaId, $organizationId): void {
+                    $unitQuery->withoutOrganizationScope()
+                        ->where('units.organization_id', $organizationId)
+                        ->whereHas('property', function (Builder $propertyQuery) use ($plazaId, $organizationId): void {
+                            $propertyQuery->withoutOrganizationScope()
+                                ->where('properties.organization_id', $organizationId)
+                                ->where('plaza_id', $plazaId);
+                        });
+                });
+            });
+
+        $row = (clone $query)
+            ->selectRaw('COALESCE(SUM(charges.amount), 0) as total_amount, COUNT(*) as holds_count')
+            ->first();
+
+        return [
+            'total' => round((float) ($row?->total_amount ?? 0), 2),
+            'count' => (int) ($row?->holds_count ?? 0),
         ];
     }
 

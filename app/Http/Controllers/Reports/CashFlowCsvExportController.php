@@ -82,6 +82,8 @@ class CashFlowCsvExportController extends Controller
             fputcsv($output, ['RESUMEN', '', '', '', 'TOTAL_INGRESOS', number_format($report['incomeTotal'], 2, '.', '')]);
             fputcsv($output, ['RESUMEN', '', '', '', 'TOTAL_EGRESOS', number_format($report['expenseTotal'], 2, '.', '')]);
             fputcsv($output, ['RESUMEN', '', '', '', 'NETO', number_format($report['netTotal'], 2, '.', '')]);
+            fputcsv($output, ['RESUMEN', '', '', '', 'TOTAL_DEPOSITOS_RECIBIDOS', number_format($report['depositsReceivedTotal'], 2, '.', '')]);
+            fputcsv($output, ['RESUMEN', '', '', '', 'INGRESO_BRUTO_CON_DEPOSITOS', number_format($report['grossCashInTotal'], 2, '.', '')]);
 
             fclose($output);
         }, $filename, [

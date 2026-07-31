@@ -80,6 +80,24 @@
         />
     </div>
 
+    <div>
+        <p class="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">{{ __('finance.cash_flow.cash_guarantees_section') }}</p>
+        <div class="grid gap-4 md:grid-cols-2">
+            <x-ui.stat-card
+                :label="__('finance.cash_flow.deposits_received')"
+                value="${{ number_format($depositsReceivedTotal, 2) }}"
+                :hint="__('finance.cash_flow.deposits_received_hint', ['count' => $depositsReceivedCount])"
+                value-class="text-slate-900"
+            />
+            <x-ui.stat-card
+                :label="__('finance.cash_flow.gross_cash_in')"
+                value="${{ number_format($grossCashInTotal, 2) }}"
+                :hint="__('finance.cash_flow.gross_cash_in_hint')"
+                value-class="text-slate-900"
+            />
+        </div>
+    </div>
+
     <x-ui.card :padding="true" class="!p-4">
         <h2 class="text-sm font-semibold text-slate-900">{{ __('finance.cash_flow.income_breakdown') }}</h2>
         <div class="mt-3 grid gap-2 md:grid-cols-3">

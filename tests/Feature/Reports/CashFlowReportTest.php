@@ -59,6 +59,8 @@ class CashFlowReportTest extends TestCase
         $this->assertStringContainsString('TOTAL_INGRESOS,1500.00', $csv);
         $this->assertStringContainsString('TOTAL_EGRESOS,300.00', $csv);
         $this->assertStringContainsString('NETO,1200.00', $csv);
+        $this->assertStringContainsString('TOTAL_DEPOSITOS_RECIBIDOS,0.00', $csv);
+        $this->assertStringContainsString('INGRESO_BRUTO_CON_DEPOSITOS,1500.00', $csv);
     }
 
     public function test_deposit_hold_allocations_are_excluded_from_operating_income(): void
@@ -120,7 +122,10 @@ class CashFlowReportTest extends TestCase
             ->set('date_from', '2026-03-01')
             ->set('date_to', '2026-03-31')
             ->assertSee('$1,000.00')
-            ->assertDontSee('$1,600.00');
+            ->assertSee('$600.00')
+            ->assertSee('$1,600.00')
+            ->assertSee(__('finance.cash_flow.deposits_received'))
+            ->assertSee(__('finance.cash_flow.gross_cash_in'));
     }
 
     public function test_payment_covering_rent_and_penalty_is_split_in_allocations_breakdown(): void

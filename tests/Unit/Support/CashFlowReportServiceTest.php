@@ -125,6 +125,113 @@ class CashFlowReportServiceTest extends TestCase
         $this->assertNull($partial['closedMonthSnapshot']);
     }
 
+    public function test_deposit_holds_are_reported_without_changing_operating_totals(): void
+    {
+        [$user, $organization] = $this->seedIncomeAndExpenseForMarch();
+        unset($user);
+
+        $contract = Contract::query()
+            ->withoutOrganizationScope()
+            ->where('organization_id', $organization->id)
+            ->firstOrFail();
+
+        Charge::query()->create([
+            'organization_id' => $organization->id,
+            'contract_id' => $contract->id,
+            'unit_id' => $contract->unit_id,
+            'type' => Charge::TYPE_DEPOSIT_HOLD,
+            'period' => '2026-03',
+            'charge_date' => '2026-03-08',
+            'amount' => 500,
+            'meta' => [],
+        ]);
+        Charge::query()->create([
+            'organization_id' => $organization->id,
+            'contract_id' => $contract->id,
+            'unit_id' => $contract->unit_id,
+            'type' => Charge::TYPE_DEPOSIT_HOLD,
+            'period' => '2026-04',
+            'charge_date' => '2026-04-02',
+            'amount' => 200,
+            'meta' => [],
+        ]);
+
+        $from = CarbonImmutable::parse('2026-03-01', 'America/Tijuana')->startOfDay();
+        $to = CarbonImmutable::parse('2026-03-31', 'America/Tijuana')->endOfDay();
+        $report = app(CashFlowReportService::class)->build((int) $organization->id, $from, $to, null);
+
+        $this->assertSame(1000.0, $report['incomeTotal']);
+        $this->assertSame(300.0, $report['expenseTotal']);
+        $this->assertSame(700.0, $report['netTotal']);
+        $this->assertSame(500.0, $report['depositsReceivedTotal']);
+        $this->assertSame(1, $report['depositsReceivedCount']);
+        $this->assertSame(1500.0, $report['grossCashInTotal']);
+        $this->assertSame(
+            round($report['incomeTotal'] + $report['depositsReceivedTotal'], 2),
+            $report['grossCashInTotal'],
+        );
+    }
+
+    public function test_deposit_holds_respect_plaza_scope(): void
+    {
+        [$organization, $plazaA, $plazaB, $unitA] = $this->seedOrgWithTwoPlazas();
+
+        $tenant = Tenant::factory()->create(['organization_id' => $organization->id]);
+        $contractA = Contract::factory()->create([
+            'organization_id' => $organization->id,
+            'unit_id' => $unitA->id,
+            'tenant_id' => $tenant->id,
+            'status' => Contract::STATUS_ACTIVE,
+        ]);
+        $unitB = Unit::factory()->create([
+            'organization_id' => $organization->id,
+            'property_id' => Property::factory()->create([
+                'organization_id' => $organization->id,
+                'plaza_id' => $plazaB->id,
+            ])->id,
+        ]);
+        $contractB = Contract::factory()->create([
+            'organization_id' => $organization->id,
+            'unit_id' => $unitB->id,
+            'tenant_id' => Tenant::factory()->create(['organization_id' => $organization->id])->id,
+            'status' => Contract::STATUS_ACTIVE,
+        ]);
+
+        Charge::query()->create([
+            'organization_id' => $organization->id,
+            'contract_id' => $contractA->id,
+            'unit_id' => $unitA->id,
+            'type' => Charge::TYPE_DEPOSIT_HOLD,
+            'period' => '2026-03',
+            'charge_date' => '2026-03-08',
+            'amount' => 400,
+            'meta' => [],
+        ]);
+        Charge::query()->create([
+            'organization_id' => $organization->id,
+            'contract_id' => $contractB->id,
+            'unit_id' => $unitB->id,
+            'type' => Charge::TYPE_DEPOSIT_HOLD,
+            'period' => '2026-03',
+            'charge_date' => '2026-03-09',
+            'amount' => 900,
+            'meta' => [],
+        ]);
+
+        $from = CarbonImmutable::parse('2026-03-01', 'America/Tijuana')->startOfDay();
+        $to = CarbonImmutable::parse('2026-03-31', 'America/Tijuana')->endOfDay();
+        $report = app(CashFlowReportService::class)->build(
+            (int) $organization->id,
+            $from,
+            $to,
+            (int) $plazaA->id,
+        );
+
+        $this->assertSame(400.0, $report['depositsReceivedTotal']);
+        $this->assertSame(1, $report['depositsReceivedCount']);
+        $this->assertSame(400.0, $report['grossCashInTotal']);
+    }
+
     /**
      * @return array{0: Organization, 1: Plaza, 2: Plaza, 3: Unit}
      */

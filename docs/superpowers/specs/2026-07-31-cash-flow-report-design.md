@@ -137,9 +137,9 @@ Comparar `ingresos_operativos`, `egresos`, `neto` del snapshot vs totales del se
 
 ---
 
-## Fase 2 — Cards informativas de depósitos (no implementada en v1)
+## Fase 2 — Cards informativas de depósitos
 
-**Status:** Spec only (aprobado 2026-07-31)  
+**Status:** Implemented (2026-07-31)  
 **Goal:** Mostrar movimiento de garantía en el reporte sin alterar la congruencia operativa ni el snapshot de cierre.
 
 ### Decisiones
