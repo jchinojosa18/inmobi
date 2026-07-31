@@ -274,7 +274,7 @@ class OrganizationInvitationsTest extends TestCase
         $this->assertSame((int) $organization->id, (int) $admin->organization_id);
     }
 
-    public function test_owner_cannot_be_demoted_from_admin_role(): void
+    public function test_owner_role_select_is_hidden_and_cannot_be_updated(): void
     {
         [$organization, $owner] = $this->createOrganizationAdminPair();
 
@@ -285,6 +285,7 @@ class OrganizationInvitationsTest extends TestCase
 
         Livewire::actingAs($owner)
             ->test(InvitationsIndex::class)
+            ->assertDontSeeHtml('wire:model="userRoles.'.$owner->id.'"')
             ->set("userRoles.{$owner->id}", 'Lectura')
             ->call('updateUserRole', $owner->id)
             ->assertHasErrors("userRoles.{$owner->id}");

@@ -219,6 +219,7 @@ return [
         'invitation_email_pending' => 'That email already has a pending invitation for this company.',
         'user_role_invalid' => 'Invalid role.',
         'owner_must_stay_admin' => 'The owner must always keep the Admin role.',
+        'owner_role_locked' => 'The owner role cannot be changed.',
         'cannot_remove_last_admin' => 'You cannot remove the last Admin from the organization.',
         'cannot_remove_owner' => 'You cannot remove the organization owner.',
         'transfer_user_required' => 'Select a user to transfer ownership.',

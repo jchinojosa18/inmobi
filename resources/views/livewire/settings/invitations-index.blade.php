@@ -135,26 +135,27 @@
                     <td class="px-4 py-2">{{ $user->email }}</td>
                     <td class="px-4 py-2">
                         @if ((int) $organization->owner_user_id === (int) $user->id)
-                            <p class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-indigo-600">{{ __('settings.owner') }}</p>
+                            <p class="text-[11px] font-semibold uppercase tracking-wide text-indigo-600">{{ __('settings.owner') }}</p>
+                        @else
+                            <x-ui.select wire:model="userRoles.{{ $user->id }}">
+                                @foreach ($allowedRoles as $allowedRole)
+                                    <option value="{{ $allowedRole }}">{{ $allowedRole }}</option>
+                                @endforeach
+                            </x-ui.select>
+                            @error("userRoles.{$user->id}") <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                         @endif
-                        <x-ui.select wire:model="userRoles.{{ $user->id }}">
-                            @foreach ($allowedRoles as $allowedRole)
-                                <option value="{{ $allowedRole }}">{{ $allowedRole }}</option>
-                            @endforeach
-                        </x-ui.select>
-                        @error("userRoles.{$user->id}") <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                     </td>
                     <td class="px-4 py-2 text-right">
-                        <div class="inline-flex items-center gap-2">
-                            <x-ui.button type="button" wire:click="updateUserRole({{ $user->id }})" variant="secondary" size="sm">
-                                {{ __('settings.save_role') }}
-                            </x-ui.button>
-                            @if ((int) $organization->owner_user_id !== (int) $user->id)
+                        @if ((int) $organization->owner_user_id !== (int) $user->id)
+                            <div class="inline-flex items-center gap-2">
+                                <x-ui.button type="button" wire:click="updateUserRole({{ $user->id }})" variant="secondary" size="sm">
+                                    {{ __('settings.save_role') }}
+                                </x-ui.button>
                                 <x-ui.button type="button" wire:click="confirmRemoveUser({{ $user->id }})" variant="danger" size="sm">
                                     {{ __('common.remove') }}
                                 </x-ui.button>
-                            @endif
-                        </div>
+                            </div>
+                        @endif
                     </td>
                 </tr>
             @endforeach

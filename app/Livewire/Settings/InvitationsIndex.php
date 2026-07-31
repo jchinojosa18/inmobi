@@ -122,8 +122,8 @@ class InvitationsIndex extends Component
             ->where('organization_id', (int) $organization->id)
             ->findOrFail($userId);
 
-        if ((int) $organization->owner_user_id === (int) $user->id && $targetRole !== 'Admin') {
-            $this->addError("userRoles.{$userId}", __('settings.validation.owner_must_stay_admin'));
+        if ((int) $organization->owner_user_id === (int) $user->id) {
+            $this->addError("userRoles.{$userId}", __('settings.validation.owner_role_locked'));
 
             return;
         }

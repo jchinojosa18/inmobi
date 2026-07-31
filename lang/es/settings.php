@@ -219,6 +219,7 @@ return [
         'invitation_email_pending' => 'Ese correo ya tiene una invitación pendiente para esta empresa.',
         'user_role_invalid' => 'Rol inválido.',
         'owner_must_stay_admin' => 'El owner siempre debe conservar rol Admin.',
+        'owner_role_locked' => 'El rol del owner no se puede modificar.',
         'cannot_remove_last_admin' => 'No puedes quitar al último Admin de la organización.',
         'cannot_remove_owner' => 'No puedes quitar al usuario owner de la organización.',
         'transfer_user_required' => 'Selecciona un usuario para transferir ownership.',
