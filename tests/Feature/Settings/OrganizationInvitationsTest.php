@@ -340,6 +340,48 @@ class OrganizationInvitationsTest extends TestCase
         $this->assertSame((int) $owner->id, (int) $organization->owner_user_id);
     }
 
+    public function test_owner_remove_button_is_hidden_and_direct_remove_is_blocked(): void
+    {
+        [$organization, $owner] = $this->createOrganizationAdminPair();
+
+        Livewire::actingAs($owner)
+            ->test(InvitationsIndex::class)
+            ->assertDontSeeHtml('wire:click="confirmRemoveUser('.$owner->id.')"')
+            ->call('removeUser', $owner->id)
+            ->assertHasErrors('remove_user');
+
+        $owner->refresh();
+        $this->assertSame((int) $organization->id, (int) $owner->organization_id);
+    }
+
+    public function test_remove_user_requires_confirmation_before_removing_member(): void
+    {
+        [$organization, $owner] = $this->createOrganizationAdminPair();
+
+        $member = User::factory()->create([
+            'organization_id' => $organization->id,
+            'email' => 'member.remove@test.dev',
+            'name' => 'Member Remove',
+        ]);
+        $member->assignRole('Lectura');
+
+        Livewire::actingAs($owner)
+            ->test(InvitationsIndex::class)
+            ->call('confirmRemoveUser', $member->id)
+            ->assertSet('showRemoveUserConfirm', true)
+            ->assertSet('pendingRemoveUserId', $member->id)
+            ->assertSee(__('settings.remove_user_body', ['name' => 'Member Remove']))
+            ->call('cancelRemoveUserConfirm')
+            ->assertSet('showRemoveUserConfirm', false)
+            ->call('confirmRemoveUser', $member->id)
+            ->call('executeRemoveUserConfirm')
+            ->assertSet('showRemoveUserConfirm', false)
+            ->assertHasNoErrors();
+
+        $member->refresh();
+        $this->assertNull($member->organization_id);
+    }
+
     private function createOrganizationAdminPair(): array
     {
         Role::findOrCreate('Admin', 'web');

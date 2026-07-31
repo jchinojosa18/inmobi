@@ -149,13 +149,28 @@
                             <x-ui.button type="button" wire:click="updateUserRole({{ $user->id }})" variant="secondary" size="sm">
                                 {{ __('settings.save_role') }}
                             </x-ui.button>
-                            <x-ui.button type="button" wire:click="removeUser({{ $user->id }})" variant="danger" size="sm">
-                                {{ __('common.remove') }}
-                            </x-ui.button>
+                            @if ((int) $organization->owner_user_id !== (int) $user->id)
+                                <x-ui.button type="button" wire:click="confirmRemoveUser({{ $user->id }})" variant="danger" size="sm">
+                                    {{ __('common.remove') }}
+                                </x-ui.button>
+                            @endif
                         </div>
                     </td>
                 </tr>
             @endforeach
         </x-slot:body>
     </x-ui.table>
+
+    <x-ui.confirm-modal
+        :open="$showRemoveUserConfirm"
+        :title="__('settings.remove_user_title')"
+        confirm-action="executeRemoveUserConfirm"
+        cancel-action="cancelRemoveUserConfirm"
+        :confirm-label="__('settings.remove_user_confirm')"
+        :aria-label="__('settings.remove_user_aria')"
+    >
+        <p class="text-slate-700">
+            {{ __('settings.remove_user_body', ['name' => $pendingRemoveUserName]) }}
+        </p>
+    </x-ui.confirm-modal>
 </section>

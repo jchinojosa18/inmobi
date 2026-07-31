@@ -29,6 +29,12 @@ class InvitationsIndex extends Component
 
     public string $transferOwnerUserId = '';
 
+    public bool $showRemoveUserConfirm = false;
+
+    public ?int $pendingRemoveUserId = null;
+
+    public ?string $pendingRemoveUserName = null;
+
     /**
      * @var list<string>
      */
@@ -150,6 +156,43 @@ class InvitationsIndex extends Component
         }
 
         session()->flash('success', __('settings.flash.role_updated'));
+    }
+
+    public function confirmRemoveUser(int $userId): void
+    {
+        $this->assertCanManageUsers();
+
+        $organization = $this->currentOrganization();
+        $user = User::query()
+            ->where('organization_id', (int) $organization->id)
+            ->findOrFail($userId);
+
+        if ((int) $organization->owner_user_id === (int) $user->id) {
+            $this->addError('remove_user', __('settings.validation.cannot_remove_owner'));
+
+            return;
+        }
+
+        $this->pendingRemoveUserId = $user->id;
+        $this->pendingRemoveUserName = $user->name;
+        $this->showRemoveUserConfirm = true;
+    }
+
+    public function cancelRemoveUserConfirm(): void
+    {
+        $this->showRemoveUserConfirm = false;
+        $this->pendingRemoveUserId = null;
+        $this->pendingRemoveUserName = null;
+    }
+
+    public function executeRemoveUserConfirm(): void
+    {
+        if ($this->pendingRemoveUserId === null) {
+            return;
+        }
+
+        $this->removeUser($this->pendingRemoveUserId);
+        $this->cancelRemoveUserConfirm();
     }
 
     public function removeUser(int $userId): void
