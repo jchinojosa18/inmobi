@@ -33,6 +33,10 @@ class Show extends Component
 
     public function sendEmail(): void
     {
+        if (! (auth()->user()?->can('receipts.send') ?? false)) {
+            abort(403);
+        }
+
         $recipient = $this->payment->contract?->tenant?->email;
 
         if (! is_string($recipient) || trim($recipient) === '') {

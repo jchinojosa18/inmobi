@@ -179,12 +179,14 @@
                             @error('evidence') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                         </div>
 
-                        @if(isset($contractSummary['tenant_email']) && $contractSummary['tenant_email'])
-                        <label class="flex items-center gap-2 text-sm cursor-pointer select-none">
-                            <input type="checkbox" wire:model.live="sendEmail" class="rounded accent-slate-700">
-                            <span>{!! __('finance.payments.send_receipt_email', ['email' => '<strong>'.$contractSummary['tenant_email'].'</strong>']) !!}</span>
-                        </label>
-                        @endif
+                        @can('receipts.send')
+                            @if(isset($contractSummary['tenant_email']) && $contractSummary['tenant_email'])
+                            <label class="flex items-center gap-2 text-sm cursor-pointer select-none">
+                                <input type="checkbox" wire:model.live="sendEmail" class="rounded accent-slate-700">
+                                <span>{!! __('finance.payments.send_receipt_email', ['email' => '<strong>'.$contractSummary['tenant_email'].'</strong>']) !!}</span>
+                            </label>
+                            @endif
+                        @endcan
                     </div>
 
                     <div class="mt-5 flex items-center justify-between gap-3">

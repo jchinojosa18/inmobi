@@ -161,7 +161,12 @@ class QuickRegisterModal extends Component
         }
 
         $tenantEmail = $payment->contract?->tenant?->email;
-        if ($this->sendEmail && is_string($tenantEmail) && $tenantEmail !== '') {
+        if (
+            $this->sendEmail
+            && (auth()->user()?->can('receipts.send') ?? false)
+            && is_string($tenantEmail)
+            && $tenantEmail !== ''
+        ) {
             Mail::to($tenantEmail)->send(new \App\Mail\PaymentReceiptMail($payment));
         }
 

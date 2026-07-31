@@ -76,6 +76,7 @@
         <p class="mt-1 text-sm text-slate-600">{{ __('finance.payments.share_mvp') }}</p>
 
         <div class="mt-4 grid gap-3 md:grid-cols-2">
+            @can('receipts.send')
             <div>
                 <x-ui.input
                     id="payment-email-recipient"
@@ -97,6 +98,7 @@
                 </x-ui.button>
                 <p class="mt-2 text-xs text-slate-500">{{ __('finance.payments.mailpit_hint') }}</p>
             </div>
+            @endcan
             <div>
                 <p class="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">{{ __('finance.payments.shareable_link') }}</p>
                 <textarea
@@ -130,6 +132,7 @@
         </x-ui.card>
     @endif
 
+    @can('receipts.send')
     <div
         x-data="{ sent: false, timer: null }"
         x-on:payment-receipt-email-sent.window="sent = true; clearTimeout(timer); timer = setTimeout(() => sent = false, 2500)"
@@ -159,6 +162,7 @@
             {{ __('finance.flash.message_sent') }}
         </div>
     </div>
+    @endcan
 
     <style>
         @keyframes paymentEmailProgress {

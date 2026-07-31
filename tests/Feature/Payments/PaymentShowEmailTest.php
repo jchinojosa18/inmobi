@@ -154,4 +154,41 @@ class PaymentShowEmailTest extends TestCase
 
         Mail::assertNothingSent();
     }
+
+    public function test_lectura_cannot_send_receipt_email(): void
+    {
+        Mail::fake();
+
+        $organization = Organization::factory()->create();
+        $viewer = User::factory()->create(['organization_id' => $organization->id]);
+        $viewer->syncRoles(['Lectura']);
+
+        $tenant = Tenant::factory()->create([
+            'organization_id' => $organization->id,
+            'email' => 'tenant@example.com',
+        ]);
+
+        $contract = Contract::factory()->create([
+            'organization_id' => $organization->id,
+            'tenant_id' => $tenant->id,
+        ]);
+
+        $payment = Payment::factory()->create([
+            'organization_id' => $organization->id,
+            'contract_id' => $contract->id,
+            'receipt_folio' => 'R-LECTURA-1',
+        ]);
+
+        $this->actingAs($viewer)
+            ->get(route('payments.show', $payment))
+            ->assertOk()
+            ->assertDontSee(__('finance.payments.send_email'));
+
+        Livewire::actingAs($viewer)
+            ->test(Show::class, ['payment' => $payment])
+            ->call('sendEmail')
+            ->assertForbidden();
+
+        Mail::assertNothingSent();
+    }
 }
