@@ -116,9 +116,38 @@ class OrganizationInvitationsTest extends TestCase
         $response = $this->get(route('invitations.accept', ['token' => $token]));
 
         $response->assertRedirect(route('register', ['invite' => $token]));
+
+        $this->followingRedirects()
+            ->get(route('register', ['invite' => $token]))
+            ->assertOk()
+            ->assertSee('value="guest.invite@test.dev"', false)
+            ->assertSee('readonly', false);
     }
 
-    public function test_invitation_link_sends_guest_with_existing_account_to_login(): void
+    public function test_register_page_keeps_invitation_email_after_validation_error(): void
+    {
+        [$organization, $admin] = $this->createOrganizationAdminPair();
+        $token = $this->createInvitationToken($organization->id, 'retry.invite@test.dev', 'Lectura', $admin->id);
+
+        $response = $this->from(route('register', ['invite' => $token]))
+            ->post(route('register.store'), [
+                'invite_token' => $token,
+                'name' => '',
+                'email' => 'retry.invite@test.dev',
+                'password' => 'password',
+                'password_confirmation' => 'password',
+            ]);
+
+        $response->assertRedirect(route('register', ['invite' => $token]));
+
+        $this->get(route('register', ['invite' => $token]))
+            ->assertOk()
+            ->assertSee('value="retry.invite@test.dev"', false)
+            ->assertSee('name="invite_token"', false)
+            ->assertSee($token, false);
+    }
+
+    public function test_invitation_link_prefills_login_email_for_existing_account(): void
     {
         [$organization, $admin] = $this->createOrganizationAdminPair();
         User::factory()->create([
@@ -129,8 +158,12 @@ class OrganizationInvitationsTest extends TestCase
 
         $response = $this->get(route('invitations.accept', ['token' => $token]));
 
-        $response->assertRedirect(route('login'));
+        $response->assertRedirect(route('login', ['invite' => $token]));
         $response->assertSessionHas('status');
+
+        $this->get(route('login', ['invite' => $token]))
+            ->assertOk()
+            ->assertSee('value="existing.guest@test.dev"', false);
     }
 
     public function test_register_with_invitation_joins_existing_org_without_creating_new_org(): void

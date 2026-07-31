@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AcceptOrganizationInvitationController;
+use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\ContractSettlementPdfController;
@@ -47,7 +48,7 @@ Route::get('/', function () {
 Route::post('/locale', LocaleController::class)->name('locale.update');
 
 Route::middleware('guest')->group(function (): void {
-    Route::view('/login', 'auth.login')->name('login');
+    Route::get('/login', [LoginController::class, 'show'])->name('login');
     Route::get('/register', [RegisterController::class, 'show'])->name('register');
 
     Route::post('/login', function (Request $request) {

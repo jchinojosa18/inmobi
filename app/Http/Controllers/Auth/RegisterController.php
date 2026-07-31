@@ -19,12 +19,10 @@ class RegisterController extends Controller
 {
     public function show(Request $request, OrganizationInvitationService $invitationService): View
     {
-        $invitation = null;
-        $inviteToken = trim((string) $request->query('invite', ''));
-
-        if ($inviteToken !== '') {
-            $invitation = $invitationService->findActiveByToken($inviteToken);
-        }
+        $inviteToken = $this->resolveInviteToken($request);
+        $invitation = $inviteToken !== ''
+            ? $invitationService->findActiveByToken($inviteToken)
+            : null;
 
         return view('auth.register', [
             'inviteToken' => $invitation !== null ? $inviteToken : null,
@@ -128,5 +126,16 @@ class RegisterController extends Controller
         }
 
         return redirect()->intended(route('dashboard'));
+    }
+
+    private function resolveInviteToken(Request $request): string
+    {
+        $token = trim((string) $request->query('invite', ''));
+
+        if ($token !== '') {
+            return $token;
+        }
+
+        return trim((string) old('invite_token', ''));
     }
 }

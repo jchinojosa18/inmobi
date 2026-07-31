@@ -33,7 +33,7 @@ class AcceptOrganizationInvitationController extends Controller
 
             if ($hasAccount) {
                 return redirect()
-                    ->guest(route('login'))
+                    ->guest(route('login', ['invite' => $token]))
                     ->with('status', 'Inicia sesión para aceptar tu invitación.');
             }
 

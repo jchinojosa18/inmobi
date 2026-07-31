@@ -39,7 +39,7 @@
             <form method="POST" action="{{ route('register.store') }}" class="space-y-5">
                 @csrf
                 @if ($isInvitationFlow)
-                    <input type="hidden" name="invite_token" value="{{ $inviteToken }}">
+                    <input type="hidden" name="invite_token" value="{{ old('invite_token', $inviteToken) }}">
                     <div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
                         Te unirás a: <strong>{{ $invitation->organization?->name ?? 'Organización' }}</strong>
                     </div>
