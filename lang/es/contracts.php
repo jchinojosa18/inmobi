@@ -134,6 +134,7 @@ return [
         'partial' => 'Parcial',
         'pending' => 'Pendiente',
         'guarantee' => 'Garantía',
+        'applied' => 'Aplicado',
     ],
     'flash' => [
         'adjustment_created' => 'Ajuste registrado correctamente.',

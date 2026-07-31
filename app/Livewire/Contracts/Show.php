@@ -397,7 +397,14 @@ class Show extends Component
     {
         $amount = round((float) $charge->amount, 2);
 
-        if ($this->isDepositLedgerType($charge->type)) {
+        if (
+            $charge->type === Charge::TYPE_ADJUSTMENT
+            && $amount < 0
+            && (bool) data_get($charge->meta, 'settled_as_credit')
+        ) {
+            $paid = $amount;
+            $balance = 0.0;
+        } elseif ($this->isDepositLedgerType($charge->type)) {
             // Guarantee received at registration — not cobranza balance.
             $paid = $amount;
             $balance = 0.0;
@@ -533,6 +540,14 @@ class Show extends Component
     ): array {
         if (in_array($charge->type, [Charge::TYPE_DEPOSIT_HOLD, Charge::TYPE_DEPOSIT_APPLY], true)) {
             return ['label' => __('contracts.charge_statuses.guarantee'), 'tone' => 'blue'];
+        }
+
+        if (
+            $charge->type === Charge::TYPE_ADJUSTMENT
+            && (float) $charge->amount < 0
+            && (bool) data_get($charge->meta, 'settled_as_credit')
+        ) {
+            return ['label' => __('contracts.charge_statuses.applied'), 'tone' => 'blue'];
         }
 
         if ($balance <= 0) {

@@ -134,6 +134,7 @@ return [
         'partial' => 'Partial',
         'pending' => 'Pending',
         'guarantee' => 'Guarantee',
+        'applied' => 'Applied',
     ],
     'flash' => [
         'adjustment_created' => 'Adjustment recorded successfully.',

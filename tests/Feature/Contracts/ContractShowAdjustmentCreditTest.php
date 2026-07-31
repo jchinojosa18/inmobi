@@ -104,6 +104,32 @@ class ContractShowAdjustmentCreditTest extends TestCase
         );
     }
 
+    public function test_settled_negative_adjustment_ledger_row_has_zero_balance(): void
+    {
+        [$user, $contract] = $this->makeContractWithCredit(credit: 0.0);
+
+        Livewire::actingAs($user)
+            ->test(Show::class, ['contract' => $contract])
+            ->set('adjustment_amount', '-50')
+            ->set('adjustment_charge_date', '2026-07-15')
+            ->set('adjustment_reason', 'Descuento')
+            ->call('createAdjustment')
+            ->assertHasNoErrors()
+            ->assertSee(__('contracts.charge_statuses.applied'));
+
+        $component = Livewire::actingAs($user)->test(Show::class, ['contract' => $contract]);
+        $groups = $component->viewData('ledgerGroups');
+        $row = collect($groups)->flatMap(fn ($g) => $g['rows'])->first(
+            fn (array $r): bool => $r['type'] === Charge::TYPE_ADJUSTMENT && $r['amount'] < 0
+        );
+
+        $this->assertNotNull($row);
+        $this->assertSame(-50.0, $row['amount']);
+        $this->assertSame(-50.0, $row['paid']);
+        $this->assertSame(0.0, $row['balance']);
+        $this->assertSame(__('contracts.charge_statuses.applied'), $row['status_label']);
+    }
+
     public function test_creating_negative_adjustment_applies_credit_to_pending_rent(): void
     {
         [$user, $contract] = $this->makeContractWithCredit(credit: 0.0, withUnpaidRent: 1000.0);
