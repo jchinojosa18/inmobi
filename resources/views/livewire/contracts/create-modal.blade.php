@@ -38,22 +38,22 @@
             </div>
 
             <div>
-                <x-ui.input :label="__('contracts.deposit').' *'" type="number" step="0.01" min="0" wire:model.blur="deposit_amount" />
+                <x-ui.input :label="__('contracts.deposit').' *'" type="number" step="0.01" min="0" wire:model.blur="deposit_amount" placeholder="0" />
                 @error('deposit_amount') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
             </div>
 
             <div>
-                <x-ui.input :label="__('contracts.due_day').' *'" type="number" min="1" max="31" wire:model.blur="due_day" />
+                <x-ui.input :label="__('contracts.due_day').' *'" type="number" min="1" max="31" wire:model.blur="due_day" placeholder="0" />
                 @error('due_day') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
             </div>
 
             <div>
-                <x-ui.input :label="__('contracts.grace_days').' *'" type="number" min="0" max="31" wire:model.blur="grace_days" />
+                <x-ui.input :label="__('contracts.grace_days').' *'" type="number" min="0" max="31" wire:model.blur="grace_days" placeholder="0" />
                 @error('grace_days') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
             </div>
 
             <div>
-                <x-ui.input :label="__('contracts.penalty_rate_daily').' *'" type="number" step="0.0001" min="0.01" max="100" wire:model.blur="penalty_rate_daily" />
+                <x-ui.input :label="__('contracts.penalty_rate_daily').' *'" type="number" step="0.01" min="0" max="100" wire:model.blur="penalty_rate_daily" placeholder="0.00" />
                 @error('penalty_rate_daily') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
             </div>
 

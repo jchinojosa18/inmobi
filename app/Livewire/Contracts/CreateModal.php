@@ -27,13 +27,13 @@ class CreateModal extends Component
 
     public string $rent_amount = '';
 
-    public string $deposit_amount = '0.00';
+    public string $deposit_amount = '';
 
-    public string $due_day = '1';
+    public string $due_day = '';
 
-    public string $grace_days = '5';
+    public string $grace_days = '';
 
-    public string $penalty_rate_daily = '5.0000';
+    public string $penalty_rate_daily = '';
 
     public string $status = Contract::STATUS_ACTIVE;
 
@@ -319,15 +319,15 @@ class CreateModal extends Component
     private function normalizePenaltyRateDaily(float $value): float
     {
         if ($value > 1) {
-            return round($value / 100, 6);
+            return round(round($value, 2) / 100, 4);
         }
 
-        return round($value, 6);
+        return round($value, 4);
     }
 
     private function toDisplayPenaltyRate(float $storedDecimalRate): string
     {
-        return number_format($storedDecimalRate * 100, 4, '.', '');
+        return number_format($storedDecimalRate * 100, 2, '.', '');
     }
 
     private function resetForm(): void
@@ -347,10 +347,10 @@ class CreateModal extends Component
             'meta_notes',
         ]);
 
-        $this->deposit_amount = '0.00';
-        $this->due_day = '1';
-        $this->grace_days = '5';
-        $this->penalty_rate_daily = '5.0000';
+        $this->deposit_amount = '';
+        $this->due_day = '';
+        $this->grace_days = '';
+        $this->penalty_rate_daily = '';
         $this->status = Contract::STATUS_ACTIVE;
         $this->starts_at = now()->toDateString();
         $this->resetValidation();

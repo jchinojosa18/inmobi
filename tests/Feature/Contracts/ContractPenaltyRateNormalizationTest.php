@@ -85,7 +85,7 @@ class ContractPenaltyRateNormalizationTest extends TestCase
         Livewire::actingAs($user)
             ->test(CreateModal::class)
             ->dispatch('open-contract-edit', contractId: $contract->id)
-            ->assertSet('penalty_rate_daily', '5.0000');
+            ->assertSet('penalty_rate_daily', '5.00');
     }
 
     public function test_it_blocks_rates_over_fifty_percent_daily_after_normalization(): void

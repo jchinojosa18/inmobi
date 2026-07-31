@@ -19,6 +19,19 @@ class ContractCreateModalTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_open_create_form_starts_with_empty_numeric_fields(): void
+    {
+        [$organization, $occupiedContract, $user] = $this->createContractGraph();
+
+        Livewire::actingAs($user)
+            ->test(CreateModal::class)
+            ->dispatch('open-contract-create')
+            ->assertSet('deposit_amount', '')
+            ->assertSet('due_day', '')
+            ->assertSet('grace_days', '')
+            ->assertSet('penalty_rate_daily', '');
+    }
+
     public function test_edit_modal_loads_contract_data(): void
     {
         [$organization, $contract, $user] = $this->createContractGraph();
@@ -31,7 +44,7 @@ class ContractCreateModalTest extends TestCase
             ->assertSet('unit_id', $contract->unit_id)
             ->assertSet('tenant_id', $contract->tenant_id)
             ->assertSet('rent_amount', (string) $contract->rent_amount)
-            ->assertSet('penalty_rate_daily', '5.0000');
+            ->assertSet('penalty_rate_daily', '5.00');
     }
 
     public function test_edit_modal_updates_contract_and_dispatches_event(): void
