@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="utf-8">
-    <title>Recibo de pago</title>
+    <title>{{ $organizationName }}</title>
 </head>
 <body style="font-family: Arial, sans-serif; color: #0f172a;">
     <h2 style="margin-bottom: 4px;">Recibo de pago {{ $receipt['folio'] }}</h2>

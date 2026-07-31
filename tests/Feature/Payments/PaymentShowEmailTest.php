@@ -49,8 +49,9 @@ class PaymentShowEmailTest extends TestCase
             ->assertHasNoErrors()
             ->assertDispatched('payment-receipt-email-sent');
 
-        Mail::assertSent(PaymentReceiptMail::class, function (PaymentReceiptMail $mail) {
-            return $mail->hasTo('tenant@example.com');
+        Mail::assertSent(PaymentReceiptMail::class, function (PaymentReceiptMail $mail) use ($organization) {
+            return $mail->hasTo('tenant@example.com')
+                && $mail->envelope()->from->name === $organization->name;
         });
 
         Mail::assertNotSent(PaymentReceiptMail::class, function (PaymentReceiptMail $mail) {

@@ -10,6 +10,9 @@ return [
     'invitations_card_description' => 'Administra invitaciones para sumar usuarios a tu organización.',
     'plazas' => 'Plazas',
     'plazas_card_description' => 'Gestiona plazas y configuración multi-ciudad.',
+    'organization' => 'Empresa',
+    'organization_description' => 'Nombre visible en correos, invitaciones y la barra superior.',
+    'organization_name' => 'Nombre de la empresa',
     'receipt_folios' => 'Folios de recibo',
     'receipt_folios_description' => 'Configuración usada al generar `receipt_folio` por organización.',
     'folio_mode' => 'Modo',
@@ -174,6 +177,9 @@ return [
     ],
 
     'validation' => [
+        'organization_name_required' => 'El nombre de la empresa es obligatorio.',
+        'organization_name_max' => 'El nombre no debe exceder 160 caracteres.',
+        'organization_name_unique' => 'Ese nombre de empresa ya está registrado.',
         'folio_mode_required' => 'Selecciona un modo de folio.',
         'folio_mode_invalid' => 'El modo de folio no es válido.',
         'folio_prefix_max' => 'El prefijo no debe exceder 20 caracteres.',

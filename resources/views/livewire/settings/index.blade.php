@@ -30,10 +30,25 @@
     </div>
 
     <x-ui.card>
-        <h2 class="text-lg font-semibold text-slate-900">{{ __('settings.receipt_folios') }}</h2>
-        <p class="mt-1 text-sm text-slate-600">{{ __('settings.receipt_folios_description') }}</p>
+        <h2 class="text-lg font-semibold text-slate-900">{{ __('settings.organization') }}</h2>
+        <p class="mt-1 text-sm text-slate-600">{{ __('settings.organization_description') }}</p>
 
         <form wire:submit="saveSettings" class="mt-4 grid gap-4 md:grid-cols-3">
+            <div class="md:col-span-3">
+                <x-ui.input
+                    :label="__('settings.organization_name')"
+                    type="text"
+                    wire:model.blur="organizationName"
+                    :disabled="! $canManageSettings"
+                />
+                @error('organizationName') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+            </div>
+
+            <div class="md:col-span-3 border-t border-slate-100 pt-4">
+                <h3 class="text-base font-semibold text-slate-900">{{ __('settings.receipt_folios') }}</h3>
+                <p class="mt-1 text-sm text-slate-600">{{ __('settings.receipt_folios_description') }}</p>
+            </div>
+
             <div>
                 <x-ui.select :label="__('settings.folio_mode')" wire:model="receiptFolioMode" :disabled="! $canManageSettings">
                     <option value="annual">{{ __('settings.folio_mode_annual') }}</option>

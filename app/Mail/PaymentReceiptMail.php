@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Payment;
+use App\Support\OrganizationMailSender;
 use App\Support\OrganizationSettingsService;
 use App\Support\PaymentReceiptDataBuilder;
 use App\Support\PaymentReceiptShareUrl;
@@ -21,7 +22,10 @@ class PaymentReceiptMail extends Mailable
 
     public function envelope(): Envelope
     {
+        $organizationName = (string) ($this->payment->organization?->name ?? '');
+
         return new Envelope(
+            from: OrganizationMailSender::fromAddress($organizationName),
             subject: 'Recibo de pago '.$this->payment->receipt_folio,
         );
     }
@@ -29,6 +33,7 @@ class PaymentReceiptMail extends Mailable
     public function content(): Content
     {
         $payment = $this->payment->fresh();
+        $organizationName = (string) ($payment->organization?->name ?? '');
         $receipt = app(PaymentReceiptDataBuilder::class)->build($payment);
         $shareUrl = PaymentReceiptShareUrl::make($payment->id);
         $settingsService = app(OrganizationSettingsService::class);
@@ -47,6 +52,7 @@ class PaymentReceiptMail extends Mailable
         return new Content(
             view: 'emails.payment-receipt',
             with: [
+                'organizationName' => $organizationName,
                 'receipt' => $receipt,
                 'shareUrl' => $shareUrl,
                 'messageBody' => $messageBody,

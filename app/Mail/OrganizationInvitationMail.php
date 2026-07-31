@@ -5,6 +5,7 @@ namespace App\Mail;
 use App\Models\OrganizationInvitation;
 use App\Models\User;
 use App\Support\DateDisplay;
+use App\Support\OrganizationMailSender;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -26,6 +27,7 @@ class OrganizationInvitationMail extends Mailable
         $organizationName = (string) ($this->invitation->organization?->name ?? 'la empresa');
 
         return new Envelope(
+            from: OrganizationMailSender::fromAddress($organizationName),
             subject: 'Invitación para unirte a '.$organizationName,
         );
     }

@@ -10,6 +10,9 @@ return [
     'invitations_card_description' => 'Manage invitations to add users to your organization.',
     'plazas' => 'Plazas',
     'plazas_card_description' => 'Manage plazas and multi-city configuration.',
+    'organization' => 'Company',
+    'organization_description' => 'Name shown in emails, invitations, and the top bar.',
+    'organization_name' => 'Company name',
     'receipt_folios' => 'Receipt folios',
     'receipt_folios_description' => 'Configuration used when generating `receipt_folio` per organization.',
     'folio_mode' => 'Mode',
@@ -174,6 +177,9 @@ return [
     ],
 
     'validation' => [
+        'organization_name_required' => 'Company name is required.',
+        'organization_name_max' => 'The name must not exceed 160 characters.',
+        'organization_name_unique' => 'That company name is already registered.',
         'folio_mode_required' => 'Select a folio mode.',
         'folio_mode_invalid' => 'The folio mode is not valid.',
         'folio_prefix_max' => 'The prefix must not exceed 20 characters.',

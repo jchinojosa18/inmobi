@@ -3,6 +3,7 @@
 namespace App\Livewire\Settings;
 
 use App\Models\ExpenseCategory;
+use App\Models\Organization;
 use App\Models\OrganizationSetting;
 use App\Support\AuditLogger;
 use App\Support\OrganizationSettingsService;
@@ -12,6 +13,8 @@ use Livewire\Component;
 
 class Index extends Component
 {
+    public string $organizationName = '';
+
     public string $receiptFolioMode = OrganizationSetting::RECEIPT_MODE_ANNUAL;
 
     public string $receiptFolioPrefix = '';
@@ -42,6 +45,7 @@ class Index extends Component
 
         $settings = $settingsService->current();
 
+        $this->organizationName = (string) (auth()->user()?->organization?->name ?? '');
         $this->receiptFolioMode = (string) $settings['receipt_folio_mode'];
         $this->receiptFolioPrefix = (string) $settings['receipt_folio_prefix'];
         $this->receiptFolioPadding = (string) $settings['receipt_folio_padding'];
@@ -53,13 +57,24 @@ class Index extends Component
     {
         $this->assertCanManageSettings();
 
+        $organizationId = (int) auth()->user()?->organization_id;
+
         $validated = $this->validate([
+            'organizationName' => [
+                'required',
+                'string',
+                'max:160',
+                Rule::unique('organizations', 'name')->ignore($organizationId),
+            ],
             'receiptFolioMode' => ['required', Rule::in(OrganizationSetting::RECEIPT_MODES)],
             'receiptFolioPrefix' => ['nullable', 'string', 'max:20'],
             'receiptFolioPadding' => ['required', 'integer', 'min:3', 'max:10'],
             'whatsAppTemplate' => ['required', 'string', 'max:2000'],
             'emailTemplate' => ['required', 'string', 'max:4000'],
         ], [
+            'organizationName.required' => __('settings.validation.organization_name_required'),
+            'organizationName.max' => __('settings.validation.organization_name_max'),
+            'organizationName.unique' => __('settings.validation.organization_name_unique'),
             'receiptFolioMode.required' => __('settings.validation.folio_mode_required'),
             'receiptFolioMode.in' => __('settings.validation.folio_mode_invalid'),
             'receiptFolioPrefix.max' => __('settings.validation.folio_prefix_max'),
@@ -72,6 +87,12 @@ class Index extends Component
             'emailTemplate.required' => __('settings.validation.email_required'),
             'emailTemplate.max' => __('settings.validation.email_max'),
         ]);
+
+        Organization::query()
+            ->whereKey($organizationId)
+            ->update([
+                'name' => trim((string) $validated['organizationName']),
+            ]);
 
         OrganizationSetting::query()->updateOrCreate(
             ['organization_id' => (int) auth()->user()?->organization_id],
@@ -91,6 +112,7 @@ class Index extends Component
             auditable: null,
             summary: __('settings.audit_summary.settings_updated'),
             meta: [
+                'organization_name' => trim((string) $validated['organizationName']),
                 'receipt_folio_mode' => $validated['receiptFolioMode'],
                 'receipt_folio_prefix' => $validated['receiptFolioPrefix'] ?? null,
                 'receipt_folio_padding' => $validated['receiptFolioPadding'],

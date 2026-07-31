@@ -39,8 +39,9 @@ class OrganizationInvitationsTest extends TestCase
             'revoked_at' => null,
         ]);
 
-        Mail::assertSent(OrganizationInvitationMail::class, function (OrganizationInvitationMail $mail) {
-            return $mail->hasTo('nuevo.usuario@test.dev');
+        Mail::assertSent(OrganizationInvitationMail::class, function (OrganizationInvitationMail $mail) use ($organization) {
+            return $mail->hasTo('nuevo.usuario@test.dev')
+                && $mail->envelope()->from->name === $organization->name;
         });
     }
 

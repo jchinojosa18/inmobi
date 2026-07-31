@@ -59,6 +59,7 @@ class OrganizationSettingsTest extends TestCase
         $this->actingAs($adminA);
 
         Livewire::test(SettingsIndex::class)
+            ->set('organizationName', 'Inmobiliaria Renovada')
             ->set('receiptFolioMode', OrganizationSetting::RECEIPT_MODE_CONTINUOUS)
             ->set('receiptFolioPrefix', 'FAC')
             ->set('receiptFolioPadding', '4')
@@ -71,6 +72,11 @@ class OrganizationSettingsTest extends TestCase
             'receipt_folio_mode' => OrganizationSetting::RECEIPT_MODE_CONTINUOUS,
             'receipt_folio_prefix' => 'FAC',
             'receipt_folio_padding' => 4,
+        ]);
+
+        $this->assertDatabaseHas('organizations', [
+            'id' => $organizationA->id,
+            'name' => 'Inmobiliaria Renovada',
         ]);
 
         Livewire::test(SettingsIndex::class)
@@ -117,5 +123,26 @@ class OrganizationSettingsTest extends TestCase
             ->call('confirmDeleteExpenseCategory', $category->id)
             ->assertDontSee('<script>alert(1)</script>', false)
             ->assertSee('&lt;script&gt;alert(1)&lt;/script&gt;', false);
+    }
+
+    public function test_organization_name_must_be_unique_across_organizations(): void
+    {
+        Role::findOrCreate('Admin', 'web');
+
+        $organizationA = Organization::factory()->create(['name' => 'Empresa A']);
+        $organizationB = Organization::factory()->create(['name' => 'Empresa B']);
+
+        $adminA = User::factory()->create(['organization_id' => $organizationA->id]);
+        $adminA->assignRole('Admin');
+
+        Livewire::actingAs($adminA)
+            ->test(SettingsIndex::class)
+            ->set('organizationName', 'Empresa B')
+            ->set('receiptFolioMode', OrganizationSetting::RECEIPT_MODE_ANNUAL)
+            ->set('receiptFolioPadding', '6')
+            ->set('whatsAppTemplate', 'Hola {tenant_name}')
+            ->set('emailTemplate', 'Hola {tenant_name}')
+            ->call('saveSettings')
+            ->assertHasErrors(['organizationName' => 'unique']);
     }
 }
