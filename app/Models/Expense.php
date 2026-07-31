@@ -20,7 +20,8 @@ class Expense extends OrganizationScopedModel
     protected $fillable = [
         'organization_id',
         'unit_id',
-        'category',
+        'expense_category_id',
+        'contract_id',
         'amount',
         'spent_at',
         'vendor',
@@ -72,6 +73,22 @@ class Expense extends OrganizationScopedModel
     }
 
     /**
+     * @return BelongsTo<ExpenseCategory, $this>
+     */
+    public function expenseCategory(): BelongsTo
+    {
+        return $this->belongsTo(ExpenseCategory::class);
+    }
+
+    /**
+     * @return BelongsTo<Contract, $this>
+     */
+    public function contract(): BelongsTo
+    {
+        return $this->belongsTo(Contract::class);
+    }
+
+    /**
      * @return MorphMany<Document, $this>
      */
     public function documents(): MorphMany
@@ -86,7 +103,8 @@ class Expense extends OrganizationScopedModel
     {
         return [
             'unit_id',
-            'category',
+            'expense_category_id',
+            'contract_id',
             'amount',
             'spent_at',
             'vendor',

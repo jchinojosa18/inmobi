@@ -22,6 +22,14 @@ class ExpenseCategoryFactory extends Factory
             'organization_id' => Organization::factory(),
             'name' => strtoupper(fake()->unique()->words(2, true)),
             'is_active' => true,
+            'is_system' => false,
         ];
+    }
+
+    public function system(): static
+    {
+        return $this->state(fn (): array => [
+            'is_system' => true,
+        ]);
     }
 }

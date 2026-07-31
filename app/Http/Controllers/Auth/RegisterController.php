@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Actions\Expenses\SeedDefaultExpenseCategoriesAction;
 use App\Http\Controllers\Controller;
 use App\Models\Organization;
 use App\Models\User;
@@ -103,6 +104,7 @@ class RegisterController extends Controller
             $organization->save();
 
             $organization->ensureDefaultPlaza($user->id);
+            app(SeedDefaultExpenseCategoriesAction::class)->execute((int) $organization->id);
             $organization->defaultPlaza()
                 ->withoutOrganizationScope()
                 ->update([

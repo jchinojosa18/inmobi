@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Expense;
+use App\Models\ExpenseCategory;
 use App\Models\Organization;
 use App\Models\Unit;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -24,7 +25,10 @@ class ExpenseFactory extends Factory
             'unit_id' => Unit::factory()->state(fn (array $attributes): array => [
                 'organization_id' => $attributes['organization_id'],
             ]),
-            'category' => fake()->randomElement(['maintenance', 'services', 'supplies', 'other']),
+            'expense_category_id' => ExpenseCategory::factory()->state(fn (array $attributes): array => [
+                'organization_id' => $attributes['organization_id'],
+            ]),
+            'contract_id' => null,
             'amount' => fake()->randomFloat(2, 100, 20000),
             'spent_at' => fake()->date(),
             'vendor' => fake()->optional()->company(),

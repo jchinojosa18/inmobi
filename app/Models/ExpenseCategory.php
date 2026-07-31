@@ -4,8 +4,10 @@ namespace App\Models;
 
 use App\Domain\Shared\OrganizationScopedModel;
 use App\Models\Concerns\Auditable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ExpenseCategory extends OrganizationScopedModel
@@ -19,6 +21,7 @@ class ExpenseCategory extends OrganizationScopedModel
         'organization_id',
         'name',
         'is_active',
+        'is_system',
     ];
 
     /**
@@ -28,7 +31,34 @@ class ExpenseCategory extends OrganizationScopedModel
     {
         return [
             'is_active' => 'boolean',
+            'is_system' => 'boolean',
         ];
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('is_active', true);
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeSystem(Builder $query): Builder
+    {
+        return $query->where('is_system', true);
+    }
+
+    /**
+     * @return HasMany<Expense, $this>
+     */
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(Expense::class);
     }
 
     /**

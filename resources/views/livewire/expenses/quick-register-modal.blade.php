@@ -67,75 +67,40 @@
                     </div>
 
                     <div>
-                        <x-ui.input
-                            id="qem-category"
-                            :label="__('common.category').' *'"
-                            type="text"
-                            list="qem-categories-list"
-                            wire:model.blur="category"
-                            :placeholder="__('finance.expenses.category_placeholder')"
-                            autocomplete="off"
-                        />
-                        <datalist id="qem-categories-list">
-                            @foreach($categories as $cat)
-                                <option value="{{ $cat }}"></option>
+                        <x-ui.select id="qem-category" :label="__('common.category').' *'" wire:model.blur="expenseCategoryId">
+                            <option value="">{{ __('common.select') }}</option>
+                            @foreach ($categories as $category)
+                                <option value="{{ $category->id }}">{{ $category->name }}</option>
                             @endforeach
-                        </datalist>
-                        @error('category') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                        </x-ui.select>
+                        @error('expenseCategoryId') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
-                        <label class="mb-2 block text-xs font-medium text-slate-700">{{ __('finance.expenses.assignment') }}</label>
-                        <div class="flex gap-4">
-                            <label class="flex items-center gap-2 text-sm cursor-pointer select-none">
-                                <input type="radio" wire:model.live="scope" value="general" class="accent-slate-700">
-                                {{ __('finance.expenses.general_expense') }}
-                            </label>
-                            <label class="flex items-center gap-2 text-sm cursor-pointer select-none">
-                                <input type="radio" wire:model.live="scope" value="unit" class="accent-slate-700">
-                                {{ __('finance.expenses.assign_to_unit') }}
-                            </label>
-                        </div>
-                    </div>
-
-                    @if($scope === 'unit')
-                    <div x-data>
-                        <label class="mb-1 block text-xs font-medium text-slate-700">{{ __('common.unit') }} *</label>
-                        <div class="relative">
-                            <input
-                                id="qem-unit-input"
-                                type="text"
-                                wire:model.live.debounce.200ms="unitQuery"
-                                wire:keydown.escape="$set('unitResults', [])"
-                                :placeholder="__('finance.expenses.unit_search_placeholder')"
-                                autocomplete="off"
-                                class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
-                            >
-
-                            @if(count($unitResults) > 0)
-                            <ul class="absolute left-0 right-0 top-full z-20 mt-1 max-h-48 overflow-y-auto divide-y divide-slate-100 rounded-md border border-slate-200 bg-white shadow-md">
-                                @foreach($unitResults as $result)
-                                <li>
-                                    <button
-                                        type="button"
-                                        wire:click="selectUnit({{ $result['id'] }})"
-                                        class="w-full px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-50"
-                                    >
-                                        {{ $result['label'] }}
-                                    </button>
-                                </li>
-                                @endforeach
-                            </ul>
-                            @endif
-                        </div>
-
-                        @if($unitId)
-                            <p class="mt-1 text-xs text-emerald-700">
-                                {{ __('finance.expenses.unit_selected', ['id' => $unitId]) }}
-                            </p>
-                        @endif
+                        <x-ui.select id="qem-unit" :label="__('finance.expenses.assignment')" wire:model.live="unitId">
+                            <option value="">{{ __('finance.expenses.general_expense') }}</option>
+                            @foreach ($units as $unit)
+                                <option value="{{ $unit->id }}">
+                                    {{ trim($unit->property_name.' / '.$unit->name.($unit->code ? " ({$unit->code})" : '')) }}
+                                </option>
+                            @endforeach
+                        </x-ui.select>
                         @error('unitId') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
+
+                    @if ($unitId)
+                        <div>
+                            <x-ui.select id="qem-contract" :label="__('common.contract').' ('.__('common.optional').')'" wire:model.blur="contractId">
+                                <option value="">{{ __('common.none') }}</option>
+                                @foreach ($contracts as $contract)
+                                    <option value="{{ $contract->id }}">
+                                        {{ $contract->tenant?->full_name ?? __('finance.cash_flow.no_tenant') }}
+                                        — {{ $contract->status === 'active' ? __('contracts.status_active') : __('contracts.status_ended') }}
+                                    </option>
+                                @endforeach
+                            </x-ui.select>
+                            @error('contractId') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                        </div>
                     @endif
 
                     <div class="grid gap-3 sm:grid-cols-2">

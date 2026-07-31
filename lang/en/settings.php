@@ -198,6 +198,8 @@ return [
         'category_required' => 'The category is required.',
         'category_max' => 'The category must not exceed 100 characters.',
         'category_unique' => 'This category already exists in the organization.',
+        'category_in_use' => 'Cannot delete: this category has recorded expenses. Deactivate it instead.',
+        'category_system_delete_forbidden' => 'System categories cannot be deleted.',
         'plaza_name_required' => 'The plaza name is required.',
         'plaza_name_max' => 'The name must not exceed 120 characters.',
         'plaza_name_unique' => 'A plaza with that name already exists in this organization.',

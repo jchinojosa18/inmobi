@@ -47,8 +47,12 @@ class DepositBalanceService
         return round((float) Expense::query()
             ->withoutOrganizationScope()
             ->where('organization_id', $contract->organization_id)
-            ->where('category', 'Refund deposit')
-            ->where('meta->contract_id', $contract->id)
+            ->where('contract_id', $contract->id)
+            ->whereHas('expenseCategory', fn ($query) => $query
+                ->withoutOrganizationScope()
+                ->where('organization_id', $contract->organization_id)
+                ->where('is_system', true)
+                ->where('name', 'REEMBOLSO DEPÓSITO'))
             ->sum('amount'), 2);
     }
 

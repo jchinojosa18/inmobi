@@ -27,6 +27,8 @@ return [
     'search' => 'Search',
     'status' => 'Status',
     'all' => 'All',
+    'select' => 'Select',
+    'none' => 'None',
     'inactive' => 'Inactive',
     'edit' => 'Edit',
     'view' => 'View',

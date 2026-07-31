@@ -8,7 +8,6 @@ use App\Models\Unit;
 use App\Support\TenantContext;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -16,6 +15,12 @@ use Livewire\WithPagination;
 class Index extends Component
 {
     use WithPagination;
+
+    public const ASSIGNMENT_ALL = 'all';
+
+    public const ASSIGNMENT_GENERAL = 'general';
+
+    public const ASSIGNMENT_UNIT = 'unit';
 
     #[On('expense-created')]
     public function onExpenseCreated(): void
@@ -27,23 +32,11 @@ class Index extends Component
 
     public ?string $dateToFilter = null;
 
-    public ?int $unitFilter = null;
+    public string $unitFilter = '';
 
     public string $categoryFilter = '';
 
-    public bool $showForm = false;
-
-    public string $category = '';
-
-    public string $amount = '';
-
-    public string $spent_at = '';
-
-    public ?int $unit_id = null;
-
-    public ?string $vendor = null;
-
-    public ?string $notes = null;
+    public string $assignmentFilter = self::ASSIGNMENT_ALL;
 
     /**
      * @var array<string, array<string, string>>
@@ -53,6 +46,7 @@ class Index extends Component
         'dateToFilter' => ['except' => ''],
         'unitFilter' => ['except' => ''],
         'categoryFilter' => ['except' => ''],
+        'assignmentFilter' => ['except' => self::ASSIGNMENT_ALL],
     ];
 
     public function mount(): void
@@ -60,8 +54,6 @@ class Index extends Component
         if (! (auth()->user()?->can('expenses.view') ?? false)) {
             abort(403);
         }
-
-        $this->spent_at = now()->toDateString();
     }
 
     public function updatingDateFromFilter(): void
@@ -84,101 +76,71 @@ class Index extends Component
         $this->resetPage();
     }
 
-    public function startCreate(): void
+    public function updatingAssignmentFilter(): void
     {
-        if (! (auth()->user()?->can('expenses.create') ?? false)) {
-            abort(403);
-        }
-
-        $this->resetForm();
-        $this->showForm = true;
-    }
-
-    public function cancelForm(): void
-    {
-        $this->resetForm();
-    }
-
-    public function save(): void
-    {
-        if (! (auth()->user()?->can('expenses.create') ?? false)) {
-            abort(403);
-        }
-
-        $validated = $this->validate($this->rules(), $this->messages());
-
-        try {
-            Expense::query()->create([
-                'organization_id' => auth()->user()?->organization_id,
-                'unit_id' => $validated['unit_id'] ?: null,
-                'category' => strtoupper(trim($validated['category'])),
-                'amount' => $validated['amount'],
-                'spent_at' => $validated['spent_at'],
-                'vendor' => $validated['vendor'] ?: null,
-                'notes' => $validated['notes'] ?: null,
-                'meta' => [],
-            ]);
-        } catch (ValidationException $exception) {
-            $message = $exception->errors()['month_close'][0] ?? __('finance.validation.expense_failed');
-            $this->addError('month_close', $message);
-
-            return;
-        }
-
-        session()->flash('success', __('finance.flash.expense_created'));
-
-        $this->resetForm();
         $this->resetPage();
+    }
+
+    public function clearFilters(): void
+    {
+        $this->dateFromFilter = null;
+        $this->dateToFilter = null;
+        $this->unitFilter = '';
+        $this->categoryFilter = '';
+        $this->assignmentFilter = self::ASSIGNMENT_ALL;
+        $this->resetPage();
+    }
+
+    public function hasActiveFilters(): bool
+    {
+        return filled($this->dateFromFilter)
+            || filled($this->dateToFilter)
+            || $this->unitFilter !== ''
+            || $this->categoryFilter !== ''
+            || $this->assignmentFilter !== self::ASSIGNMENT_ALL;
     }
 
     public function render(): View
     {
         $unitsQuery = Unit::query()
             ->join('properties', 'properties.id', '=', 'units.property_id')
+            ->orderBy('properties.name')
             ->orderBy('units.name')
-            ->select(['units.id', 'units.name', 'units.code']);
+            ->select(['units.id', 'units.name', 'units.code', 'properties.name as property_name']);
 
         TenantContext::applyCurrentPlazaFilter($unitsQuery, 'properties.plaza_id');
 
         $units = $unitsQuery->get();
 
-        $configuredCategories = ExpenseCategory::query()
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->pluck('name')
-            ->values();
-
         $currentPlazaId = TenantContext::currentPlazaId();
 
-        $historicCategories = Expense::query()
-            ->when($currentPlazaId !== null, function (Builder $query) use ($currentPlazaId): void {
-                $query->whereHas('unit.property', function (Builder $propertyQuery) use ($currentPlazaId): void {
-                    $propertyQuery->where('plaza_id', $currentPlazaId);
-                });
-            })
-            ->select('category')
-            ->distinct()
-            ->orderBy('category')
-            ->pluck('category')
-            ->values();
-
-        $categories = $configuredCategories
-            ->merge($historicCategories)
-            ->filter(fn ($category) => is_string($category) && trim($category) !== '')
-            ->unique()
-            ->values();
-
-        $expenses = Expense::query()
-            ->with(['unit.property'])
-            ->when($currentPlazaId !== null, function (Builder $query) use ($currentPlazaId): void {
-                $query->whereHas('unit.property', function (Builder $propertyQuery) use ($currentPlazaId): void {
-                    $propertyQuery->where('plaza_id', $currentPlazaId);
-                });
-            })
+        $scopedExpensesQuery = Expense::query()
+            ->when($currentPlazaId !== null, fn (Builder $query) => $this->applyPlazaScope($query, $currentPlazaId))
+            ->when($currentPlazaId === null, fn (Builder $query) => $this->applyAssignmentScope($query))
             ->when($this->dateFromFilter, fn ($query) => $query->whereDate('spent_at', '>=', $this->dateFromFilter))
             ->when($this->dateToFilter, fn ($query) => $query->whereDate('spent_at', '<=', $this->dateToFilter))
-            ->when($this->unitFilter, fn ($query) => $query->where('unit_id', $this->unitFilter))
-            ->when($this->categoryFilter !== '', fn ($query) => $query->where('category', $this->categoryFilter))
+            ->when($this->unitFilter !== '', fn ($query) => $query->where('unit_id', (int) $this->unitFilter));
+
+        $categoryIdsInScope = (clone $scopedExpensesQuery)
+            ->select('expense_category_id')
+            ->distinct()
+            ->pluck('expense_category_id')
+            ->filter()
+            ->values();
+
+        $categoriesQuery = ExpenseCategory::query()->active();
+
+        if ($categoryIdsInScope->isNotEmpty()) {
+            $categoriesQuery->whereIn('id', $categoryIdsInScope);
+        }
+
+        $categories = $categoriesQuery
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        $expenses = (clone $scopedExpensesQuery)
+            ->with(['unit.property', 'expenseCategory', 'contract.tenant'])
+            ->when($this->categoryFilter !== '', fn ($query) => $query->where('expense_category_id', (int) $this->categoryFilter))
             ->latest('spent_at')
             ->latest('id')
             ->paginate(10);
@@ -188,54 +150,35 @@ class Index extends Component
             'units' => $units,
             'categories' => $categories,
             'canCreateExpenses' => auth()->user()?->can('expenses.create') ?? false,
+            'hasActiveFilters' => $this->hasActiveFilters(),
         ])->layout('layouts.app', ['title' => __('finance.expenses.title')]);
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    private function rules(): array
+    private function applyPlazaScope(Builder $query, int $plazaId): void
     {
-        return [
-            'unit_id' => ['nullable', 'integer', 'exists:units,id'],
-            'category' => ['required', 'string', 'max:100'],
-            'amount' => ['required', 'numeric', 'min:0.01'],
-            'spent_at' => ['required', 'date'],
-            'vendor' => ['nullable', 'string', 'max:150'],
-            'notes' => ['nullable', 'string', 'max:1000'],
-        ];
+        $query->where(function (Builder $scoped) use ($plazaId): void {
+            if ($this->assignmentFilter !== self::ASSIGNMENT_UNIT) {
+                $scoped->whereNull('unit_id');
+            }
+
+            if ($this->assignmentFilter !== self::ASSIGNMENT_GENERAL) {
+                $scoped->orWhereHas('unit.property', function (Builder $propertyQuery) use ($plazaId): void {
+                    $propertyQuery->where('plaza_id', $plazaId);
+                });
+            }
+        });
     }
 
-    /**
-     * @return array<string, string>
-     */
-    private function messages(): array
+    private function applyAssignmentScope(Builder $query): void
     {
-        return [
-            'category.required' => __('finance.validation.category_required'),
-            'category.max' => __('finance.validation.category_max'),
-            'amount.required' => __('finance.validation.amount_required'),
-            'amount.numeric' => __('finance.validation.amount_numeric'),
-            'amount.min' => __('finance.validation.amount_min'),
-            'spent_at.required' => __('finance.validation.spent_at_required'),
-            'spent_at.date' => __('finance.validation.spent_at_invalid'),
-            'unit_id.exists' => __('finance.validation.unit_invalid'),
-            'vendor.max' => __('finance.validation.vendor_max'),
-            'notes.max' => __('finance.validation.notes_max'),
-        ];
-    }
+        if ($this->assignmentFilter === self::ASSIGNMENT_GENERAL) {
+            $query->whereNull('unit_id');
 
-    private function resetForm(): void
-    {
-        $this->reset([
-            'unit_id',
-            'category',
-            'amount',
-            'vendor',
-            'notes',
-        ]);
-        $this->spent_at = now()->toDateString();
-        $this->showForm = false;
-        $this->resetValidation();
+            return;
+        }
+
+        if ($this->assignmentFilter === self::ASSIGNMENT_UNIT) {
+            $query->whereNotNull('unit_id');
+        }
     }
 }

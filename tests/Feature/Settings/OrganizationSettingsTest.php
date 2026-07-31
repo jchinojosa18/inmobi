@@ -147,6 +147,51 @@ class OrganizationSettingsTest extends TestCase
             ->assertHasErrors(['organizationName' => 'unique']);
     }
 
+    public function test_cannot_delete_system_expense_category(): void
+    {
+        Role::findOrCreate('Admin', 'web');
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->create(['organization_id' => $organization->id]);
+        $admin->assignRole('Admin');
+
+        $category = ExpenseCategory::factory()->system()->create([
+            'organization_id' => $organization->id,
+            'name' => 'MANTENIMIENTO',
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(SettingsIndex::class)
+            ->call('deleteExpenseCategory', $category->id)
+            ->assertHasErrors(['expenseCategory']);
+
+        $this->assertDatabaseHas('expense_categories', ['id' => $category->id]);
+    }
+
+    public function test_cannot_delete_expense_category_in_use(): void
+    {
+        Role::findOrCreate('Admin', 'web');
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->create(['organization_id' => $organization->id]);
+        $admin->assignRole('Admin');
+
+        $category = ExpenseCategory::factory()->create([
+            'organization_id' => $organization->id,
+            'name' => 'CUSTOM',
+        ]);
+
+        \App\Models\Expense::factory()->create([
+            'organization_id' => $organization->id,
+            'expense_category_id' => $category->id,
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(SettingsIndex::class)
+            ->call('deleteExpenseCategory', $category->id)
+            ->assertHasErrors(['expenseCategory']);
+
+        $this->assertDatabaseHas('expense_categories', ['id' => $category->id]);
+    }
+
     public function test_save_settings_button_disables_while_saving_and_shows_saved_toast_copy(): void
     {
         Role::findOrCreate('Admin', 'web');

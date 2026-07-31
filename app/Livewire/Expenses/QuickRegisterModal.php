@@ -2,13 +2,15 @@
 
 namespace App\Livewire\Expenses;
 
+use App\Actions\Expenses\RegisterExpenseAction;
+use App\Models\Contract;
 use App\Models\Document;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use App\Models\Unit;
 use App\Support\AuditLogger;
+use App\Support\TenantContext;
 use Illuminate\Contracts\View\View;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -24,16 +26,11 @@ class QuickRegisterModal extends Component
 
     public string $amount = '';
 
-    public string $category = '';
-
-    public string $scope = 'general';
+    public ?int $expenseCategoryId = null;
 
     public ?int $unitId = null;
 
-    public string $unitQuery = '';
-
-    /** @var array<int, array<string, mixed>> */
-    public array $unitResults = [];
+    public ?int $contractId = null;
 
     public string $vendor = '';
 
@@ -53,13 +50,7 @@ class QuickRegisterModal extends Component
         $this->open = true;
 
         if ($unitId !== null) {
-            $this->scope = 'unit';
             $this->unitId = $unitId;
-            $unit = Unit::query()->with('property')->find($unitId);
-            if ($unit !== null) {
-                $code = $unit->code ? " ({$unit->code})" : '';
-                $this->unitQuery = trim("{$unit->property?->name} / {$unit->name}{$code}");
-            }
         }
 
         $this->dispatch('qem-opened');
@@ -76,11 +67,9 @@ class QuickRegisterModal extends Component
     {
         $this->spentAt = now()->toDateString();
         $this->amount = '';
-        $this->category = '';
-        $this->scope = 'general';
+        $this->expenseCategoryId = null;
         $this->unitId = null;
-        $this->unitQuery = '';
-        $this->unitResults = [];
+        $this->contractId = null;
         $this->vendor = '';
         $this->notes = '';
         $this->evidenceFile = null;
@@ -88,52 +77,10 @@ class QuickRegisterModal extends Component
         $this->dispatch('expense-evidence-reset');
     }
 
-    public function updatedUnitQuery(): void
+    public function updatedUnitId(): void
     {
-        $trimmed = trim($this->unitQuery);
-
-        if (mb_strlen($trimmed) < 2) {
-            $this->unitResults = [];
-
-            return;
-        }
-
-        $term = '%'.$trimmed.'%';
-
-        $this->unitResults = Unit::query()
-            ->select(['units.id', 'units.name', 'units.code', 'properties.name as property_name'])
-            ->join('properties', 'properties.id', '=', 'units.property_id')
-            ->whereColumn('properties.organization_id', 'units.organization_id')
-            ->where(function ($q) use ($term): void {
-                $q->where('units.name', 'like', $term)
-                    ->orWhere('units.code', 'like', $term)
-                    ->orWhere('properties.name', 'like', $term);
-            })
-            ->orderBy('properties.name')
-            ->orderBy('units.name')
-            ->limit(8)
-            ->get()
-            ->map(fn ($row): array => [
-                'id' => (int) $row->id,
-                'label' => trim("{$row->property_name} / {$row->name}".($row->code ? " ({$row->code})" : '')),
-            ])
-            ->all();
-    }
-
-    public function updatedScope(): void
-    {
-        $this->unitId = null;
-        $this->unitQuery = '';
-        $this->unitResults = [];
-        $this->resetValidation(['unitId']);
-    }
-
-    public function selectUnit(int $id): void
-    {
-        $this->unitId = $id;
-        $selected = collect($this->unitResults)->firstWhere('id', $id);
-        $this->unitQuery = $selected ? (string) $selected['label'] : '';
-        $this->unitResults = [];
+        $this->contractId = null;
+        $this->resetValidation(['contractId']);
     }
 
     public function save(): void
@@ -144,25 +91,32 @@ class QuickRegisterModal extends Component
 
         $this->validate($this->rules(), $this->messages());
 
+        $organizationId = (int) auth()->user()?->organization_id;
+
         try {
-            $expense = Expense::query()->create([
-                'organization_id' => auth()->user()?->organization_id,
-                'unit_id' => $this->scope === 'unit' ? $this->unitId : null,
-                'category' => strtoupper(trim($this->category)),
+            $expense = app(RegisterExpenseAction::class)->execute($organizationId, [
+                'expense_category_id' => $this->expenseCategoryId,
                 'amount' => $this->amount,
                 'spent_at' => $this->spentAt,
+                'unit_id' => $this->unitId,
+                'contract_id' => $this->contractId,
                 'vendor' => $this->vendor ?: null,
                 'notes' => $this->notes ?: null,
                 'meta' => [],
             ]);
         } catch (ValidationException $e) {
-            $this->addError('month_close', $e->errors()['month_close'][0] ?? __('finance.validation.expense_failed'));
+            foreach ($e->errors() as $field => $messages) {
+                $this->addError($field, $messages[0] ?? '');
+            }
+
+            if ($e->errors()['month_close'][0] ?? null) {
+                $this->addError('month_close', $e->errors()['month_close'][0]);
+            }
 
             return;
         }
 
         if ($this->evidenceFile !== null) {
-            $organizationId = (int) auth()->user()?->organization_id;
             $disk = (string) config('filesystems.documents_disk', 'public');
             $path = $this->evidenceFile->store('documents/expenses/'.$organizationId, $disk);
 
@@ -182,18 +136,21 @@ class QuickRegisterModal extends Component
             ]);
         }
 
+        $expense->load('expenseCategory');
+
         app(AuditLogger::class)->log(
             action: 'expense.created',
             auditable: $expense,
             summary: __('finance.expenses.audit_summary', [
                 'amount' => number_format((float) $expense->amount, 2),
-                'category' => $expense->category,
+                'category' => $expense->expenseCategory?->name ?? '—',
             ]),
             meta: [
                 'amount' => (float) $expense->amount,
-                'category' => $expense->category,
+                'expense_category_id' => $expense->expense_category_id,
                 'spent_at' => $expense->spent_at,
                 'unit_id' => $expense->unit_id,
+                'contract_id' => $expense->contract_id,
                 'vendor' => $expense->vendor,
             ],
         );
@@ -205,27 +162,37 @@ class QuickRegisterModal extends Component
 
     public function render(): View
     {
-        $configuredCategories = ExpenseCategory::query()
-            ->where('is_active', true)
+        $categories = ExpenseCategory::query()
+            ->active()
             ->orderBy('name')
-            ->pluck('name')
-            ->values();
+            ->get(['id', 'name']);
 
-        $historicCategories = Expense::query()
-            ->select('category')
-            ->distinct()
-            ->orderBy('category')
-            ->pluck('category')
-            ->values();
+        $unitsQuery = Unit::query()
+            ->join('properties', 'properties.id', '=', 'units.property_id')
+            ->orderBy('properties.name')
+            ->orderBy('units.name')
+            ->select(['units.id', 'units.name', 'units.code', 'properties.name as property_name']);
 
-        $categories = $configuredCategories
-            ->merge($historicCategories)
-            ->filter(fn ($c) => is_string($c) && trim($c) !== '')
-            ->unique()
-            ->values();
+        TenantContext::applyCurrentPlazaFilter($unitsQuery, 'properties.plaza_id');
+
+        $units = $unitsQuery->get();
+
+        $contracts = collect();
+
+        if ($this->unitId !== null) {
+            $contracts = Contract::query()
+                ->with('tenant')
+                ->where('unit_id', $this->unitId)
+                ->orderByRaw("CASE WHEN status = 'active' THEN 0 ELSE 1 END")
+                ->orderByDesc('starts_at')
+                ->limit(20)
+                ->get();
+        }
 
         return view('livewire.expenses.quick-register-modal', [
             'categories' => $categories,
+            'units' => $units,
+            'contracts' => $contracts,
         ]);
     }
 
@@ -237,11 +204,9 @@ class QuickRegisterModal extends Component
         return [
             'spentAt' => ['required', 'date'],
             'amount' => ['required', 'numeric', 'min:0.01'],
-            'category' => ['required', 'string', 'max:100'],
-            'scope' => ['required', Rule::in(['general', 'unit'])],
-            'unitId' => $this->scope === 'unit'
-                ? ['required', 'integer', 'exists:units,id']
-                : ['nullable', 'integer'],
+            'expenseCategoryId' => ['required', 'integer'],
+            'unitId' => ['nullable', 'integer'],
+            'contractId' => ['nullable', 'integer'],
             'vendor' => ['nullable', 'string', 'max:150'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'evidenceFile' => ['nullable', 'file', 'max:5120', 'mimes:jpg,jpeg,png,pdf'],
@@ -259,10 +224,7 @@ class QuickRegisterModal extends Component
             'amount.required' => __('finance.validation.amount_required'),
             'amount.numeric' => __('finance.validation.amount_numeric'),
             'amount.min' => __('finance.validation.amount_min'),
-            'category.required' => __('finance.validation.category_required'),
-            'category.max' => __('finance.validation.category_max'),
-            'unitId.required' => __('finance.validation.unit_required'),
-            'unitId.exists' => __('finance.validation.unit_invalid'),
+            'expenseCategoryId.required' => __('finance.validation.category_required'),
             'vendor.max' => __('finance.validation.vendor_max'),
             'notes.max' => __('finance.validation.notes_max'),
             'evidenceFile.max' => __('finance.validation.evidence_max'),

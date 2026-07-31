@@ -2,11 +2,13 @@
 
 namespace Tests\Feature\MonthCloses;
 
+use App\Actions\Expenses\SeedDefaultExpenseCategoriesAction;
 use App\Actions\MonthCloses\CloseMonthAction;
 use App\Livewire\MonthCloses\Index as MonthClosesIndex;
 use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\Expense;
+use App\Models\ExpenseCategory;
 use App\Models\MonthClose;
 use App\Models\Payment;
 use App\Models\Property;
@@ -52,11 +54,18 @@ class MonthCloseWorkflowTest extends TestCase
             $this->assertStringContainsString('Mes bloqueado: 2026-03', $exception->errors()['month_close'][0] ?? '');
         }
 
+        app(SeedDefaultExpenseCategoriesAction::class)->execute((int) $user->organization_id);
+        $categoryId = ExpenseCategory::query()
+            ->withoutOrganizationScope()
+            ->where('organization_id', $user->organization_id)
+            ->where('name', 'MANTENIMIENTO')
+            ->value('id');
+
         try {
             Expense::query()->withoutOrganizationScope()->create([
                 'organization_id' => $user->organization_id,
                 'unit_id' => $unit->id,
-                'category' => 'MANTENIMIENTO',
+                'expense_category_id' => $categoryId,
                 'amount' => 350,
                 'spent_at' => '2026-03-15',
                 'vendor' => 'Proveedor',

@@ -198,6 +198,8 @@ return [
         'category_required' => 'La categoría es obligatoria.',
         'category_max' => 'La categoría no debe exceder 100 caracteres.',
         'category_unique' => 'La categoría ya existe en esta organización.',
+        'category_in_use' => 'No se puede eliminar: la categoría tiene egresos registrados. Desactívala en su lugar.',
+        'category_system_delete_forbidden' => 'No se puede eliminar una categoría del sistema.',
         'plaza_name_required' => 'El nombre de la plaza es obligatorio.',
         'plaza_name_max' => 'El nombre no debe exceder 120 caracteres.',
         'plaza_name_unique' => 'Ya existe una plaza con ese nombre en esta organización.',

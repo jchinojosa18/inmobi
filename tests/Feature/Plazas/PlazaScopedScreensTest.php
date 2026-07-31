@@ -5,6 +5,7 @@ namespace Tests\Feature\Plazas;
 use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\Expense;
+use App\Models\ExpenseCategory;
 use App\Models\Organization;
 use App\Models\Payment;
 use App\Models\PaymentAllocation;
@@ -59,7 +60,8 @@ class PlazaScopedScreensTest extends TestCase
 
         $expenses->assertOk();
         $expenses->assertSeeText('EGRESO-PLAZA-A');
-        $expenses->assertDontSeeText('EGRESO-PLAZA-B');
+        $expenses->assertSeeText('Proveedor A');
+        $expenses->assertDontSeeText('Proveedor B');
 
         $reports = $this->actingAs($data['user'])
             ->withSession([$sessionKey => $data['plazaA']->id])
@@ -244,10 +246,19 @@ class PlazaScopedScreensTest extends TestCase
             'meta' => [],
         ]);
 
+        $categoryA = ExpenseCategory::factory()->create([
+            'organization_id' => $organization->id,
+            'name' => 'EGRESO-PLAZA-A',
+        ]);
+        $categoryB = ExpenseCategory::factory()->create([
+            'organization_id' => $organization->id,
+            'name' => 'EGRESO-PLAZA-B',
+        ]);
+
         Expense::query()->create([
             'organization_id' => $organization->id,
             'unit_id' => $unitA->id,
-            'category' => 'EGRESO-PLAZA-A',
+            'expense_category_id' => $categoryA->id,
             'amount' => 150,
             'spent_at' => $today->toDateString(),
             'vendor' => 'Proveedor A',
@@ -257,7 +268,7 @@ class PlazaScopedScreensTest extends TestCase
         Expense::query()->create([
             'organization_id' => $organization->id,
             'unit_id' => $unitB->id,
-            'category' => 'EGRESO-PLAZA-B',
+            'expense_category_id' => $categoryB->id,
             'amount' => 180,
             'spent_at' => $today->toDateString(),
             'vendor' => 'Proveedor B',

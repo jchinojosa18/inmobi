@@ -46,7 +46,7 @@ class CashFlow extends Component
         $incomeTotal = round((float) array_sum($incomeByType), 2);
 
         $expenses = Expense::query()
-            ->with(['unit.property'])
+            ->with(['unit.property', 'expenseCategory'])
             ->when($currentPlazaId !== null, function (Builder $query) use ($currentPlazaId): void {
                 $query->whereHas('unit.property', function (Builder $propertyQuery) use ($currentPlazaId): void {
                     $propertyQuery->where('plaza_id', $currentPlazaId);
@@ -57,6 +57,11 @@ class CashFlow extends Component
             ->get();
 
         $expenseTotal = round((float) $expenses->sum('amount'), 2);
+
+        $expensesByCategory = $expenses
+            ->groupBy(fn (Expense $expense) => $expense->expenseCategory?->name ?? '—')
+            ->map(fn ($group) => round((float) $group->sum('amount'), 2))
+            ->sortKeys();
 
         $netTotal = round($incomeTotal - $expenseTotal, 2);
 
@@ -85,6 +90,7 @@ class CashFlow extends Component
             'incomeByType' => $incomeByType,
             'incomeDetails' => $incomeDetails,
             'expenses' => $expenses,
+            'expensesByCategory' => $expensesByCategory,
             'operatingChargeTypes' => $operatingIncomeService->operatingChargeTypes(),
             'closedMonthSnapshot' => $closedMonthSnapshot,
             'snapshotMatches' => $snapshotMatches,

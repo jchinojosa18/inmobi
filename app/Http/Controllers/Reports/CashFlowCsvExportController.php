@@ -40,7 +40,7 @@ class CashFlowCsvExportController extends Controller
         );
 
         $expenses = Expense::query()
-            ->with(['unit.property'])
+            ->with(['unit.property', 'expenseCategory'])
             ->when($currentPlazaId !== null, function (Builder $query) use ($currentPlazaId): void {
                 $query->whereHas('unit.property', function (Builder $propertyQuery) use ($currentPlazaId): void {
                     $propertyQuery->where('plaza_id', $currentPlazaId);
@@ -92,7 +92,7 @@ class CashFlowCsvExportController extends Controller
             foreach ($expenses as $expense) {
                 fputcsv($output, [
                     DateDisplay::formatDate($expense->spent_at),
-                    $expense->category,
+                    $expense->expenseCategory?->name ?? '',
                     $expense->unit?->property?->name ?? '',
                     $expense->unit?->name ?? '',
                     $expense->vendor ?: 'Sin proveedor',

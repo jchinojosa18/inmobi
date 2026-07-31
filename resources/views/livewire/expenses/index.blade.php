@@ -13,34 +13,52 @@
     </x-ui.page-header>
 
     <x-ui.card :padding="true" class="!p-4">
-        <div class="grid gap-3 md:grid-cols-4">
-            <x-ui.input
-                id="expenses-date-from"
-                :label="__('common.from')"
-                type="date"
-                wire:model.live="dateFromFilter"
-            />
+        <div class="space-y-3">
+            <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
+                <x-ui.input
+                    id="expenses-date-from"
+                    :label="__('common.from')"
+                    type="date"
+                    wire:model.live="dateFromFilter"
+                />
 
-            <x-ui.input
-                id="expenses-date-to"
-                :label="__('common.to')"
-                type="date"
-                wire:model.live="dateToFilter"
-            />
+                <x-ui.input
+                    id="expenses-date-to"
+                    :label="__('common.to')"
+                    type="date"
+                    wire:model.live="dateToFilter"
+                />
 
-            <x-ui.select id="expenses-unit" :label="__('common.unit')" wire:model.live="unitFilter">
-                <option value="">{{ __('common.all') }}</option>
-                @foreach ($units as $unit)
-                    <option value="{{ $unit->id }}">{{ $unit->name }}</option>
-                @endforeach
-            </x-ui.select>
+                <x-ui.select id="expenses-assignment" :label="__('finance.expenses.assignment')" wire:model.live="assignmentFilter">
+                    <option value="all">{{ __('finance.expenses.filter_assignment_all') }}</option>
+                    <option value="general">{{ __('finance.expenses.general_expense') }}</option>
+                    <option value="unit">{{ __('finance.expenses.filter_assignment_unit') }}</option>
+                </x-ui.select>
 
-            <x-ui.select id="expenses-category" :label="__('common.category')" wire:model.live="categoryFilter">
-                <option value="">{{ __('common.all') }}</option>
-                @foreach ($categories as $category)
-                    <option value="{{ $category }}">{{ $category }}</option>
-                @endforeach
-            </x-ui.select>
+                <x-ui.select id="expenses-category" :label="__('common.category')" wire:model.live="categoryFilter">
+                    <option value="">{{ __('common.all') }}</option>
+                    @foreach ($categories as $category)
+                        <option value="{{ $category->id }}">{{ $category->name }}</option>
+                    @endforeach
+                </x-ui.select>
+
+                <x-ui.select id="expenses-unit" :label="__('common.unit')" wire:model.live="unitFilter">
+                    <option value="">{{ __('common.all') }}</option>
+                    @foreach ($units as $unit)
+                        <option value="{{ $unit->id }}">
+                            {{ trim($unit->property_name.' / '.$unit->name.($unit->code ? " ({$unit->code})" : '')) }}
+                        </option>
+                    @endforeach
+                </x-ui.select>
+            </div>
+
+            @if ($hasActiveFilters)
+                <div class="flex justify-end">
+                    <x-ui.button type="button" variant="secondary" size="sm" wire:click="clearFilters">
+                        {{ __('finance.expenses.clear_filters') }}
+                    </x-ui.button>
+                </div>
+            @endif
         </div>
     </x-ui.card>
 
@@ -56,9 +74,13 @@
             @forelse ($expenses as $expense)
                 <tr wire:key="expense-row-{{ $expense->id }}" class="transition hover:bg-slate-50/80">
                     <td class="px-4 py-3"><x-ui.display-date :value="$expense->spent_at" /></td>
-                    <td class="px-4 py-3 font-medium text-slate-900">{{ $expense->category }}</td>
+                    <td class="px-4 py-3 font-medium text-slate-900">{{ $expense->expenseCategory?->name ?? '—' }}</td>
                     <td class="px-4 py-3 text-slate-700">
-                        {{ $expense->unit?->name ?: __('finance.expenses.general') }}
+                        @if ($expense->unit)
+                            {{ $expense->unit->property?->name }} / {{ $expense->unit->name }}{{ $expense->unit->code ? ' ('.$expense->unit->code.')' : '' }}
+                        @else
+                            {{ __('finance.expenses.general') }}
+                        @endif
                     </td>
                     <td class="px-4 py-3 text-slate-700">{{ $expense->vendor ?: __('common.n_a') }}</td>
                     <td class="px-4 py-3 text-right font-medium">${{ number_format((float) $expense->amount, 2) }}</td>

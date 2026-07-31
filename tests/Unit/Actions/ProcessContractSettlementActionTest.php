@@ -3,9 +3,11 @@
 namespace Tests\Unit\Actions;
 
 use App\Actions\Contracts\ProcessContractSettlementAction;
+use App\Actions\Expenses\SeedDefaultExpenseCategoriesAction;
 use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\CreditBalance;
+use App\Models\ExpenseCategory;
 use App\Models\Organization;
 use App\Models\Payment;
 use App\Models\PaymentAllocation;
@@ -74,9 +76,16 @@ class ProcessContractSettlementActionTest extends TestCase
             'amount' => -500,
         ]);
 
+        $refundCategoryId = ExpenseCategory::query()
+            ->withoutOrganizationScope()
+            ->where('organization_id', $contract->organization_id)
+            ->where('name', 'REEMBOLSO DEPÓSITO')
+            ->value('id');
+
         $this->assertDatabaseHas('expenses', [
             'organization_id' => $contract->organization_id,
-            'category' => 'Refund deposit',
+            'expense_category_id' => $refundCategoryId,
+            'contract_id' => $contract->id,
             'amount' => 500,
         ]);
 
@@ -134,9 +143,16 @@ class ProcessContractSettlementActionTest extends TestCase
             'amount' => -300,
         ]);
 
+        $refundCategoryId = ExpenseCategory::query()
+            ->withoutOrganizationScope()
+            ->where('organization_id', $contract->organization_id)
+            ->where('name', 'REEMBOLSO DEPÓSITO')
+            ->value('id');
+
         $this->assertDatabaseMissing('expenses', [
             'organization_id' => $contract->organization_id,
-            'category' => 'Refund deposit',
+            'expense_category_id' => $refundCategoryId,
+            'contract_id' => $contract->id,
         ]);
     }
 
@@ -244,6 +260,7 @@ class ProcessContractSettlementActionTest extends TestCase
     private function createContractWithDepositHold(float $depositAmount): array
     {
         $organization = Organization::factory()->create();
+        app(SeedDefaultExpenseCategoriesAction::class)->execute((int) $organization->id);
 
         $property = Property::factory()->create([
             'organization_id' => $organization->id,

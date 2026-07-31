@@ -35,10 +35,13 @@ class ContractSettlementPdfController extends Controller
             ->first();
 
         $refundExpense = Expense::query()
+            ->with('expenseCategory')
             ->where('organization_id', $contract->organization_id)
-            ->where('category', 'Refund deposit')
-            ->where('meta->contract_id', $contract->id)
+            ->where('contract_id', $contract->id)
             ->where('meta->settlement_batch_id', $batch)
+            ->whereHas('expenseCategory', fn ($query) => $query
+                ->where('is_system', true)
+                ->where('name', 'REEMBOLSO DEPÓSITO'))
             ->first();
 
         $summary = data_get($contract->meta, "settlements.{$batch}", []);

@@ -128,6 +128,20 @@
         </x-slot:body>
     </x-ui.table>
 
+    @if ($expensesByCategory->isNotEmpty())
+        <x-ui.card :padding="true" class="!p-4">
+            <h2 class="mb-3 text-sm font-semibold text-slate-900">{{ __('finance.cash_flow.expenses_by_category') }}</h2>
+            <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                @foreach ($expensesByCategory as $categoryName => $categoryTotal)
+                    <div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                        <p class="text-xs text-slate-500">{{ $categoryName }}</p>
+                        <p class="text-sm font-semibold text-rose-700">${{ number_format((float) $categoryTotal, 2) }}</p>
+                    </div>
+                @endforeach
+            </div>
+        </x-ui.card>
+    @endif
+
     <x-ui.table>
         <x-slot:header>
             <div class="flex items-center justify-between">
@@ -146,7 +160,7 @@
             @forelse ($expenses as $expense)
                 <tr class="transition hover:bg-slate-50/80">
                     <td class="px-4 py-3 text-slate-700"><x-ui.display-date :value="$expense->spent_at" /></td>
-                    <td class="px-4 py-3 text-slate-700">{{ $expense->category }}</td>
+                    <td class="px-4 py-3 text-slate-700">{{ $expense->expenseCategory?->name ?? '—' }}</td>
                     <td class="px-4 py-3 text-slate-700">{{ $expense->unit?->property?->name }} / {{ $expense->unit?->name ?? '-' }}</td>
                     <td class="px-4 py-3 text-slate-700">{{ $expense->vendor ?: '-' }}</td>
                     <td class="px-4 py-3 text-right font-medium text-rose-700">${{ number_format((float) $expense->amount, 2) }}</td>

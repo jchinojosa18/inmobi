@@ -204,6 +204,19 @@ class Index extends Component
         $this->assertCanManageExpenseCategories();
 
         $category = ExpenseCategory::query()->findOrFail($categoryId);
+
+        if ($category->is_system) {
+            $this->addError('expenseCategory', __('settings.validation.category_system_delete_forbidden'));
+
+            return;
+        }
+
+        if ($category->expenses()->exists()) {
+            $this->addError('expenseCategory', __('settings.validation.category_in_use'));
+
+            return;
+        }
+
         $category->delete();
 
         if ($this->editingExpenseCategoryId === $categoryId) {

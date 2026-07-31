@@ -2,10 +2,12 @@
 
 namespace Tests\Feature\Reports;
 
+use App\Actions\Expenses\SeedDefaultExpenseCategoriesAction;
 use App\Actions\MonthCloses\CloseMonthAction;
 use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\Expense;
+use App\Models\ExpenseCategory;
 use App\Models\MonthClose;
 use App\Models\Organization;
 use App\Models\Payment;
@@ -326,10 +328,22 @@ class CashFlowReportTest extends TestCase
             'meta' => [],
         ]);
 
+        app(SeedDefaultExpenseCategoriesAction::class)->execute($organization->id);
+        $maintenanceCategoryId = ExpenseCategory::query()
+            ->withoutOrganizationScope()
+            ->where('organization_id', $organization->id)
+            ->where('name', 'MANTENIMIENTO')
+            ->value('id');
+        $serviceCategoryId = ExpenseCategory::query()
+            ->withoutOrganizationScope()
+            ->where('organization_id', $organization->id)
+            ->where('name', 'SERVICIO')
+            ->value('id');
+
         Expense::query()->create([
             'organization_id' => $organization->id,
             'unit_id' => $unit->id,
-            'category' => 'MANTENIMIENTO',
+            'expense_category_id' => $maintenanceCategoryId,
             'amount' => 300,
             'spent_at' => '2026-03-12',
             'vendor' => 'Proveedor A',
@@ -339,7 +353,7 @@ class CashFlowReportTest extends TestCase
         Expense::query()->create([
             'organization_id' => $organization->id,
             'unit_id' => $unit->id,
-            'category' => 'SERVICIO',
+            'expense_category_id' => $serviceCategoryId,
             'amount' => 250,
             'spent_at' => '2026-04-05',
             'vendor' => 'Proveedor B',

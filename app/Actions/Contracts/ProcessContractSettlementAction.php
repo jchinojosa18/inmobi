@@ -2,6 +2,7 @@
 
 namespace App\Actions\Contracts;
 
+use App\Actions\Expenses\SeedDefaultExpenseCategoriesAction;
 use App\Actions\Payments\ApplyCreditBalanceAction;
 use App\Models\Charge;
 use App\Models\Contract;
@@ -122,12 +123,16 @@ class ProcessContractSettlementAction
             $depositRefund = round(max($depositAvailable - $depositApplied, 0), 2);
             $refundExpenseId = null;
             if ($depositRefund > 0) {
+                $refundCategoryId = app(SeedDefaultExpenseCategoriesAction::class)
+                    ->depositRefundCategoryId($lockedContract->organization_id);
+
                 $refundExpense = Expense::query()
                     ->withoutOrganizationScope()
                     ->create([
                         'organization_id' => $lockedContract->organization_id,
                         'unit_id' => $lockedContract->unit_id,
-                        'category' => 'Refund deposit',
+                        'expense_category_id' => $refundCategoryId,
+                        'contract_id' => $lockedContract->id,
                         'amount' => $depositRefund,
                         'spent_at' => $exitDate->toDateString(),
                         'vendor' => $lockedContract->tenant?->full_name,

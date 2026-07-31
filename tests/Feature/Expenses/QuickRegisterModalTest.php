@@ -2,8 +2,10 @@
 
 namespace Tests\Feature\Expenses;
 
+use App\Actions\Expenses\SeedDefaultExpenseCategoriesAction;
 use App\Livewire\Expenses\QuickRegisterModal;
 use App\Models\Expense;
+use App\Models\ExpenseCategory;
 use App\Models\MonthClose;
 use App\Models\Property;
 use App\Models\Unit;
@@ -34,11 +36,10 @@ class QuickRegisterModalTest extends TestCase
             ->test(QuickRegisterModal::class)
             ->call('open')
             ->assertSet('open', true)
-            ->assertSet('scope', 'general')
             ->assertSet('unitId', null);
     }
 
-    public function test_opens_with_unit_id_preselects_unit_scope(): void
+    public function test_opens_with_unit_id_preselects_unit(): void
     {
         $user = User::factory()->create();
         $organizationId = (int) $user->organization_id;
@@ -55,7 +56,6 @@ class QuickRegisterModalTest extends TestCase
             ->test(QuickRegisterModal::class)
             ->call('open', $unit->id)
             ->assertSet('open', true)
-            ->assertSet('scope', 'unit')
             ->assertSet('unitId', $unit->id);
     }
 
@@ -63,29 +63,41 @@ class QuickRegisterModalTest extends TestCase
     {
         $user = User::factory()->create();
         $organizationId = (int) $user->organization_id;
+        app(SeedDefaultExpenseCategoriesAction::class)->execute($organizationId);
+        $categoryId = ExpenseCategory::query()
+            ->withoutOrganizationScope()
+            ->where('organization_id', $organizationId)
+            ->where('name', 'MANTENIMIENTO')
+            ->value('id');
 
         Livewire::actingAs($user)
             ->test(QuickRegisterModal::class)
             ->call('open')
             ->set('spentAt', now()->toDateString())
             ->set('amount', '850')
-            ->set('category', 'MANTENIMIENTO')
+            ->set('expenseCategoryId', $categoryId)
             ->call('save')
             ->assertSet('open', false)
             ->assertDispatched('expense-created');
 
         $this->assertDatabaseHas('expenses', [
             'organization_id' => $organizationId,
-            'category' => 'MANTENIMIENTO',
+            'expense_category_id' => $categoryId,
             'amount' => 850,
             'unit_id' => null,
         ]);
     }
 
-    public function test_save_with_unit_scope_assigns_unit(): void
+    public function test_save_with_unit_assigns_unit(): void
     {
         $user = User::factory()->create();
         $organizationId = (int) $user->organization_id;
+        app(SeedDefaultExpenseCategoriesAction::class)->execute($organizationId);
+        $categoryId = ExpenseCategory::query()
+            ->withoutOrganizationScope()
+            ->where('organization_id', $organizationId)
+            ->where('name', 'LIMPIEZA')
+            ->value('id');
 
         $property = Property::factory()->create(['organization_id' => $organizationId]);
         $unit = Unit::factory()->create([
@@ -98,15 +110,14 @@ class QuickRegisterModalTest extends TestCase
             ->call('open')
             ->set('spentAt', now()->toDateString())
             ->set('amount', '300')
-            ->set('category', 'LIMPIEZA')
-            ->set('scope', 'unit')
+            ->set('expenseCategoryId', $categoryId)
             ->set('unitId', $unit->id)
             ->call('save')
             ->assertSet('open', false);
 
         $this->assertDatabaseHas('expenses', [
             'organization_id' => $organizationId,
-            'category' => 'LIMPIEZA',
+            'expense_category_id' => $categoryId,
             'unit_id' => $unit->id,
         ]);
     }
@@ -115,6 +126,12 @@ class QuickRegisterModalTest extends TestCase
     {
         $user = User::factory()->create();
         $organizationId = (int) $user->organization_id;
+        app(SeedDefaultExpenseCategoriesAction::class)->execute($organizationId);
+        $categoryId = ExpenseCategory::query()
+            ->withoutOrganizationScope()
+            ->where('organization_id', $organizationId)
+            ->where('name', 'SERVICIO')
+            ->value('id');
 
         $currentMonth = now('America/Tijuana')->format('Y-m');
 
@@ -141,18 +158,18 @@ class QuickRegisterModalTest extends TestCase
             ->call('open')
             ->set('spentAt', now()->toDateString())
             ->set('amount', '500')
-            ->set('category', 'SERVICIO')
+            ->set('expenseCategoryId', $categoryId)
             ->call('save')
             ->assertSeeHtml('Mes bloqueado')
             ->assertSet('open', true);
 
         $this->assertDatabaseMissing('expenses', [
             'organization_id' => $organizationId,
-            'category' => 'SERVICIO',
+            'expense_category_id' => $categoryId,
         ]);
     }
 
-    public function test_unit_typeahead_returns_scoped_results(): void
+    public function test_unit_select_lists_scoped_results(): void
     {
         $user = User::factory()->create();
         $organizationId = (int) $user->organization_id;
@@ -170,8 +187,6 @@ class QuickRegisterModalTest extends TestCase
         Livewire::actingAs($user)
             ->test(QuickRegisterModal::class)
             ->call('open')
-            ->set('scope', 'unit')
-            ->set('unitQuery', 'Local')
             ->assertSeeHtml('Local 5');
     }
 
@@ -186,9 +201,14 @@ class QuickRegisterModalTest extends TestCase
             ->assertSeeText('Registrar egreso')
             ->assertSeeHtml('open-quick-expense');
 
+        $category = ExpenseCategory::factory()->create([
+            'organization_id' => $organizationId,
+            'name' => 'REPARACION',
+        ]);
+
         Expense::query()->withoutOrganizationScope()->create([
             'organization_id' => $organizationId,
-            'category' => 'REPARACION',
+            'expense_category_id' => $category->id,
             'amount' => 1200,
             'spent_at' => now()->toDateString(),
             'meta' => [],

@@ -2,9 +2,11 @@
 
 namespace Tests\Feature\Dashboard;
 
+use App\Actions\Expenses\SeedDefaultExpenseCategoriesAction;
 use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\Expense;
+use App\Models\ExpenseCategory;
 use App\Models\Payment;
 use App\Models\PaymentAllocation;
 use App\Models\Property;
@@ -159,10 +161,17 @@ class DashboardControlCenterTest extends TestCase
             'meta' => [],
         ]);
 
+        app(SeedDefaultExpenseCategoriesAction::class)->execute($organizationId);
+        $categoryId = ExpenseCategory::query()
+            ->withoutOrganizationScope()
+            ->where('organization_id', $organizationId)
+            ->where('name', 'MANTENIMIENTO')
+            ->value('id');
+
         Expense::query()->create([
             'organization_id' => $organizationId,
             'unit_id' => $unitOverdue->id,
-            'category' => 'MANTENIMIENTO',
+            'expense_category_id' => $categoryId,
             'amount' => 120,
             'spent_at' => $today->toDateString(),
             'vendor' => 'Proveedor dashboard',

@@ -27,6 +27,8 @@ return [
     'search' => 'Buscar',
     'status' => 'Estado',
     'all' => 'Todos',
+    'select' => 'Seleccionar',
+    'none' => 'Ninguno',
     'inactive' => 'Inactivo',
     'edit' => 'Editar',
     'view' => 'Ver',
