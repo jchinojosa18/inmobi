@@ -76,16 +76,28 @@
 
                 <div>
                     <label for="email" class="mb-2 block text-sm font-medium leading-5 text-slate-700 dark:text-slate-200">{{ __('auth.email') }}</label>
-                    <input
-                        id="email"
-                        name="email"
-                        type="email"
-                        required
-                        value="{{ old('email', $isInvitationFlow ? $invitation->email : '') }}"
-                        placeholder="{{ __('auth.email_placeholder') }}"
-                        @if ($isInvitationFlow) readonly @endif
-                        class="block h-11 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-base text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none focus:ring-4 focus:ring-slate-900/10 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-slate-400 dark:focus:ring-slate-100/10"
-                    >
+                    @if ($isInvitationFlow)
+                        <input
+                            id="email"
+                            type="email"
+                            value="{{ old('email', $invitation->email) }}"
+                            placeholder="{{ __('auth.email_placeholder') }}"
+                            disabled
+                            aria-disabled="true"
+                            class="block h-11 w-full cursor-not-allowed rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-base text-slate-900 opacity-80 placeholder:text-slate-400 dark:border-slate-600 dark:bg-slate-800/80 dark:text-slate-100 dark:placeholder:text-slate-400"
+                        >
+                        <input type="hidden" name="email" value="{{ old('email', $invitation->email) }}">
+                    @else
+                        <input
+                            id="email"
+                            name="email"
+                            type="email"
+                            required
+                            value="{{ old('email') }}"
+                            placeholder="{{ __('auth.email_placeholder') }}"
+                            class="block h-11 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-base text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none focus:ring-4 focus:ring-slate-900/10 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-slate-400 dark:focus:ring-slate-100/10"
+                        >
+                    @endif
                 </div>
 
                 <div>

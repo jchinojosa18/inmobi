@@ -121,7 +121,8 @@ class OrganizationInvitationsTest extends TestCase
             ->get(route('register', ['invite' => $token]))
             ->assertOk()
             ->assertSee('value="guest.invite@test.dev"', false)
-            ->assertSee('readonly', false);
+            ->assertSee('disabled', false)
+            ->assertSee('type="hidden" name="email"', false);
     }
 
     public function test_register_page_keeps_invitation_email_after_validation_error(): void
@@ -143,6 +144,7 @@ class OrganizationInvitationsTest extends TestCase
         $this->get(route('register', ['invite' => $token]))
             ->assertOk()
             ->assertSee('value="retry.invite@test.dev"', false)
+            ->assertSee('type="hidden" name="email"', false)
             ->assertSee('name="invite_token"', false)
             ->assertSee($token, false);
     }
