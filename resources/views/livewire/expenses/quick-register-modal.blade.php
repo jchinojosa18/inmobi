@@ -90,7 +90,7 @@
 
                     @if ($unitId)
                         <div>
-                            <x-ui.select id="qem-contract" :label="__('common.contract').' ('.__('common.optional').')'" wire:model.blur="contractId">
+                            <x-ui.select id="qem-contract" :label="__('common.contract')" wire:model.blur="contractId">
                                 <option value="">{{ __('common.none') }}</option>
                                 @foreach ($contracts as $contract)
                                     <option value="{{ $contract->id }}">
@@ -107,7 +107,7 @@
                         <div>
                             <x-ui.input
                                 id="qem-vendor"
-                                :label="__('common.vendor').' ('.__('common.optional').')'"
+                                :label="__('common.vendor')"
                                 type="text"
                                 wire:model.blur="vendor"
                                 maxlength="150"
@@ -119,7 +119,7 @@
                         <div>
                             <x-ui.input
                                 id="qem-notes"
-                                :label="__('common.notes').' ('.__('common.optional').')'"
+                                :label="__('common.notes')"
                                 type="text"
                                 wire:model.blur="notes"
                                 maxlength="1000"
