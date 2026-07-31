@@ -78,6 +78,39 @@ class RegisterContractAdjustmentAction
         }, 3);
     }
 
+    public function settleExistingNegativeAdjustment(Charge $charge): bool
+    {
+        return DB::transaction(function () use ($charge): bool {
+            $charge = Charge::query()->lockForUpdate()->findOrFail($charge->id);
+
+            if ($charge->type !== Charge::TYPE_ADJUSTMENT) {
+                return false;
+            }
+
+            if ((float) $charge->amount >= 0) {
+                return false;
+            }
+
+            if ((bool) data_get($charge->meta, 'settled_as_credit')) {
+                return false;
+            }
+
+            $contract = Contract::query()->lockForUpdate()->findOrFail($charge->contract_id);
+            $creditAmount = round(abs((float) $charge->amount), 2);
+            $this->creditFromAdjustment($contract, $charge, $creditAmount);
+
+            $meta = is_array($charge->meta) ? $charge->meta : [];
+            $meta['settled_as_credit'] = true;
+            $meta['credit_amount'] = $creditAmount;
+            $charge->meta = $meta;
+            $charge->save();
+
+            $this->applyCreditBalanceAction->execute($contract);
+
+            return true;
+        }, 3);
+    }
+
     private function creditFromAdjustment(Contract $contract, Charge $charge, float $amount): void
     {
         $creditBalance = CreditBalance::query()
