@@ -80,4 +80,113 @@ final class NavigationReturn
             'label' => $label,
         ];
     }
+
+    /**
+     * @return array{tenant_id: int, tab: ?string}|null
+     */
+    public static function parseTenantKardexReturn(?string $url): ?array
+    {
+        $url = self::sanitizeUrl($url);
+
+        if ($url === null || preg_match('#^/tenants/(\d+)(?:\?(.*))?$#', $url, $matches) !== 1) {
+            return null;
+        }
+
+        $tab = null;
+
+        if (isset($matches[2]) && $matches[2] !== '') {
+            parse_str($matches[2], $query);
+            $tab = is_string($query['tab'] ?? null) ? $query['tab'] : null;
+        }
+
+        return [
+            'tenant_id' => (int) $matches[1],
+            'tab' => $tab,
+        ];
+    }
+
+    /**
+     * @return array{
+     *     primary: array{url: string, label: string},
+     *     secondary: array{url: string, label: string}|null
+     * }
+     */
+    public static function resolvePaymentShowBack(
+        ?string $returnUrl,
+        ?string $returnLabel,
+        string $defaultContractUrl,
+        string $defaultContractLabel,
+        ?string $tenantName = null,
+    ): array {
+        return self::resolveKardexAwareShowBack(
+            $returnUrl,
+            $returnLabel,
+            $defaultContractUrl,
+            $defaultContractLabel,
+            $tenantName,
+        );
+    }
+
+    /**
+     * @return array{
+     *     primary: array{url: string, label: string},
+     *     secondary: array{url: string, label: string}|null
+     * }
+     */
+    public static function resolveContractShowBack(
+        ?string $returnUrl,
+        ?string $returnLabel,
+        string $defaultContractsIndexUrl,
+        string $defaultContractsIndexLabel,
+        ?string $tenantName = null,
+    ): array {
+        return self::resolveKardexAwareShowBack(
+            $returnUrl,
+            $returnLabel,
+            $defaultContractsIndexUrl,
+            $defaultContractsIndexLabel,
+            $tenantName,
+        );
+    }
+
+    /**
+     * @return array{
+     *     primary: array{url: string, label: string},
+     *     secondary: array{url: string, label: string}|null
+     * }
+     */
+    private static function resolveKardexAwareShowBack(
+        ?string $returnUrl,
+        ?string $returnLabel,
+        string $secondaryUrl,
+        string $secondaryLabel,
+        ?string $tenantName = null,
+    ): array {
+        $kardex = self::parseTenantKardexReturn($returnUrl);
+
+        if ($kardex === null) {
+            return [
+                'primary' => self::resolve($returnUrl, $returnLabel, $secondaryUrl, $secondaryLabel),
+                'secondary' => null,
+            ];
+        }
+
+        $tenantUrl = self::sanitizeUrl($returnUrl)
+            ?? route('tenants.show', $kardex['tenant_id'], false);
+        $tenantLabel = self::sanitizeLabel($returnLabel)
+            ?? ($tenantName !== null && $tenantName !== ''
+                ? __('catalog.tenants.kardex.back_to_tenant', ['name' => $tenantName])
+                : __('catalog.tenants.kardex.back_to_tenant_fallback'));
+
+        return [
+            'primary' => [
+                'url' => $tenantUrl,
+                'label' => $tenantLabel,
+            ],
+            'secondary' => [
+                'url' => $secondaryUrl,
+                'label' => $secondaryLabel,
+            ],
+        ];
+    }
 }

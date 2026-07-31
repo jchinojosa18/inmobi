@@ -147,11 +147,12 @@ class Show extends Component
         $creditTotal = (float) ($contract->creditBalance?->balance ?? 0);
         $pendingBalance = max(0, round((float) $operationalRows->sum('balance'), 2));
 
-        $back = NavigationReturn::resolve(
+        $back = NavigationReturn::resolveContractShowBack(
             $this->returnUrl !== '' ? $this->returnUrl : null,
             $this->returnLabel !== '' ? $this->returnLabel : null,
             route('contracts.index', absolute: false),
             __('common.back_to_contracts'),
+            (string) ($contract->tenant?->full_name ?? ''),
         );
 
         $contractReturnLabel = __('common.back_to_contract');
@@ -185,8 +186,10 @@ class Show extends Component
 
         return view('livewire.contracts.show', [
             'contract' => $contract,
-            'backUrl' => $back['url'],
-            'backLabel' => $back['label'],
+            'backUrl' => $back['primary']['url'],
+            'backLabel' => $back['primary']['label'],
+            'secondaryBackUrl' => $back['secondary']['url'] ?? null,
+            'secondaryBackLabel' => $back['secondary']['label'] ?? null,
             'chargesTotal' => $chargesTotal,
             'allocatedTotal' => $allocatedTotal,
             'creditTotal' => $creditTotal,

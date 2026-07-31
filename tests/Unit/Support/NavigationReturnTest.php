@@ -47,4 +47,74 @@ class NavigationReturnTest extends TestCase
         $this->assertSame('/contracts', $resolved['url']);
         $this->assertSame('Volver a contratos', $resolved['label']);
     }
+
+    public function test_resolve_payment_show_back_from_tenant_kardex_adds_contract_secondary(): void
+    {
+        $resolved = NavigationReturn::resolvePaymentShowBack(
+            '/tenants/9?tab=charges',
+            'Volver a Maria',
+            '/contracts/5',
+            'Volver al contrato',
+        );
+
+        $this->assertSame('/tenants/9?tab=charges', $resolved['primary']['url']);
+        $this->assertSame('Volver a Maria', $resolved['primary']['label']);
+        $this->assertSame('/contracts/5', $resolved['secondary']['url']);
+        $this->assertSame('Volver al contrato', $resolved['secondary']['label']);
+    }
+
+    public function test_resolve_payment_show_back_from_payments_tab_preserves_active_tab(): void
+    {
+        $resolved = NavigationReturn::resolvePaymentShowBack(
+            '/tenants/9?tab=payments',
+            'Volver a Maria',
+            '/contracts/5',
+            'Volver al contrato',
+        );
+
+        $this->assertSame('/tenants/9?tab=payments', $resolved['primary']['url']);
+        $this->assertSame('Volver a Maria', $resolved['primary']['label']);
+        $this->assertSame('/contracts/5', $resolved['secondary']['url']);
+        $this->assertSame('Volver al contrato', $resolved['secondary']['label']);
+    }
+
+    public function test_resolve_contract_show_back_from_tenant_kardex_adds_contracts_index_secondary(): void
+    {
+        $resolved = NavigationReturn::resolveContractShowBack(
+            '/tenants/9',
+            'Volver a Maria',
+            '/contracts',
+            'Volver a contratos',
+        );
+
+        $this->assertSame('/tenants/9', $resolved['primary']['url']);
+        $this->assertSame('Volver a Maria', $resolved['primary']['label']);
+        $this->assertSame('/contracts', $resolved['secondary']['url']);
+        $this->assertSame('Volver a contratos', $resolved['secondary']['label']);
+    }
+
+    public function test_resolve_contract_show_back_preserves_active_kardex_tab(): void
+    {
+        $resolved = NavigationReturn::resolveContractShowBack(
+            '/tenants/9?tab=charges',
+            'Volver a Maria',
+            '/contracts',
+            'Volver a contratos',
+        );
+
+        $this->assertSame('/tenants/9?tab=charges', $resolved['primary']['url']);
+    }
+
+    public function test_resolve_payment_show_back_from_contract_uses_single_default(): void
+    {
+        $resolved = NavigationReturn::resolvePaymentShowBack(
+            '/contracts/5',
+            'Volver al contrato',
+            '/contracts/5',
+            'Volver al contrato',
+        );
+
+        $this->assertSame('/contracts/5', $resolved['primary']['url']);
+        $this->assertNull($resolved['secondary']);
+    }
 }

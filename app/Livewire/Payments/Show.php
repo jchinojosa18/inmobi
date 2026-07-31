@@ -101,17 +101,20 @@ class Show extends Component
             ? FileViewerItem::fromPdfRoute('payments.receipt.pdf', ['paymentId' => $payment->id], __('finance.payments.view_pdf'))
             : null;
 
-        $back = NavigationReturn::resolve(
+        $back = NavigationReturn::resolvePaymentShowBack(
             $this->returnUrl !== '' ? $this->returnUrl : null,
             $this->returnLabel !== '' ? $this->returnLabel : null,
             route('contracts.show', $payment->contract_id, false),
             __('common.back_to_contract'),
+            (string) ($payment->contract?->tenant?->full_name ?? ''),
         );
 
         return view('livewire.payments.show', [
             'payment' => $payment,
-            'backUrl' => $back['url'],
-            'backLabel' => $back['label'],
+            'backUrl' => $back['primary']['url'],
+            'backLabel' => $back['primary']['label'],
+            'secondaryBackUrl' => $back['secondary']['url'] ?? null,
+            'secondaryBackLabel' => $back['secondary']['label'] ?? null,
             'receipt' => $receipt,
             'receiptUrl' => $receiptUrl,
             'receiptViewerItem' => $receiptViewerItem,

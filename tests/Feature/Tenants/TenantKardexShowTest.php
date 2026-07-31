@@ -130,6 +130,9 @@ class TenantKardexShowTest extends TestCase
             ->where('status', Contract::STATUS_ACTIVE)
             ->firstOrFail();
 
+        $contractsIndexPath = route('contracts.index', absolute: false);
+        $contractsIndexLabel = __('common.back_to_contracts');
+
         $this->actingAs($user)
             ->get(route('contracts.show', [
                 'contract' => $contract,
@@ -138,13 +141,33 @@ class TenantKardexShowTest extends TestCase
             ]))
             ->assertOk()
             ->assertSee('href="'.$kardexPath.'"', false)
-            ->assertSeeText($backLabel);
+            ->assertSee('href="'.$contractsIndexPath.'"', false)
+            ->assertSeeText($backLabel)
+            ->assertSeeText($contractsIndexLabel);
+
+        $chargesTabPath = $kardexPath.'?tab=charges';
+
+        $this->actingAs($user)
+            ->get(route('contracts.show', [
+                'contract' => $contract,
+                'return' => $chargesTabPath,
+                'return_label' => $backLabel,
+            ]))
+            ->assertOk()
+            ->assertSee('href="'.$chargesTabPath.'"', false)
+            ->assertSee('href="'.$contractsIndexPath.'"', false)
+            ->assertSeeText($backLabel)
+            ->assertSeeText($contractsIndexLabel);
 
         $payment = Payment::query()
             ->withoutOrganizationScope()
             ->where('organization_id', $organization->id)
             ->where('contract_id', $contract->id)
             ->firstOrFail();
+
+        $contractBackLabel = __('common.back_to_contract');
+        $contractPath = route('contracts.show', $contract, false);
+        $paymentsTabPath = $kardexPath.'?tab=payments';
 
         $this->actingAs($user)
             ->get(route('payments.show', [
@@ -154,9 +177,9 @@ class TenantKardexShowTest extends TestCase
             ]))
             ->assertOk()
             ->assertSee('href="'.$kardexPath.'"', false)
-            ->assertSeeText($backLabel);
-
-        $paymentsTabPath = $kardexPath.'?tab=payments';
+            ->assertSee('href="'.$contractPath.'"', false)
+            ->assertSeeText($backLabel)
+            ->assertSeeText($contractBackLabel);
 
         $this->actingAs($user)
             ->get(route('tenants.show', ['tenant' => $tenant, 'tab' => 'payments']))
@@ -171,14 +194,26 @@ class TenantKardexShowTest extends TestCase
             ]))
             ->assertOk()
             ->assertSee('href="'.$paymentsTabPath.'"', false)
-            ->assertSeeText($backLabel);
-
-        $chargesTabPath = $kardexPath.'?tab=charges';
+            ->assertSee('href="'.$contractPath.'"', false)
+            ->assertSeeText($backLabel)
+            ->assertSeeText($contractBackLabel);
 
         $this->actingAs($user)
             ->get(route('tenants.show', ['tenant' => $tenant, 'tab' => 'charges']))
             ->assertOk()
             ->assertSee('return='.rawurlencode($chargesTabPath), false);
+
+        $this->actingAs($user)
+            ->get(route('payments.show', [
+                'payment' => $payment,
+                'return' => $chargesTabPath,
+                'return_label' => $backLabel,
+            ]))
+            ->assertOk()
+            ->assertSee('href="'.$chargesTabPath.'"', false)
+            ->assertSee('href="'.$contractPath.'"', false)
+            ->assertSeeText($backLabel)
+            ->assertSeeText($contractBackLabel);
     }
 
     public function test_view_only_user_cannot_see_or_use_edit(): void

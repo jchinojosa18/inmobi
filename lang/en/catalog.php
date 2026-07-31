@@ -72,6 +72,7 @@ return [
             'view_contract' => 'View contract',
             'view_payment' => 'View payment',
             'back_to_tenant' => 'Back to :name',
+            'back_to_tenant_fallback' => 'Back to tenant',
             'flash_updated' => 'Tenant updated.',
         ],
     ],

@@ -72,6 +72,7 @@ return [
             'view_contract' => 'Ver contrato',
             'view_payment' => 'Ver pago',
             'back_to_tenant' => 'Volver a :name',
+            'back_to_tenant_fallback' => 'Volver al inquilino',
             'flash_updated' => 'Inquilino actualizado.',
         ],
     ],

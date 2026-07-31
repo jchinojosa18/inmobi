@@ -7,6 +7,11 @@
             <x-ui.button href="{{ $backUrl }}" variant="secondary">
                 {{ $backLabel }}
             </x-ui.button>
+            @if ($secondaryBackUrl && $secondaryBackLabel)
+                <x-ui.button href="{{ $secondaryBackUrl }}" variant="secondary">
+                    {{ $secondaryBackLabel }}
+                </x-ui.button>
+            @endif
             @if ($canCreatePayments)
                 <x-ui.button
                     type="button"
