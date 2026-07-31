@@ -3,59 +3,37 @@
 namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
-use App\Models\Expense;
+use App\Support\CashFlowReportService;
 use App\Support\DateDisplay;
-use App\Support\OperatingIncomeService;
 use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CashFlowCsvExportController extends Controller
 {
-    public function __invoke(Request $request, OperatingIncomeService $operatingIncomeService): StreamedResponse
+    public function __invoke(Request $request, CashFlowReportService $cashFlowReportService): StreamedResponse
     {
         $validated = $request->validate([
             'date_from' => ['required', 'date'],
             'date_to' => ['required', 'date', 'after_or_equal:date_from'],
         ]);
 
-        $dateFrom = CarbonImmutable::parse($validated['date_from'])->startOfDay();
-        $dateTo = CarbonImmutable::parse($validated['date_to'])->endOfDay();
+        $dateFrom = CarbonImmutable::parse($validated['date_from'], 'America/Tijuana')->startOfDay();
+        $dateTo = CarbonImmutable::parse($validated['date_to'], 'America/Tijuana')->endOfDay();
         $organizationId = (int) $request->user()?->organization_id;
         $currentPlazaId = TenantContext::currentPlazaId();
 
-        $incomeDetails = $operatingIncomeService->allocationsForRange(
-            organizationId: $organizationId,
-            dateFrom: $dateFrom,
-            dateTo: $dateTo,
-            plazaId: $currentPlazaId,
-        );
-        $incomeByType = $operatingIncomeService->totalsByTypeForRange(
-            organizationId: $organizationId,
-            dateFrom: $dateFrom,
-            dateTo: $dateTo,
-            plazaId: $currentPlazaId,
+        $report = $cashFlowReportService->build(
+            $organizationId,
+            $dateFrom,
+            $dateTo,
+            $currentPlazaId,
         );
 
-        $expenses = Expense::query()
-            ->with(['unit.property', 'expenseCategory'])
-            ->when($currentPlazaId !== null, function (Builder $query) use ($currentPlazaId): void {
-                $query->whereHas('unit.property', function (Builder $propertyQuery) use ($currentPlazaId): void {
-                    $propertyQuery->where('plaza_id', $currentPlazaId);
-                });
-            })
-            ->whereBetween('spent_at', [$dateFrom->toDateString(), $dateTo->toDateString()])
-            ->orderBy('spent_at')
-            ->get();
-
-        $incomeTotal = round((float) array_sum($incomeByType), 2);
-        $expenseTotal = round((float) $expenses->sum('amount'), 2);
-        $netTotal = round($incomeTotal - $expenseTotal, 2);
         $filename = 'cash-flow-'.$dateFrom->format('Ymd').'-'.$dateTo->format('Ymd').'.csv';
 
-        return response()->streamDownload(function () use ($incomeDetails, $incomeByType, $expenses, $incomeTotal, $expenseTotal, $netTotal): void {
+        return response()->streamDownload(function () use ($report): void {
             $output = fopen('php://output', 'w');
 
             if (! is_resource($output)) {
@@ -66,7 +44,7 @@ class CashFlowCsvExportController extends Controller
 
             fputcsv($output, ['SECCION', 'INGRESOS_ALLOCATIONS']);
             fputcsv($output, ['fecha_pago', 'folio', 'contract_id', 'inquilino', 'propiedad', 'unidad', 'tipo', 'monto']);
-            foreach ($incomeDetails as $row) {
+            foreach ($report['incomeDetails'] as $row) {
                 fputcsv($output, [
                     DateDisplay::formatDateTime($row['paid_at']),
                     $row['receipt_folio'] ?? '',
@@ -82,14 +60,14 @@ class CashFlowCsvExportController extends Controller
             fputcsv($output, []);
             fputcsv($output, ['SECCION', 'INGRESOS_POR_TIPO']);
             fputcsv($output, ['tipo', 'total']);
-            foreach ($incomeByType as $type => $total) {
+            foreach ($report['incomeByType'] as $type => $total) {
                 fputcsv($output, [(string) $type, number_format((float) $total, 2, '.', '')]);
             }
 
             fputcsv($output, []);
             fputcsv($output, ['SECCION', 'EGRESOS']);
             fputcsv($output, ['fecha', 'categoria', 'propiedad', 'unidad', 'proveedor', 'monto']);
-            foreach ($expenses as $expense) {
+            foreach ($report['expenses'] as $expense) {
                 fputcsv($output, [
                     DateDisplay::formatDate($expense->spent_at),
                     $expense->expenseCategory?->name ?? '',
@@ -101,9 +79,9 @@ class CashFlowCsvExportController extends Controller
             }
 
             fputcsv($output, []);
-            fputcsv($output, ['RESUMEN', '', '', '', 'TOTAL_INGRESOS', number_format($incomeTotal, 2, '.', '')]);
-            fputcsv($output, ['RESUMEN', '', '', '', 'TOTAL_EGRESOS', number_format($expenseTotal, 2, '.', '')]);
-            fputcsv($output, ['RESUMEN', '', '', '', 'NETO', number_format($netTotal, 2, '.', '')]);
+            fputcsv($output, ['RESUMEN', '', '', '', 'TOTAL_INGRESOS', number_format($report['incomeTotal'], 2, '.', '')]);
+            fputcsv($output, ['RESUMEN', '', '', '', 'TOTAL_EGRESOS', number_format($report['expenseTotal'], 2, '.', '')]);
+            fputcsv($output, ['RESUMEN', '', '', '', 'NETO', number_format($report['netTotal'], 2, '.', '')]);
 
             fclose($output);
         }, $filename, [

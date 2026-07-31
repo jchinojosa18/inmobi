@@ -2,13 +2,10 @@
 
 namespace App\Livewire\Reports;
 
-use App\Models\Expense;
-use App\Models\MonthClose;
-use App\Support\OperatingIncomeService;
+use App\Support\CashFlowReportService;
 use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
-use Illuminate\Database\Eloquent\Builder;
 use Livewire\Component;
 
 class CashFlow extends Component
@@ -40,41 +37,12 @@ class CashFlow extends Component
         $organizationId = (int) auth()->user()?->organization_id;
         $currentPlazaId = TenantContext::currentPlazaId();
 
-        $operatingIncomeService = app(OperatingIncomeService::class);
-        $incomeDetails = $operatingIncomeService->allocationsForRange($organizationId, $dateFrom, $dateTo, $currentPlazaId);
-        $incomeByType = $operatingIncomeService->totalsByTypeForRange($organizationId, $dateFrom, $dateTo, $currentPlazaId);
-        $incomeTotal = round((float) array_sum($incomeByType), 2);
-
-        $expenses = Expense::query()
-            ->with(['unit.property', 'expenseCategory'])
-            ->when($currentPlazaId !== null, function (Builder $query) use ($currentPlazaId): void {
-                $query->whereHas('unit.property', function (Builder $propertyQuery) use ($currentPlazaId): void {
-                    $propertyQuery->where('plaza_id', $currentPlazaId);
-                });
-            })
-            ->whereBetween('spent_at', [$dateFrom->toDateString(), $dateTo->toDateString()])
-            ->orderBy('spent_at')
-            ->get();
-
-        $expenseTotal = round((float) $expenses->sum('amount'), 2);
-
-        $expensesByCategory = $expenses
-            ->groupBy(fn (Expense $expense) => $expense->expenseCategory?->name ?? '—')
-            ->map(fn ($group) => round((float) $group->sum('amount'), 2))
-            ->sortKeys();
-
-        $netTotal = round($incomeTotal - $expenseTotal, 2);
-
-        $incomeCount = $incomeDetails->count();
-        $expenseCount = $expenses->count();
-        $closedMonthSnapshot = $this->resolveClosedMonthSnapshot($organizationId, $dateFrom, $dateTo);
-        $snapshotMatches = null;
-
-        if ($closedMonthSnapshot !== null) {
-            $snapshotMatches = round((float) ($closedMonthSnapshot['ingresos_operativos'] ?? 0), 2) === $incomeTotal
-                && round((float) ($closedMonthSnapshot['egresos'] ?? 0), 2) === $expenseTotal
-                && round((float) ($closedMonthSnapshot['neto'] ?? 0), 2) === $netTotal;
-        }
+        $report = app(CashFlowReportService::class)->build(
+            $organizationId,
+            $dateFrom,
+            $dateTo,
+            $currentPlazaId,
+        );
 
         $exportUrl = route('reports.flow.export.csv', [
             'date_from' => $this->date_from,
@@ -82,18 +50,7 @@ class CashFlow extends Component
         ]);
 
         return view('livewire.reports.cash-flow', [
-            'incomeTotal' => $incomeTotal,
-            'expenseTotal' => $expenseTotal,
-            'netTotal' => $netTotal,
-            'incomeCount' => $incomeCount,
-            'expenseCount' => $expenseCount,
-            'incomeByType' => $incomeByType,
-            'incomeDetails' => $incomeDetails,
-            'expenses' => $expenses,
-            'expensesByCategory' => $expensesByCategory,
-            'operatingChargeTypes' => $operatingIncomeService->operatingChargeTypes(),
-            'closedMonthSnapshot' => $closedMonthSnapshot,
-            'snapshotMatches' => $snapshotMatches,
+            ...$report,
             'exportUrl' => $exportUrl,
         ])->layout('layouts.app', ['title' => __('finance.cash_flow.title')]);
     }
@@ -121,33 +78,5 @@ class CashFlow extends Component
             'date_to.date' => __('finance.validation.date_to_invalid'),
             'date_to.after_or_equal' => __('finance.validation.date_to_after'),
         ];
-    }
-
-    /**
-     * @return array<string, mixed>|null
-     */
-    private function resolveClosedMonthSnapshot(int $organizationId, CarbonImmutable $dateFrom, CarbonImmutable $dateTo): ?array
-    {
-        $monthStart = $dateFrom->startOfMonth()->toDateString();
-        $monthEnd = $dateFrom->endOfMonth()->toDateString();
-
-        if (
-            $dateFrom->toDateString() !== $monthStart
-            || $dateTo->toDateString() !== $monthEnd
-            || $dateFrom->format('Y-m') !== $dateTo->format('Y-m')
-        ) {
-            return null;
-        }
-
-        $monthClose = MonthClose::query()
-            ->where('organization_id', $organizationId)
-            ->where('month', $dateFrom->format('Y-m'))
-            ->first();
-
-        if ($monthClose === null) {
-            return null;
-        }
-
-        return is_array($monthClose->snapshot) ? $monthClose->snapshot : null;
     }
 }

@@ -12,10 +12,12 @@ use App\Models\MonthClose;
 use App\Models\Organization;
 use App\Models\Payment;
 use App\Models\PaymentAllocation;
+use App\Models\Plaza;
 use App\Models\Property;
 use App\Models\Tenant;
 use App\Models\Unit;
 use App\Models\User;
+use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -180,6 +182,56 @@ class CashFlowReportTest extends TestCase
             ->assertSee('RENT')
             ->assertSee('PENALTY')
             ->assertSee('$1,120.00');
+    }
+
+    public function test_ui_and_csv_share_the_same_totals(): void
+    {
+        [$user] = $this->seedFinanceData();
+
+        $this->actingAs($user);
+
+        Livewire::test(\App\Livewire\Reports\CashFlow::class)
+            ->set('date_from', '2026-03-01')
+            ->set('date_to', '2026-03-31')
+            ->assertSee('$1,500.00')
+            ->assertSee('$300.00')
+            ->assertSee('$1,200.00');
+
+        $csv = $this->actingAs($user)->get(route('reports.flow.export.csv', [
+            'date_from' => '2026-03-01',
+            'date_to' => '2026-03-31',
+        ]))->streamedContent();
+
+        $this->assertStringContainsString('TOTAL_INGRESOS,1500.00', $csv);
+        $this->assertStringContainsString('TOTAL_EGRESOS,300.00', $csv);
+        $this->assertStringContainsString('NETO,1200.00', $csv);
+    }
+
+    public function test_snapshot_banner_hidden_when_plaza_is_active(): void
+    {
+        [$user] = $this->seedFinanceData();
+
+        app(CloseMonthAction::class)->execute(
+            organizationId: (int) $user->organization_id,
+            userId: (int) $user->id,
+            month: '2026-03',
+            notes: 'Close for plaza banner',
+        );
+
+        $plaza = Plaza::factory()->create([
+            'organization_id' => $user->organization_id,
+        ]);
+        $sessionKey = TenantContext::sessionKeyForCurrentPlaza((int) $user->id);
+
+        $this->actingAs($user)
+            ->withSession([$sessionKey => $plaza->id])
+            ->get(route('reports.flow', [
+                'date_from' => '2026-03-01',
+                'date_to' => '2026-03-31',
+            ]))
+            ->assertOk()
+            ->assertDontSee('Mes cerrado: el reporte coincide con el snapshot.')
+            ->assertDontSee('Mes cerrado: hay diferencia contra snapshot de cierre.');
     }
 
     public function test_monthly_report_matches_month_close_snapshot_when_month_is_closed(): void
