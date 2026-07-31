@@ -26,6 +26,7 @@ Hacer que el reporte de flujo (`/reports/flow`) sea **consistente y preciso**: m
 - P&L por unidad
 - Rediseño visual grande de la pantalla
 - Cambios a `BuildMonthCloseSnapshotAction`
+- Cards informativas de depósitos / ingreso bruto con depósitos → **Fase 2** (abajo)
 
 ## Architecture
 
@@ -133,3 +134,59 @@ Comparar `ingresos_operativos`, `egresos`, `neto` del snapshot vs totales del se
 - Fechas UI: `d/m/Y` vía `DateDisplay` / `x-ui.display-date`.
 - Diff mínimo; lógica en Support, no duplicada en Livewire.
 - Verificar: `./vendor/bin/sail test --filter=CashFlow` + `./vendor/bin/sail pint --dirty`.
+
+---
+
+## Fase 2 — Cards informativas de depósitos (no implementada en v1)
+
+**Status:** Spec only (aprobado 2026-07-31)  
+**Goal:** Mostrar movimiento de garantía en el reporte sin alterar la congruencia operativa ni el snapshot de cierre.
+
+### Decisiones
+
+| Tema | Decisión |
+|------|----------|
+| Impacto en Ingresos / Egresos / Neto | **Ninguno** — las tres cards operativas y el `RESUMEN` CSV se mantienen |
+| Snapshot / `ingresos_operativos` | Sin cambios; las cards nuevas no participan en match/mismatch |
+| Fuente de depósitos recibidos | Suma de cargos `DEPOSIT_HOLD` (registro de garantía), no allocations ni `payments.amount` |
+| Fecha del rango | `charges.charge_date` entre `date_from` y `date_to` (mismo timezone `America/Tijuana`) |
+| Plaza | Misma regla que ingresos: vía `unit.property.plaza_id` del contrato/unidad del cargo |
+| Anulados | Excluir soft-deleted; si existe void de hold, no contar cargos anulados (mismo criterio que `DepositBalanceService` / `VoidDepositHoldAction`) |
+| Ingreso bruto (caja) | `incomeTotal` (operativo) + `depositsReceivedTotal` — solo etiqueta informativa |
+| Neto | No se redefine; no agregar “neto de caja” en esta fase |
+| Reembolsos | Ya van en Egresos (`REEMBOLSO DEPÓSITO`); no restarlos otra vez en la card de depósitos |
+
+### UI
+
+- Dos `stat-card` adicionales (fila secundaria o misma grilla ampliada), **después** de Ingresos / Egresos / Neto o claramente separadas como “Caja / garantías”:
+  1. **Depósitos recibidos** — `depositsReceivedTotal` + hint con conteo de holds
+  2. **Ingreso bruto (con depósitos)** — `grossCashInTotal` + hint que aclare que **no** es el ingreso del cierre mensual
+- Copy i18n (`lang/es|en/finance.php`): nombres que no digan solo “Ingresos” para el bruto.
+- Nota operativa existente (excluye DEPOSIT_HOLD / DEPOSIT_APPLY del ingreso operativo) se mantiene.
+
+### Servicio
+
+Extender `CashFlowReportService::build()` (no duplicar en Livewire):
+
+| Campo nuevo | Contenido |
+|-------------|-----------|
+| `depositsReceivedTotal` | Suma `DEPOSIT_HOLD.amount` en rango + plaza |
+| `depositsReceivedCount` | Cantidad de holds en el rango |
+| `grossCashInTotal` | `round(incomeTotal + depositsReceivedTotal, 2)` |
+
+CSV (opcional en fase 2): filas de resumen adicionales `TOTAL_DEPOSITOS_RECIBIDOS` y `INGRESO_BRUTO_CON_DEPOSITOS` **después** del `RESUMEN` operativo, sin renombrar `TOTAL_INGRESOS` / `NETO`.
+
+### Fuera de alcance (fase 2)
+
+- Incluir depósitos en `incomeTotal` o en snapshot de cierre
+- Detalle tabular de cada `DEPOSIT_HOLD` (puede ser fase 3)
+- Neto de caja alternativo
+- Cambiar `BuildMonthCloseSnapshotAction`
+
+### Tests mínimos (fase 2)
+
+- Hold en rango suma en `depositsReceivedTotal`; hold fuera de rango no.
+- `incomeTotal` y `netTotal` idénticos con o sin holds en el periodo (regresión de congruencia).
+- Con plaza: hold de otra plaza no entra; hold de la plaza sí.
+- `grossCashInTotal === incomeTotal + depositsReceivedTotal`.
+- Banner de snapshot sigue comparando solo operativos (sin depósitos).
