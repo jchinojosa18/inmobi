@@ -93,6 +93,9 @@ class GenerateRentChargesCommandTest extends TestCase
 
     public function test_it_is_idempotent_when_command_runs_twice_for_same_month(): void
     {
+        // Freeze on day 31: createFromFormat('Y-m') without '!' overflows April → May.
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-07-31 12:00:00', 'America/Tijuana'));
+
         $month = '2026-04';
 
         $this->createTwoActiveContracts();
@@ -118,6 +121,8 @@ class GenerateRentChargesCommandTest extends TestCase
                 ->where('period', $month)
                 ->count()
         );
+
+        CarbonImmutable::setTestNow();
     }
 
     /**

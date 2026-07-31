@@ -83,7 +83,7 @@ class GenerateMonthlyRentChargesActionTest extends TestCase
         [$organization, $contract, $unit] = $this->makeContractGraph();
         TenantContext::setOrganizationId($organization->id);
 
-        $periodStart = \Carbon\CarbonImmutable::createFromFormat('Y-m', '2026-03')->startOfMonth();
+        $periodStart = \Carbon\CarbonImmutable::createFromFormat('!Y-m', '2026-03')->startOfMonth();
         $dueDate = $periodStart->day(min(max((int) $contract->due_day, 1), $periodStart->daysInMonth));
 
         $charge = Charge::query()->create([

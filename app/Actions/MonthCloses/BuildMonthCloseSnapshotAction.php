@@ -21,7 +21,7 @@ class BuildMonthCloseSnapshotAction
      */
     public function execute(int $organizationId, string $month): array
     {
-        $periodStart = CarbonImmutable::createFromFormat('Y-m', $month, 'America/Tijuana')->startOfMonth();
+        $periodStart = CarbonImmutable::createFromFormat('!Y-m', $month, 'America/Tijuana')->startOfMonth();
         $periodEnd = $periodStart->endOfMonth();
         $cutoffTimestamp = $periodEnd->setTime(23, 59, 59);
 

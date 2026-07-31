@@ -486,7 +486,7 @@ class Show extends Component
         }
 
         return ucfirst(
-            CarbonImmutable::createFromFormat('Y-m', $period)
+            CarbonImmutable::createFromFormat('!Y-m', $period)
                 ->locale(app()->getLocale())
                 ->translatedFormat('F Y')
         );

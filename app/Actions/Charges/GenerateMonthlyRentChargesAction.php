@@ -27,7 +27,7 @@ class GenerateMonthlyRentChargesAction
      */
     public function executeForOrganization(string $month, ?int $organizationId): array
     {
-        $periodStart = CarbonImmutable::createFromFormat('Y-m', $month)->startOfMonth();
+        $periodStart = CarbonImmutable::createFromFormat('!Y-m', $month)->startOfMonth();
         $periodEnd = $periodStart->endOfMonth();
 
         $created = 0;
@@ -70,7 +70,7 @@ class GenerateMonthlyRentChargesAction
     public function ensureCurrentMonthForContract(Contract $contract): Charge
     {
         $currentMonth = now('America/Tijuana')->format('Y-m');
-        $periodStart = CarbonImmutable::createFromFormat('Y-m', $currentMonth)->startOfMonth();
+        $periodStart = CarbonImmutable::createFromFormat('!Y-m', $currentMonth)->startOfMonth();
 
         return $this->createRentChargeForContractPeriod($contract, $periodStart);
     }
@@ -104,7 +104,7 @@ class GenerateMonthlyRentChargesAction
             ->chunkById(200, function ($contracts) use (&$created, &$skipped, $asOf, $candidatePeriods, $previousMonth): void {
                 foreach ($contracts as $contract) {
                     foreach ($candidatePeriods as $month) {
-                        $periodStart = CarbonImmutable::createFromFormat('Y-m', $month)->startOfMonth();
+                        $periodStart = CarbonImmutable::createFromFormat('!Y-m', $month)->startOfMonth();
                         $periodEnd = $periodStart->endOfMonth();
 
                         if (! $this->contractCoversPeriod($contract, $periodStart, $periodEnd)) {
@@ -174,7 +174,7 @@ class GenerateMonthlyRentChargesAction
                 continue;
             }
 
-            $periodStart = CarbonImmutable::createFromFormat('Y-m', $period)->startOfMonth();
+            $periodStart = CarbonImmutable::createFromFormat('!Y-m', $period)->startOfMonth();
             $dueDate = $this->buildDueDate($periodStart, (int) $contract->due_day);
             $graceUntil = $dueDate->addDays(max((int) $contract->grace_days, 0));
 
