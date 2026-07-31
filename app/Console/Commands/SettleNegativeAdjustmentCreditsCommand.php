@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Actions\Charges\RegisterContractAdjustmentAction;
 use App\Models\Charge;
+use App\Support\TenantContext;
 use Illuminate\Console\Command;
 
 class SettleNegativeAdjustmentCreditsCommand extends Command
@@ -38,11 +39,17 @@ class SettleNegativeAdjustmentCreditsCommand extends Command
         $skipped = 0;
 
         foreach ($query->cursor() as $charge) {
-            if ($action->settleExistingNegativeAdjustment($charge)) {
-                $settled++;
-                $this->line("Settled charge #{$charge->id} contract #{$charge->contract_id}");
-            } else {
-                $skipped++;
+            TenantContext::setOrganizationId((int) $charge->organization_id);
+
+            try {
+                if ($action->settleExistingNegativeAdjustment($charge)) {
+                    $settled++;
+                    $this->line("Settled charge #{$charge->id} contract #{$charge->contract_id}");
+                } else {
+                    $skipped++;
+                }
+            } finally {
+                TenantContext::clear();
             }
         }
 

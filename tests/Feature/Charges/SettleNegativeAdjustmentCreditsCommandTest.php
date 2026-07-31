@@ -59,16 +59,24 @@ class SettleNegativeAdjustmentCreditsCommandTest extends TestCase
             'meta' => ['reason' => 'legacy discount'],
         ]);
 
+        TenantContext::clear();
+        $this->assertNull(TenantContext::currentOrganizationId());
+
         $this->artisan('inmo:adjustments:settle-negative-credits', [
             '--contract-id' => $contract->id,
         ])->assertSuccessful();
 
-        $charge->refresh();
+        $charge = Charge::query()->withoutOrganizationScope()->findOrFail($charge->id);
         $this->assertTrue((bool) data_get($charge->meta, 'settled_as_credit'));
         $this->assertSame(
             298.75,
-            (float) CreditBalance::query()->where('contract_id', $contract->id)->value('balance')
+            (float) CreditBalance::query()
+                ->withoutOrganizationScope()
+                ->where('contract_id', $contract->id)
+                ->value('balance')
         );
+
+        $this->assertNull(TenantContext::currentOrganizationId());
 
         $this->artisan('inmo:adjustments:settle-negative-credits', [
             '--contract-id' => $contract->id,
@@ -76,7 +84,10 @@ class SettleNegativeAdjustmentCreditsCommandTest extends TestCase
 
         $this->assertSame(
             298.75,
-            (float) CreditBalance::query()->where('contract_id', $contract->id)->value('balance')
+            (float) CreditBalance::query()
+                ->withoutOrganizationScope()
+                ->where('contract_id', $contract->id)
+                ->value('balance')
         );
     }
 }
