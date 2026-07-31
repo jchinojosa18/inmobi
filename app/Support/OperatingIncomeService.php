@@ -3,8 +3,10 @@
 namespace App\Support;
 
 use App\Models\Charge;
+use App\Models\Payment;
 use App\Models\PaymentAllocation;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 class OperatingIncomeService
@@ -75,7 +77,7 @@ class OperatingIncomeService
             ->when($plazaId !== null, function ($query) use ($plazaId): void {
                 $query->where('properties.plaza_id', $plazaId);
             })
-            ->whereIn('charges.type', $this->operatingChargeTypes())
+            ->tap(fn (Builder $query): Builder => $this->constrainOperatingIncome($query))
             ->select([
                 'payment_allocations.id as allocation_id',
                 'payment_allocations.payment_id',
@@ -149,7 +151,7 @@ class OperatingIncomeService
             ->when($plazaId !== null, function ($query) use ($plazaId): void {
                 $query->where('properties.plaza_id', $plazaId);
             })
-            ->whereIn('charges.type', $this->operatingChargeTypes())
+            ->tap(fn (Builder $query): Builder => $this->constrainOperatingIncome($query))
             ->selectRaw('charges.type as charge_type, SUM(payment_allocations.amount) as total_amount')
             ->groupBy('charges.type')
             ->get();
@@ -170,5 +172,19 @@ class OperatingIncomeService
         return round((float) array_sum(
             $this->totalsByTypeForRange($organizationId, $dateFrom, $dateTo, $plazaId)
         ), 2);
+    }
+
+    /**
+     * Cash-oriented operating income: allocations on operating charge types,
+     * excluding internal CREDIT applications (saldo a favor / discounts).
+     *
+     * @param  Builder<\App\Models\PaymentAllocation>  $query
+     * @return Builder<\App\Models\PaymentAllocation>
+     */
+    private function constrainOperatingIncome(Builder $query): Builder
+    {
+        return $query
+            ->whereIn('charges.type', $this->operatingChargeTypes())
+            ->where('payments.method', '!=', Payment::METHOD_CREDIT);
     }
 }

@@ -155,7 +155,7 @@ Corrección manual mínima por contrato (tasa mal capturada):
 
 ### 4.4 Reportes por allocations (fuente de verdad)
 - Servicio: [`OperatingIncomeService`](../app/Support/OperatingIncomeService.php)
-- Ingreso operativo = sum de `payment_allocations.amount` en tipos operativos.
+- Ingreso operativo = sum de `payment_allocations.amount` en tipos operativos, **excluyendo** pagos `method=CREDIT` (aplicación de saldo a favor / descuentos; no es caja).
 - Excluye depósitos (`DEPOSIT_HOLD`, `DEPOSIT_APPLY`).
 - Reporte UI: [`/reports/flow`](../app/Livewire/Reports/CashFlow.php), export CSV controller.
 

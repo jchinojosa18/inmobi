@@ -103,4 +103,97 @@ class OperatingIncomeServiceTest extends TestCase
         $this->assertSame(1120.0, $detailsSum);
         $this->assertSame($detailsSum, $typesSum);
     }
+
+    public function test_credit_method_allocations_are_excluded_from_operating_income(): void
+    {
+        $organization = Organization::factory()->create();
+        User::factory()->create(['organization_id' => $organization->id]);
+
+        $property = Property::factory()->create(['organization_id' => $organization->id]);
+        $unit = Unit::factory()->create([
+            'organization_id' => $organization->id,
+            'property_id' => $property->id,
+        ]);
+        $tenant = Tenant::factory()->create(['organization_id' => $organization->id]);
+        $contract = Contract::factory()->create([
+            'organization_id' => $organization->id,
+            'unit_id' => $unit->id,
+            'tenant_id' => $tenant->id,
+            'status' => Contract::STATUS_ENDED,
+            'ends_at' => '2026-12-31',
+            'rent_amount' => 0,
+        ]);
+
+        $rent = Charge::query()->create([
+            'organization_id' => $organization->id,
+            'contract_id' => $contract->id,
+            'unit_id' => $unit->id,
+            'type' => Charge::TYPE_RENT,
+            'period' => '2026-07',
+            'charge_date' => '2026-07-01',
+            'amount' => 1000,
+            'meta' => [],
+        ]);
+        $adjustment = Charge::query()->create([
+            'organization_id' => $organization->id,
+            'contract_id' => $contract->id,
+            'unit_id' => $unit->id,
+            'type' => Charge::TYPE_ADJUSTMENT,
+            'period' => '2026-07',
+            'charge_date' => '2026-07-15',
+            'amount' => 400,
+            'meta' => ['reason' => 'Corrección'],
+        ]);
+
+        $cashPayment = Payment::query()->create([
+            'organization_id' => $organization->id,
+            'contract_id' => $contract->id,
+            'paid_at' => '2026-07-10 10:00:00',
+            'amount' => 1000,
+            'method' => Payment::METHOD_CASH,
+            'reference' => null,
+            'receipt_folio' => 'REC-CASH-001',
+            'meta' => [],
+        ]);
+        PaymentAllocation::query()->create([
+            'organization_id' => $organization->id,
+            'payment_id' => $cashPayment->id,
+            'charge_id' => $rent->id,
+            'amount' => 1000,
+            'meta' => [],
+        ]);
+
+        $creditPayment = Payment::query()->create([
+            'organization_id' => $organization->id,
+            'contract_id' => $contract->id,
+            'paid_at' => '2026-07-16 10:00:00',
+            'amount' => 400,
+            'method' => Payment::METHOD_CREDIT,
+            'reference' => null,
+            'receipt_folio' => null,
+            'meta' => ['source' => 'credit_application'],
+        ]);
+        PaymentAllocation::query()->create([
+            'organization_id' => $organization->id,
+            'payment_id' => $creditPayment->id,
+            'charge_id' => $adjustment->id,
+            'amount' => 400,
+            'meta' => ['source' => 'apply_credit_balance_action'],
+        ]);
+
+        $from = CarbonImmutable::parse('2026-07-01', 'America/Tijuana')->startOfDay();
+        $to = CarbonImmutable::parse('2026-07-31', 'America/Tijuana')->endOfDay();
+        $service = app(OperatingIncomeService::class);
+
+        $details = $service->allocationsForRange((int) $organization->id, $from, $to);
+        $totals = $service->totalsByTypeForRange((int) $organization->id, $from, $to);
+
+        $this->assertSame(1000.0, round((float) $details->sum('allocated_amount'), 2));
+        $this->assertSame(1000.0, $service->sumForRange((int) $organization->id, $from, $to));
+        $this->assertSame(1000.0, $totals[Charge::TYPE_RENT] ?? 0.0);
+        $this->assertSame(0.0, $totals[Charge::TYPE_ADJUSTMENT] ?? 0.0);
+        $this->assertTrue($details->every(
+            fn (array $row): bool => $row['payment_method'] !== Payment::METHOD_CREDIT
+        ));
+    }
 }

@@ -112,7 +112,7 @@ Comparar `ingresos_operativos`, `egresos`, `neto` del snapshot vs totales del se
 
 ## Reglas de negocio (sin cambio conceptual)
 
-- Ingreso operativo = suma de `payment_allocations.amount` en tipos configurados (`config/reporting.operating_income_charge_types` o default RENT/PENALTY/SERVICE/OTHER/ADJUSTMENT).
+- Ingreso operativo = suma de `payment_allocations.amount` en tipos configurados (`config/reporting.operating_income_charge_types` o default RENT/PENALTY/SERVICE/OTHER/ADJUSTMENT), **excluyendo** `payments.method = CREDIT` (aplicación de saldo a favor; no es caja).
 - No usar `payments.amount` bruto.
 - Neto = ingresos − egresos.
 - Cierre mensual org-wide sigue siendo la referencia cuando el reporte se ve sin plaza y en mes completo.
