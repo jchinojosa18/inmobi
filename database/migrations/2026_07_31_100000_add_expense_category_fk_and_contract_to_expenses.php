@@ -98,6 +98,17 @@ return new class extends Migration
             $contractId = data_get($meta, 'contract_id');
             $contractId = is_numeric($contractId) ? (int) $contractId : null;
 
+            if ($contractId !== null) {
+                $contractValid = DB::table('contracts')
+                    ->where('id', $contractId)
+                    ->where('organization_id', $organizationId)
+                    ->exists();
+
+                if (! $contractValid) {
+                    $contractId = null;
+                }
+            }
+
             DB::table('expenses')->where('id', $expense->id)->update([
                 'expense_category_id' => $categoryId,
                 'contract_id' => $contractId,

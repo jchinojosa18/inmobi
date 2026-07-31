@@ -164,6 +164,7 @@
             @endif
         </div>
         @error('newExpenseCategory') <p class="px-5 pt-2 text-sm text-red-600">{{ $message }}</p> @enderror
+        @error('expenseCategory') <p class="px-5 pt-2 text-sm text-red-600">{{ $message }}</p> @enderror
 
         <x-ui.table>
             <x-slot:head>
@@ -178,7 +179,12 @@
                                 <x-ui.input type="text" wire:model.blur="editingExpenseCategoryName" />
                                 @error('editingExpenseCategoryName') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                             @else
-                                {{ $category->name }}
+                                <span class="inline-flex items-center gap-2">
+                                    {{ $category->name }}
+                                    @if ($category->is_system)
+                                        <x-ui.badge variant="neutral">{{ __('settings.system_category') }}</x-ui.badge>
+                                    @endif
+                                </span>
                             @endif
                         </td>
                         <td class="px-4 py-3 text-right">
@@ -191,7 +197,7 @@
                                         <x-ui.button type="button" wire:click="cancelEditingExpenseCategory" variant="secondary" size="sm">
                                             {{ __('common.cancel') }}
                                         </x-ui.button>
-                                    @else
+                                    @elseif (! $category->is_system)
                                         <x-ui.button type="button" wire:click="startEditingExpenseCategory({{ $category->id }})" variant="secondary" size="sm">
                                             {{ __('common.edit') }}
                                         </x-ui.button>

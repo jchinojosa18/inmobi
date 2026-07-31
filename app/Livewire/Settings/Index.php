@@ -158,6 +158,10 @@ class Index extends Component
     {
         $category = ExpenseCategory::query()->findOrFail($categoryId);
 
+        if ($category->is_system) {
+            return;
+        }
+
         $this->editingExpenseCategoryId = $category->id;
         $this->editingExpenseCategoryName = $category->name;
     }
@@ -167,6 +171,14 @@ class Index extends Component
         $this->assertCanManageExpenseCategories();
 
         if (! is_int($this->editingExpenseCategoryId)) {
+            return;
+        }
+
+        $category = ExpenseCategory::query()->findOrFail($this->editingExpenseCategoryId);
+
+        if ($category->is_system) {
+            $this->addError('expenseCategory', __('settings.validation.category_system_rename_forbidden'));
+
             return;
         }
 
@@ -265,7 +277,7 @@ class Index extends Component
     {
         $categories = ExpenseCategory::query()
             ->orderBy('name')
-            ->get(['id', 'name', 'is_active']);
+            ->get(['id', 'name', 'is_active', 'is_system']);
 
         return view('livewire.settings.index', [
             'categories' => $categories,

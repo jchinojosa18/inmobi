@@ -147,6 +147,31 @@ class OrganizationSettingsTest extends TestCase
             ->assertHasErrors(['organizationName' => 'unique']);
     }
 
+    public function test_cannot_rename_system_expense_category(): void
+    {
+        Role::findOrCreate('Admin', 'web');
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->create(['organization_id' => $organization->id]);
+        $admin->assignRole('Admin');
+
+        $category = ExpenseCategory::factory()->system()->create([
+            'organization_id' => $organization->id,
+            'name' => 'MANTENIMIENTO',
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(SettingsIndex::class)
+            ->set('editingExpenseCategoryId', $category->id)
+            ->set('editingExpenseCategoryName', 'OTRO NOMBRE')
+            ->call('updateExpenseCategory')
+            ->assertHasErrors(['expenseCategory']);
+
+        $this->assertDatabaseHas('expense_categories', [
+            'id' => $category->id,
+            'name' => 'MANTENIMIENTO',
+        ]);
+    }
+
     public function test_cannot_delete_system_expense_category(): void
     {
         Role::findOrCreate('Admin', 'web');
