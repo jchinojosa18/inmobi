@@ -113,6 +113,7 @@ return [
         'expense_created' => 'Expense recorded successfully.',
         'payment_created' => 'Payment recorded successfully.',
         'receipt_sent' => 'Receipt sent by email (check Mailpit in development).',
+        'message_sent' => 'Message Sent',
         'month_closed' => 'Month :month closed successfully.',
         'month_reopened' => 'Month :month reopened successfully.',
         'month_already_open' => 'Month :month was already open.',

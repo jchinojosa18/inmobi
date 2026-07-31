@@ -113,6 +113,7 @@ return [
         'expense_created' => 'Egreso registrado correctamente.',
         'payment_created' => 'Pago registrado correctamente.',
         'receipt_sent' => 'Recibo enviado por correo (revisa Mailpit en desarrollo).',
+        'message_sent' => 'Mensaje Enviado',
         'month_closed' => 'Mes :month cerrado correctamente.',
         'month_reopened' => 'Mes :month reabierto correctamente.',
         'month_already_open' => 'El mes :month ya estaba abierto.',

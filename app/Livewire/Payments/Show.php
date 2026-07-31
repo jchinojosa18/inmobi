@@ -43,7 +43,7 @@ class Show extends Component
 
         Mail::to($recipient)->send(new PaymentReceiptMail($this->payment));
 
-        session()->flash('success', __('finance.flash.receipt_sent'));
+        session()->now('success', __('finance.flash.message_sent'));
         $this->dispatch('payment-receipt-email-sent');
     }
 
