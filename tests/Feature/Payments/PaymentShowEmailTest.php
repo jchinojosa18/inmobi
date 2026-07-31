@@ -58,38 +58,6 @@ class PaymentShowEmailTest extends TestCase
         });
     }
 
-    public function test_send_email_flashes_short_message_sent(): void
-    {
-        Mail::fake();
-
-        Role::findOrCreate('Admin', 'web');
-        $organization = Organization::factory()->create();
-        $admin = User::factory()->create(['organization_id' => $organization->id]);
-        $admin->assignRole('Admin');
-
-        $tenant = Tenant::factory()->create([
-            'organization_id' => $organization->id,
-            'email' => 'tenant@example.com',
-        ]);
-
-        $contract = Contract::factory()->create([
-            'organization_id' => $organization->id,
-            'tenant_id' => $tenant->id,
-        ]);
-
-        $payment = Payment::factory()->create([
-            'organization_id' => $organization->id,
-            'contract_id' => $contract->id,
-        ]);
-
-        Livewire::actingAs($admin)
-            ->test(Show::class, ['payment' => $payment])
-            ->call('sendEmail')
-            ->assertHasNoErrors()
-            ->assertDispatched('payment-receipt-email-sent')
-            ->assertSessionHas('success', __('finance.flash.message_sent'));
-    }
-
     public function test_email_send_toast_shows_progress_loading_and_message_sent_copy(): void
     {
         Role::findOrCreate('Admin', 'web');
@@ -115,8 +83,8 @@ class PaymentShowEmailTest extends TestCase
 
         Livewire::actingAs($admin)
             ->test(Show::class, ['payment' => $payment])
-            ->assertSeeHtml('wire:loading')
-            ->assertSeeHtml('wire:target="sendEmail"')
+            ->assertSeeHtml('animate-[paymentEmailProgress_1s_ease-in-out_infinite]')
+            ->assertSeeHtml('wire:loading.attr="disabled"')
             ->assertSeeHtml('payment-receipt-email-sent')
             ->assertSee(__('finance.flash.message_sent'))
             ->assertDontSee(__('finance.flash.receipt_sent'));

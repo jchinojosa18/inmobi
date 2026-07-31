@@ -90,7 +90,6 @@
                     wire:click="sendEmail"
                     wire:loading.attr="disabled"
                     wire:target="sendEmail"
-                    wire:loading.class="opacity-60 cursor-not-allowed"
                     class="mt-3"
                     :disabled="! $payment->contract?->tenant?->email"
                 >
@@ -132,8 +131,8 @@
     @endif
 
     <div
-        x-data="{ sent: false }"
-        x-on:payment-receipt-email-sent.window="sent = true; setTimeout(() => sent = false, 2500)"
+        x-data="{ sent: false, timer: null }"
+        x-on:payment-receipt-email-sent.window="sent = true; clearTimeout(timer); timer = setTimeout(() => sent = false, 2500)"
         class="pointer-events-none fixed bottom-6 right-6 z-[70]"
     >
         <div
