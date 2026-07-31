@@ -2,7 +2,7 @@
 
 namespace App\Livewire\Contracts;
 
-use App\Actions\Payments\ApplyCreditBalanceAction;
+use App\Actions\Charges\RegisterContractAdjustmentAction;
 use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\Payment;
@@ -88,30 +88,21 @@ class Show extends Component
         $chargeDate = CarbonImmutable::parse($validated['adjustment_charge_date'], 'America/Tijuana')->startOfDay();
 
         try {
-            Charge::query()->create([
-                'organization_id' => $this->contract->organization_id,
-                'contract_id' => $this->contract->id,
-                'unit_id' => $this->contract->unit_id,
-                'type' => Charge::TYPE_ADJUSTMENT,
-                'period' => $chargeDate->format('Y-m'),
-                'charge_date' => $chargeDate->toDateString(),
-                'amount' => (float) $validated['adjustment_amount'],
-                'meta' => [
-                    'reason' => trim((string) $validated['adjustment_reason']),
-                    'comment' => trim((string) ($validated['adjustment_comment'] ?? '')),
-                    'linked_to' => trim((string) ($validated['adjustment_linked_to'] ?? '')),
-                    'created_from' => 'contract_show_adjustment',
-                    'created_by_user_id' => auth()->id(),
-                ],
-            ]);
+            app(RegisterContractAdjustmentAction::class)->execute(
+                contract: $this->contract,
+                amount: (float) $validated['adjustment_amount'],
+                chargeDate: $chargeDate,
+                reason: trim((string) $validated['adjustment_reason']),
+                comment: $validated['adjustment_comment'] ?? null,
+                linkedTo: $validated['adjustment_linked_to'] ?? null,
+                createdByUserId: auth()->id(),
+            );
         } catch (ValidationException $exception) {
             $message = $exception->errors()['month_close'][0] ?? __('contracts.validation.adjustment_failed');
             $this->addError('adjustment_month_close', $message);
 
             return;
         }
-
-        app(ApplyCreditBalanceAction::class)->execute($this->contract);
 
         $this->reset([
             'adjustment_amount',
