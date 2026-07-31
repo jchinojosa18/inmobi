@@ -88,6 +88,9 @@
                 <x-ui.button
                     type="button"
                     wire:click="sendEmail"
+                    wire:loading.attr="disabled"
+                    wire:target="sendEmail"
+                    wire:loading.class="opacity-60 cursor-not-allowed"
                     class="mt-3"
                     :disabled="! $payment->contract?->tenant?->email"
                 >
@@ -129,15 +132,39 @@
     @endif
 
     <div
-        x-data="{ show: false }"
-        x-on:payment-receipt-email-sent.window="show = true; setTimeout(() => show = false, 2500)"
-        x-show="show"
-        x-cloak
-        x-transition.opacity
-        class="pointer-events-none fixed bottom-6 right-6 z-[70] rounded-lg bg-slate-800/95 px-4 py-2 text-sm font-medium text-white shadow-lg"
-        role="status"
-        aria-live="polite"
+        x-data="{ sent: false }"
+        x-on:payment-receipt-email-sent.window="sent = true; setTimeout(() => sent = false, 2500)"
+        class="pointer-events-none fixed bottom-6 right-6 z-[70]"
     >
-        {{ __('finance.flash.receipt_sent') }}
+        <div
+            wire:loading
+            wire:target="sendEmail"
+            class="w-56 overflow-hidden rounded-lg bg-slate-800/95 px-4 py-3 shadow-lg"
+            role="status"
+            aria-live="polite"
+            aria-busy="true"
+        >
+            <div class="h-1.5 w-full overflow-hidden rounded-full bg-slate-600">
+                <div class="h-full w-1/3 animate-[paymentEmailProgress_1s_ease-in-out_infinite] rounded-full bg-white"></div>
+            </div>
+        </div>
+
+        <div
+            x-show="sent"
+            x-cloak
+            x-transition.opacity
+            class="rounded-lg bg-slate-800/95 px-4 py-2 text-sm font-medium text-white shadow-lg"
+            role="status"
+            aria-live="polite"
+        >
+            {{ __('finance.flash.message_sent') }}
+        </div>
     </div>
+
+    <style>
+        @keyframes paymentEmailProgress {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(300%); }
+        }
+    </style>
 </section>
