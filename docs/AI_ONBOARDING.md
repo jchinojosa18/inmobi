@@ -138,7 +138,7 @@ Corrección manual mínima por contrato (tasa mal capturada):
   2. Tras generar/asegurar RENT mensual ([`GenerateMonthlyRentChargesAction`](../app/Actions/Charges/GenerateMonthlyRentChargesAction.php)).
   3. Tras crear cada PENALTY ([`RunDailyPenaltiesAction`](../app/Actions/Penalties/RunDailyPenaltiesAction.php)).
   4. Al inicio del finiquito ([`ProcessContractSettlementAction`](../app/Actions/Contracts/ProcessContractSettlementAction.php)), antes de calcular adeudo y aplicar depósito.
-  5. Tras crear un `ADJUSTMENT` desde el show del contrato ([`Contracts\Show::createAdjustment`](../app/Livewire/Contracts/Show.php)).
+  5. Tras crear un `ADJUSTMENT` vía [`RegisterContractAdjustmentAction`](../app/Actions/Charges/RegisterContractAdjustmentAction.php) (orquestado desde [`Contracts\Show::createAdjustment`](../app/Livewire/Contracts/Show.php)). Si el monto es **negativo**, primero acredita `abs(amount)` en `credit_balances` (`last_source=adjustment_credit`), marca `meta.settled_as_credit`, y luego aplica crédito a pendientes.
 - Prioridad compartida en [`ChargeAllocationPrioritizer`](../app/Support/ChargeAllocationPrioritizer.php).
 
 ### 4.3 Depósitos y finiquito
@@ -163,6 +163,7 @@ Corrección manual mínima por contrato (tasa mal capturada):
 - Guard: [`MonthCloseGuard`](../app/Support/MonthCloseGuard.php)
 - Bloquea create/update/delete en mes cerrado para `Payment`, `Expense`, `Charge`, `Document` (según fecha asociada).
 - Excepción permitida: `ADJUSTMENT` con `meta.reason` obligatorio.
+- `ADJUSTMENT` negativo = descuento: se acredita `abs(amount)` en `credit_balances`, se marca `meta.settled_as_credit`, y se aplica crédito a pendientes. Backfill: `inmo:adjustments:settle-negative-credits`.
 - Snapshot al cerrar: [`BuildMonthCloseSnapshotAction`](../app/Actions/MonthCloses/BuildMonthCloseSnapshotAction.php).
 
 ### 4.6 RBAC (permisos granulares)

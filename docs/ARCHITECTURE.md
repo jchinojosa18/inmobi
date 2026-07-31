@@ -270,7 +270,7 @@ Contract     1---1 CreditBalance (saldo a favor acumulado)
 - Estrategia de corrección:
   - No se reescribe historial de meses cerrados.
   - Se permite registrar `Charge` tipo `ADJUSTMENT` con:
-    - `amount` (+/-)
+    - `amount` (+/-): positivo consume crédito existente; negativo (descuento) acredita `abs(amount)` en `credit_balances` y aplica crédito a pendientes — no queda saldo de cargo huérfano.
     - `meta.reason` obligatorio
     - `meta.linked_to` y `meta.comment` opcionales para trazabilidad.
   - Los ajustes quedan auditados via `activitylog`.
