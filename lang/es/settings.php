@@ -223,6 +223,7 @@ return [
 
     'flash' => [
         'settings_updated' => 'Configuración actualizada correctamente.',
+        'configuration_saved' => 'Configuración guardada',
         'settings_saved' => 'Configuración actualizada correctamente.',
         'category_created' => 'Categoría registrada correctamente.',
         'category_updated' => 'Categoría actualizada.',

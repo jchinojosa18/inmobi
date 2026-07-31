@@ -99,13 +99,36 @@
 
             @if ($canManageSettings)
                 <div class="md:col-span-3 flex justify-end">
-                    <x-ui.button type="submit">
+                    <x-ui.button
+                        type="submit"
+                        wire:loading.attr="disabled"
+                        wire:target="saveSettings"
+                    >
                         {{ __('settings.save_settings') }}
                     </x-ui.button>
                 </div>
             @endif
         </form>
     </x-ui.card>
+
+    @if ($canManageSettings)
+        <div
+            x-data="{ saved: false, timer: null }"
+            x-on:settings-saved.window="saved = true; clearTimeout(timer); timer = setTimeout(() => saved = false, 2500)"
+            class="pointer-events-none fixed bottom-6 right-6 z-[70]"
+        >
+            <div
+                x-show="saved"
+                x-cloak
+                x-transition.opacity
+                class="rounded-lg bg-slate-800/95 px-4 py-2 text-sm font-medium text-white shadow-lg"
+                role="status"
+                aria-live="polite"
+            >
+                {{ __('settings.flash.configuration_saved') }}
+            </div>
+        </div>
+    @endif
 
     <x-ui.card>
         <h2 class="text-lg font-semibold text-slate-900">{{ __('settings.penalty_policy_docs') }}</h2>

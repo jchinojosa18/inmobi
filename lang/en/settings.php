@@ -223,6 +223,7 @@ return [
 
     'flash' => [
         'settings_updated' => 'Settings updated successfully.',
+        'configuration_saved' => 'Settings saved',
         'settings_saved' => 'Settings updated successfully.',
         'category_created' => 'Category created successfully.',
         'category_updated' => 'Category updated.',

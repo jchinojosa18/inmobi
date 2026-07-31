@@ -65,7 +65,8 @@ class OrganizationSettingsTest extends TestCase
             ->set('receiptFolioPadding', '4')
             ->set('whatsAppTemplate', 'Hola {tenant_name} saldo ${amount_due} en {unit_name}. {shared_receipt_url}')
             ->set('emailTemplate', 'Hola {tenant_name} / {unit_name} / {amount_due} / {shared_receipt_url}')
-            ->call('saveSettings');
+            ->call('saveSettings')
+            ->assertDispatched('settings-saved');
 
         $this->assertDatabaseHas('organization_settings', [
             'organization_id' => $organizationA->id,
@@ -144,5 +145,20 @@ class OrganizationSettingsTest extends TestCase
             ->set('emailTemplate', 'Hola {tenant_name}')
             ->call('saveSettings')
             ->assertHasErrors(['organizationName' => 'unique']);
+    }
+
+    public function test_save_settings_button_disables_while_saving_and_shows_saved_toast_copy(): void
+    {
+        Role::findOrCreate('Admin', 'web');
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->create(['organization_id' => $organization->id]);
+        $admin->assignRole('Admin');
+
+        Livewire::actingAs($admin)
+            ->test(SettingsIndex::class)
+            ->assertSeeHtml('wire:loading.attr="disabled"')
+            ->assertSeeHtml('wire:target="saveSettings"')
+            ->assertSeeHtml('settings-saved.window')
+            ->assertSee(__('settings.flash.configuration_saved'));
     }
 }

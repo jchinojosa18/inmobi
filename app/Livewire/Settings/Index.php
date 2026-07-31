@@ -119,7 +119,7 @@ class Index extends Component
             ],
         );
 
-        session()->flash('success', __('settings.flash.settings_updated'));
+        $this->dispatch('settings-saved');
     }
 
     public function createExpenseCategory(): void
