@@ -134,6 +134,45 @@ class RenewContractActionTest extends TestCase
         );
     }
 
+    public function test_renew_blocked_when_landlord_name_missing(): void
+    {
+        [$source] = $this->createRenewableSource(depositHoldAmount: 9500.0, withLandlordName: false);
+
+        try {
+            app(RenewContractAction::class)->execute(
+                source: $source,
+                input: [
+                    'starts_at' => '2026-08-01',
+                    'ends_at' => '2027-07-31',
+                    'rent_amount' => 10000,
+                    'deposit_amount' => 10000,
+                    'register_difference' => false,
+                ],
+                userId: null,
+            );
+            $this->fail('Expected ValidationException was not thrown.');
+        } catch (ValidationException $exception) {
+            $this->assertSame(
+                'Configure el nombre del arrendador en Configuración antes de generar el contrato.',
+                $exception->errors()['landlord_name'][0] ?? null,
+            );
+        }
+
+        $source->refresh();
+
+        $this->assertSame(Contract::STATUS_ACTIVE, $source->status);
+        $this->assertNull(data_get($source->meta, 'renewed_to_contract_id'));
+        $this->assertSame(
+            1,
+            Contract::query()
+                ->withoutOrganizationScope()
+                ->where('organization_id', $source->organization_id)
+                ->where('unit_id', $source->unit_id)
+                ->where('status', Contract::STATUS_ACTIVE)
+                ->count(),
+        );
+    }
+
     public function test_renew_blocked_when_settlement_batch_present(): void
     {
         [$source] = $this->createRenewableSource(depositHoldAmount: 9500.0);
@@ -160,7 +199,7 @@ class RenewContractActionTest extends TestCase
     /**
      * @return array{0: Contract}
      */
-    private function createRenewableSource(float $depositHoldAmount): array
+    private function createRenewableSource(float $depositHoldAmount, bool $withLandlordName = true): array
     {
         $organization = Organization::factory()->create();
         $property = Property::factory()->create(['organization_id' => $organization->id]);
@@ -172,12 +211,14 @@ class RenewContractActionTest extends TestCase
 
         TenantContext::setOrganizationId($organization->id);
 
-        OrganizationSetting::query()
-            ->withoutOrganizationScope()
-            ->updateOrCreate(
-                ['organization_id' => $organization->id],
-                ['landlord_name' => 'Arrendador Demo S.A. de C.V.'],
-            );
+        if ($withLandlordName) {
+            OrganizationSetting::query()
+                ->withoutOrganizationScope()
+                ->updateOrCreate(
+                    ['organization_id' => $organization->id],
+                    ['landlord_name' => 'Arrendador Demo S.A. de C.V.'],
+                );
+        }
 
         $contract = Contract::factory()->create([
             'organization_id' => $organization->id,

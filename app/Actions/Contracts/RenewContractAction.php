@@ -6,6 +6,7 @@ use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\Payment;
 use App\Support\DepositBalanceService;
+use App\Support\OrganizationSettingsService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -16,6 +17,7 @@ class RenewContractAction
         private readonly DepositBalanceService $depositBalanceService,
         private readonly RegisterDepositHoldAction $registerDepositHoldAction,
         private readonly GenerateLeaseAgreementPdfAction $generateLeaseAgreementPdfAction,
+        private readonly OrganizationSettingsService $organizationSettingsService,
     ) {}
 
     /**
@@ -40,6 +42,8 @@ class RenewContractAction
         $rentAmount = round((float) $input['rent_amount'], 2);
         $depositAmount = round((float) $input['deposit_amount'], 2);
         $registerDifference = (bool) ($input['register_difference'] ?? false);
+
+        $this->assertLandlordNameConfigured((int) $source->organization_id);
 
         $transactionResult = DB::transaction(function () use (
             $source,
@@ -179,6 +183,18 @@ class RenewContractAction
             differenceAmount: $transactionResult['differenceAmount'],
             document: $document,
         );
+    }
+
+    private function assertLandlordNameConfigured(int $organizationId): void
+    {
+        $settings = $this->organizationSettingsService->forOrganization($organizationId);
+        $landlordName = is_string($settings['landlord_name'] ?? null) ? trim($settings['landlord_name']) : '';
+
+        if ($landlordName === '') {
+            throw ValidationException::withMessages([
+                'landlord_name' => 'Configure el nombre del arrendador en Configuración antes de generar el contrato.',
+            ]);
+        }
     }
 
     private function assertRenewable(Contract $source): void
