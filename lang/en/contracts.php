@@ -129,6 +129,17 @@ return [
     'remove' => 'Remove',
     'confirm_settlement' => 'Confirm settlement',
     'view_settlement_pdf' => 'View settlement PDF',
+    'charge_types' => [
+        'RENT' => 'Rent',
+        'PENALTY' => 'Penalty',
+        'SERVICE' => 'Service',
+        'OTHER' => 'Other',
+        'ADJUSTMENT' => 'Adjustment',
+        'MOVEOUT' => 'Move-out',
+        'DEPOSIT_HOLD' => 'Security deposit',
+        'DEPOSIT_APPLY' => 'Deposit applied',
+        'DEPOSIT_TRANSFER_OUT' => 'Deposit transfer',
+    ],
     'charge_statuses' => [
         'paid' => 'Paid',
         'overdue' => 'Overdue',

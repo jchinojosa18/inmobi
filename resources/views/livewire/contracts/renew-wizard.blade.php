@@ -127,12 +127,20 @@
 
                 <div class="flex flex-wrap justify-center gap-2">
                     @if ($pdfUrl)
-                        <a
-                            href="{{ $pdfUrl }}"
-                            class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                        @php
+                            $agreementViewerItem = \App\Support\FileViewerItem::fromUrl(
+                                $pdfUrl,
+                                __('contracts.view_contract_pdf'),
+                            );
+                        @endphp
+                        <x-ui.file-viewer-trigger
+                            :items="[$agreementViewerItem]"
+                            :index="0"
+                            variant="secondary"
+                            size="sm"
                         >
                             {{ __('contracts.view_contract_pdf') }}
-                        </a>
+                        </x-ui.file-viewer-trigger>
                     @endif
 
                     @if ($shareUrl)

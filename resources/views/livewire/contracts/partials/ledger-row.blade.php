@@ -21,7 +21,7 @@
         'text-slate-900' => ! $nested,
         'text-rose-600' => $nested,
     ])>
-        {{ $row['type'] }}
+        {{ $row['type_label'] ?? $row['type'] }}
     </td>
     <td class="px-4 py-3">{{ $row['charge_date'] ?: '-' }}</td>
     <td class="px-4 py-3">{{ $row['due_date'] }}</td>

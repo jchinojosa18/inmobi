@@ -140,6 +140,17 @@ return [
     'remove' => 'Quitar',
     'confirm_settlement' => 'Confirmar finiquito',
     'view_settlement_pdf' => 'Ver PDF de finiquito',
+    'charge_types' => [
+        'RENT' => 'Renta',
+        'PENALTY' => 'Multa',
+        'SERVICE' => 'Servicio',
+        'OTHER' => 'Otro',
+        'ADJUSTMENT' => 'Ajuste',
+        'MOVEOUT' => 'Salida',
+        'DEPOSIT_HOLD' => 'Depósito en garantía',
+        'DEPOSIT_APPLY' => 'Depósito aplicado',
+        'DEPOSIT_TRANSFER_OUT' => 'Transferencia de depósito',
+    ],
     'charge_statuses' => [
         'paid' => 'Pagado',
         'overdue' => 'Vencido',

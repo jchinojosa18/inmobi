@@ -142,31 +142,50 @@ Corrección manual mínima por contrato (tasa mal capturada):
 - Prioridad compartida en [`ChargeAllocationPrioritizer`](../app/Support/ChargeAllocationPrioritizer.php).
 
 ### 4.3 Depósitos y finiquito
-- Tipos: `DEPOSIT_HOLD`, `MOVEOUT`, `DEPOSIT_APPLY` (en [`Charge`](../app/Models/Charge.php)).
+- Tipos: `DEPOSIT_HOLD`, `MOVEOUT`, `DEPOSIT_APPLY`, `DEPOSIT_TRANSFER_OUT` (en [`Charge`](../app/Models/Charge.php)).
 - `DEPOSIT_HOLD` es garantía recibida (no cobranza): al registrar se crea el cargo con folio propio `DEP-YYYY-#####` en `meta.deposit_receipt_folio`, PDF en `/deposits/{id}/receipt.pdf`, y evidencia vía `Documents` sobre el cargo. **No** crea `Payment` de cobranza.
+- `DEPOSIT_TRANSFER_OUT`: salida contable del depósito disponible al renovar (monto **negativo**, como `DEPOSIT_APPLY`). UI muestra valor absoluto y etiqueta “Transferencia de depósito”. Excluido de ingresos operativos, saldo pendiente y kardex de inquilino (igual que `DEPOSIT_HOLD`/`DEPOSIT_APPLY`).
 - Finiquito: `availableDepositAmount` usa lo **registrado** (`registeredDepositHoldAmount`), no allocations de pagos.
 - Tope de registro: suma de `DEPOSIT_HOLD` ≤ `contracts.deposit_amount`. Guard en [`RegisterDepositHoldAction`](../app/Actions/Contracts/RegisterDepositHoldAction.php).
-- Estado de cuenta: excluye `DEPOSIT_HOLD`/`DEPOSIT_APPLY` del saldo pendiente; estatus UI = Garantía. Anulación: [`VoidDepositHoldAction`](../app/Actions/Contracts/VoidDepositHoldAction.php).
+- Estado de cuenta: excluye `DEPOSIT_HOLD`/`DEPOSIT_APPLY`/`DEPOSIT_TRANSFER_OUT` del saldo pendiente; estatus UI = Garantía. Anulación: [`VoidDepositHoldAction`](../app/Actions/Contracts/VoidDepositHoldAction.php).
 - Finiquito: [`ProcessContractSettlementAction`](../app/Actions/Contracts/ProcessContractSettlementAction.php)
   - crea `MOVEOUT`
   - aplica depósito con `DEPOSIT_APPLY` (negativo)
   - si sobra depósito crea `Expense` categoría `Refund deposit`
   - termina contrato (`status=ended`)
 
-### 4.4 Reportes por allocations (fuente de verdad)
+### 4.4 Renovación de contrato
+- Acción: [`RenewContractAction`](../app/Actions/Contracts/RenewContractAction.php)
+- UI: wizard modal en [`Contracts\RenewWizard`](../app/Livewire/Contracts/RenewWizard.php), botón en [`Contracts\Show`](../app/Livewire/Contracts/Show.php) (contratos activos/vencidos sin adeudo operativo).
+- Flujo:
+  1. Valida `landlord_name` en settings (requerido para PDF; wizard enlaza a `/settings` si falta).
+  2. Bloquea si hay adeudo operativo (`outstandingBalanceExcludingDepositHold`).
+  3. Crea contrato nuevo; termina el origen (`status=ended`) sin finiquito.
+  4. Enlaza `meta.renewed_from_contract_id` / `meta.renewed_to_contract_id`.
+  5. Si hay depósito disponible: `DEPOSIT_TRANSFER_OUT` (negativo) en origen + `DEPOSIT_HOLD` en nuevo (`meta.source=deposit_transfer`, sin folio DEP de recibo).
+  6. Si el depósito nuevo excede lo transferido y el usuario marca “registrar diferencia”: [`RegisterDepositHoldAction`](../app/Actions/Contracts/RegisterDepositHoldAction.php) para el remanente.
+  7. Genera RENT del mes corriente vía hooks existentes (`GenerateMonthlyRentChargesAction`).
+  8. Genera PDF DomPDF: [`GenerateLeaseAgreementPdfAction`](../app/Actions/Contracts/GenerateLeaseAgreementPdfAction.php) → `Document` en contrato nuevo (`variant=contract`).
+- PDF: `GET /contracts/{contractId}/agreement.pdf` (auth). Link firmado: `GET /contracts/{contractId}/agreement/shared.pdf` (sin auth, `signed:relative`).
+- Envío post-renovación:
+  - Email: [`ContractAgreementMail`](../app/Mail/ContractAgreementMail.php) con PDF adjunto; solo si `tenant.email` presente y permiso `receipts.send` (checkbox en wizard).
+  - WhatsApp: deep link `wa.me` con plantilla org + link firmado (sin API); botón en wizard y en detalle del contrato.
+- Badge “Vencido”: contrato activo con `ends_at` pasada (solo UI; `status` en DB no auto-cambia).
+
+### 4.5 Reportes por allocations (fuente de verdad)
 - Servicio: [`OperatingIncomeService`](../app/Support/OperatingIncomeService.php)
 - Ingreso operativo = sum de `payment_allocations.amount` en tipos operativos, **excluyendo** pagos `method=CREDIT` (aplicación de saldo a favor / descuentos; no es caja).
-- Excluye depósitos (`DEPOSIT_HOLD`, `DEPOSIT_APPLY`).
+- Excluye depósitos (`DEPOSIT_HOLD`, `DEPOSIT_APPLY`, `DEPOSIT_TRANSFER_OUT`).
 - Reporte UI: [`/reports/flow`](../app/Livewire/Reports/CashFlow.php), export CSV controller.
 
-### 4.5 Cierre mensual + ajustes
+### 4.6 Cierre mensual + ajustes
 - Guard: [`MonthCloseGuard`](../app/Support/MonthCloseGuard.php)
 - Bloquea create/update/delete en mes cerrado para `Payment`, `Expense`, `Charge`, `Document` (según fecha asociada).
 - Excepción permitida: `ADJUSTMENT` con `meta.reason` obligatorio.
 - `ADJUSTMENT` negativo = descuento: se acredita `abs(amount)` en `credit_balances`, se marca `meta.settled_as_credit`, y se aplica crédito a pendientes. Backfill: `inmo:adjustments:settle-negative-credits`.
 - Snapshot al cerrar: [`BuildMonthCloseSnapshotAction`](../app/Actions/MonthCloses/BuildMonthCloseSnapshotAction.php).
 
-### 4.6 RBAC (permisos granulares)
+### 4.7 RBAC (permisos granulares)
 - Seeder fuente de verdad: [`database/seeders/SyncRolesAndPermissionsSeeder.php`](../database/seeders/SyncRolesAndPermissionsSeeder.php)
 - Mapa UI (agrupación por módulos amigables): [`config/permissions_ui.php`](../config/permissions_ui.php)
 - Roles: `Admin`, `Capturista`, `Lectura`.
@@ -215,6 +234,7 @@ Archivos clave:
 - [`app/Actions/Charges/GenerateMonthlyRentChargesAction.php`](../app/Actions/Charges/GenerateMonthlyRentChargesAction.php): cargos RENT mensuales idempotentes.
 - [`app/Actions/MonthCloses/CloseMonthAction.php`](../app/Actions/MonthCloses/CloseMonthAction.php): cierre mensual.
 - [`app/Actions/Contracts/ProcessContractSettlementAction.php`](../app/Actions/Contracts/ProcessContractSettlementAction.php): finiquito.
+- [`app/Actions/Contracts/RenewContractAction.php`](../app/Actions/Contracts/RenewContractAction.php): renovación de contrato.
 
 ### `app/Support`
 - Servicios transversales y políticas técnicas.

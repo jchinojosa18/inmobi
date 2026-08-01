@@ -396,6 +396,14 @@ class Show extends Component
         ], true);
     }
 
+    private function chargeTypeLabel(string $type): string
+    {
+        $key = 'contracts.charge_types.'.$type;
+        $translated = __($key);
+
+        return $translated !== $key ? $translated : $type;
+    }
+
     /**
      * @return array{
      *     id:int,
@@ -416,6 +424,10 @@ class Show extends Component
     private function mapChargeToLedgerRow(Contract $contract, Charge $charge, ?string $periodOverride = null): array
     {
         $amount = round((float) $charge->amount, 2);
+
+        if ($this->isDepositLedgerType($charge->type) && $amount < 0) {
+            $amount = abs($amount);
+        }
 
         if (
             $charge->type === Charge::TYPE_ADJUSTMENT
@@ -450,6 +462,7 @@ class Show extends Component
             'period_key' => $periodKey,
             'period_label' => $periodLabel,
             'type' => $charge->type,
+            'type_label' => $this->chargeTypeLabel($charge->type),
             'charge_date' => DateDisplay::formatDate($charge->charge_date, ''),
             'due_date' => $dueDate !== null ? DateDisplay::formatDate($dueDate) : '-',
             'amount' => $amount,

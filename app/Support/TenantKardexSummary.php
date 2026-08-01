@@ -142,7 +142,11 @@ final class TenantKardexSummary
             ->withoutOrganizationScope()
             ->where('charges.organization_id', $this->organizationId)
             ->whereIn('charges.contract_id', $this->contractIds)
-            ->whereNotIn('charges.type', [Charge::TYPE_DEPOSIT_HOLD, Charge::TYPE_DEPOSIT_APPLY])
+            ->whereNotIn('charges.type', [
+                Charge::TYPE_DEPOSIT_HOLD,
+                Charge::TYPE_DEPOSIT_APPLY,
+                Charge::TYPE_DEPOSIT_TRANSFER_OUT,
+            ])
             ->with(['contract.unit.property'])
             ->leftJoinSub($allocationSubquery, 'alloc', function ($join): void {
                 $join->on('alloc.charge_id', '=', 'charges.id');

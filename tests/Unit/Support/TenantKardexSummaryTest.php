@@ -137,4 +137,35 @@ class TenantKardexSummaryTest extends TestCase
         $this->assertSame(0.0, $summary->pendingBalance());
         $this->assertCount(0, $summary->outstandingCharges());
     }
+
+    public function test_deposit_transfer_out_is_excluded_from_pending_balance(): void
+    {
+        $organization = Organization::factory()->create();
+        $tenant = Tenant::factory()->create(['organization_id' => $organization->id]);
+        $property = Property::factory()->create(['organization_id' => $organization->id]);
+        $unit = Unit::factory()->create([
+            'organization_id' => $organization->id,
+            'property_id' => $property->id,
+        ]);
+        $contract = Contract::withoutEvents(fn () => Contract::factory()->create([
+            'organization_id' => $organization->id,
+            'tenant_id' => $tenant->id,
+            'unit_id' => $unit->id,
+            'status' => Contract::STATUS_ACTIVE,
+        ]));
+
+        Charge::factory()->create([
+            'organization_id' => $organization->id,
+            'contract_id' => $contract->id,
+            'unit_id' => $unit->id,
+            'type' => Charge::TYPE_DEPOSIT_TRANSFER_OUT,
+            'amount' => -9500,
+            'charge_date' => '2026-07-01',
+        ]);
+
+        $summary = TenantKardexSummary::for($tenant);
+
+        $this->assertSame(0.0, $summary->pendingBalance());
+        $this->assertCount(0, $summary->outstandingCharges());
+    }
 }
