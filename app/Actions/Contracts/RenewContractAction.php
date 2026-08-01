@@ -2,6 +2,7 @@
 
 namespace App\Actions\Contracts;
 
+use App\Mail\ContractAgreementMail;
 use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\Payment;
@@ -9,6 +10,7 @@ use App\Support\DepositBalanceService;
 use App\Support\OrganizationSettingsService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class RenewContractAction
@@ -33,6 +35,7 @@ class RenewContractAction
      *   difference_received_at?: string,
      *   difference_method?: string,
      *   notes?: string|null,
+     *   send_email?: bool,
      * }  $input
      */
     public function execute(Contract $source, array $input, ?int $userId): RenewContractResult
@@ -168,10 +171,16 @@ class RenewContractAction
             ];
         }, 3);
 
+        $newContract = $transactionResult['newContract']->fresh();
+
         $document = $this->generateLeaseAgreementPdfAction->execute(
-            $transactionResult['newContract']->fresh(),
+            $newContract,
             $userId,
         );
+
+        if ((bool) ($input['send_email'] ?? false)) {
+            $this->sendContractAgreementEmail($newContract);
+        }
 
         return new RenewContractResult(
             newContract: $transactionResult['newContract'],
@@ -183,6 +192,18 @@ class RenewContractAction
             differenceAmount: $transactionResult['differenceAmount'],
             document: $document,
         );
+    }
+
+    private function sendContractAgreementEmail(Contract $contract): void
+    {
+        $contract->loadMissing('tenant');
+        $recipient = $contract->tenant?->email;
+
+        if (! is_string($recipient) || trim($recipient) === '') {
+            return;
+        }
+
+        Mail::to($recipient)->send(new ContractAgreementMail($contract));
     }
 
     private function assertLandlordNameConfigured(int $organizationId): void
