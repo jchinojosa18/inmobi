@@ -35,6 +35,10 @@ class OrganizationSetting extends OrganizationScopedModel
         'penalty_calculation_policy',
         'whatsapp_template',
         'email_template',
+        'landlord_name',
+        'landlord_rep',
+        'contract_email_template',
+        'contract_whatsapp_template',
         'onboarding_dismissed_until',
     ];
 
@@ -71,6 +75,10 @@ class OrganizationSetting extends OrganizationScopedModel
             'penalty_calculation_policy',
             'whatsapp_template',
             'email_template',
+            'landlord_name',
+            'landlord_rep',
+            'contract_email_template',
+            'contract_whatsapp_template',
             'onboarding_dismissed_until',
         ];
     }

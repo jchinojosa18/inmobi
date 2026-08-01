@@ -27,6 +27,17 @@ Tambien puedes consultarlo en: {shared_receipt_url}
 
 Gracias.';
 
+    public const DEFAULT_CONTRACT_WHATSAPP_TEMPLATE = 'Hola {tenant_name}, tu contrato de arrendamiento para {unit_name} esta listo. Renta: ${rent_amount}. Vigencia: {starts_at} - {ends_at}. Contrato: {shared_contract_url}';
+
+    public const DEFAULT_CONTRACT_EMAIL_TEMPLATE = 'Hola {tenant_name},
+
+Adjuntamos el contrato de arrendamiento de la unidad {unit_name}.
+Renta mensual: ${rent_amount}.
+Vigencia: {starts_at} a {ends_at}.
+Tambien puedes consultarlo en: {shared_contract_url}
+
+Saludos.';
+
     /**
      * @return array<string, int|string|null>
      */
@@ -67,6 +78,10 @@ Gracias.';
             'penalty_calculation_policy' => self::DEFAULT_PENALTY_CALCULATION_POLICY,
             'whatsapp_template' => self::DEFAULT_WHATSAPP_TEMPLATE,
             'email_template' => self::DEFAULT_EMAIL_TEMPLATE,
+            'landlord_name' => null,
+            'landlord_rep' => null,
+            'contract_email_template' => self::DEFAULT_CONTRACT_EMAIL_TEMPLATE,
+            'contract_whatsapp_template' => self::DEFAULT_CONTRACT_WHATSAPP_TEMPLATE,
             'onboarding_dismissed_until' => null,
         ];
     }
@@ -121,7 +136,7 @@ Gracias.';
     /**
      * @return list<string>
      */
-    public function templateVariables(): array
+    public function receiptTemplateVariables(): array
     {
         return [
             'tenant_name',
@@ -129,6 +144,32 @@ Gracias.';
             'amount_due',
             'shared_receipt_url',
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function contractTemplateVariables(): array
+    {
+        return [
+            'tenant_name',
+            'unit_name',
+            'shared_contract_url',
+            'rent_amount',
+            'starts_at',
+            'ends_at',
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function templateVariables(): array
+    {
+        return array_values(array_unique(array_merge(
+            $this->receiptTemplateVariables(),
+            $this->contractTemplateVariables(),
+        )));
     }
 
     /**
@@ -176,6 +217,19 @@ Gracias.';
             $emailTemplate = (string) $defaults['email_template'];
         }
 
+        $landlordName = $this->nullableTrimmed($settings->landlord_name);
+        $landlordRep = $this->nullableTrimmed($settings->landlord_rep);
+
+        $contractWhatsAppTemplate = trim((string) $settings->contract_whatsapp_template);
+        if ($contractWhatsAppTemplate === '') {
+            $contractWhatsAppTemplate = (string) $defaults['contract_whatsapp_template'];
+        }
+
+        $contractEmailTemplate = trim((string) $settings->contract_email_template);
+        if ($contractEmailTemplate === '') {
+            $contractEmailTemplate = (string) $defaults['contract_email_template'];
+        }
+
         return [
             'receipt_folio_mode' => $mode,
             'receipt_folio_prefix' => $prefix,
@@ -184,7 +238,22 @@ Gracias.';
             'penalty_calculation_policy' => $penaltyPolicy,
             'whatsapp_template' => $whatsAppTemplate,
             'email_template' => $emailTemplate,
+            'landlord_name' => $landlordName,
+            'landlord_rep' => $landlordRep,
+            'contract_email_template' => $contractEmailTemplate,
+            'contract_whatsapp_template' => $contractWhatsAppTemplate,
             'onboarding_dismissed_until' => $settings->onboarding_dismissed_until?->toDateTimeString(),
         ];
+    }
+
+    private function nullableTrimmed(?string $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $trimmed = trim($value);
+
+        return $trimmed === '' ? null : $trimmed;
     }
 }

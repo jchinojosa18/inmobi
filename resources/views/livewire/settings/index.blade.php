@@ -97,6 +97,48 @@
                 {{ collect($templateVariables)->map(fn ($var) => '{'.$var.'}')->join(', ') }}
             </div>
 
+            <div class="md:col-span-3 border-t border-slate-100 pt-4">
+                <h3 class="text-base font-semibold text-slate-900">{{ __('settings.contract_agreement') }}</h3>
+                <p class="mt-1 text-sm text-slate-600">{{ __('settings.contract_agreement_description') }}</p>
+            </div>
+
+            <div class="md:col-span-2">
+                <x-ui.input
+                    :label="__('settings.landlord_name')"
+                    type="text"
+                    wire:model.blur="landlordName"
+                    :disabled="! $canManageSettings"
+                />
+                @error('landlordName') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+            </div>
+
+            <div>
+                <x-ui.input
+                    :label="__('settings.landlord_rep')"
+                    type="text"
+                    wire:model.blur="landlordRep"
+                    :disabled="! $canManageSettings"
+                />
+                @error('landlordRep') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+            </div>
+
+            <div class="md:col-span-3">
+                <label class="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">{{ __('settings.contract_email_template') }}</label>
+                <textarea wire:model.blur="contractEmailTemplate" rows="6" @disabled(! $canManageSettings) class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm disabled:bg-slate-100"></textarea>
+                @error('contractEmailTemplate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+            </div>
+
+            <div class="md:col-span-3">
+                <label class="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">{{ __('settings.contract_whatsapp_template') }}</label>
+                <textarea wire:model.blur="contractWhatsAppTemplate" rows="4" @disabled(! $canManageSettings) class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm disabled:bg-slate-100"></textarea>
+                @error('contractWhatsAppTemplate') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+            </div>
+
+            <div class="md:col-span-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                {{ __('settings.contract_template_variables') }}
+                {{ collect($contractTemplateVariables)->map(fn ($var) => '{'.$var.'}')->join(', ') }}
+            </div>
+
             @if ($canManageSettings)
                 <div class="md:col-span-3 flex justify-end">
                     <x-ui.button

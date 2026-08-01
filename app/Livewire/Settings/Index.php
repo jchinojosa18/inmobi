@@ -25,6 +25,14 @@ class Index extends Component
 
     public string $emailTemplate = '';
 
+    public string $landlordName = '';
+
+    public string $landlordRep = '';
+
+    public string $contractEmailTemplate = '';
+
+    public string $contractWhatsAppTemplate = '';
+
     public string $newExpenseCategory = '';
 
     public ?int $editingExpenseCategoryId = null;
@@ -51,6 +59,10 @@ class Index extends Component
         $this->receiptFolioPadding = (string) $settings['receipt_folio_padding'];
         $this->whatsAppTemplate = (string) $settings['whatsapp_template'];
         $this->emailTemplate = (string) $settings['email_template'];
+        $this->landlordName = (string) ($settings['landlord_name'] ?? '');
+        $this->landlordRep = (string) ($settings['landlord_rep'] ?? '');
+        $this->contractEmailTemplate = (string) $settings['contract_email_template'];
+        $this->contractWhatsAppTemplate = (string) $settings['contract_whatsapp_template'];
     }
 
     public function saveSettings(): void
@@ -71,6 +83,10 @@ class Index extends Component
             'receiptFolioPadding' => ['required', 'integer', 'min:3', 'max:10'],
             'whatsAppTemplate' => ['required', 'string', 'max:2000'],
             'emailTemplate' => ['required', 'string', 'max:4000'],
+            'landlordName' => ['nullable', 'string', 'max:200'],
+            'landlordRep' => ['nullable', 'string', 'max:200'],
+            'contractEmailTemplate' => ['required', 'string', 'max:4000'],
+            'contractWhatsAppTemplate' => ['required', 'string', 'max:2000'],
         ], [
             'organizationName.required' => __('settings.validation.organization_name_required'),
             'organizationName.max' => __('settings.validation.organization_name_max'),
@@ -86,6 +102,12 @@ class Index extends Component
             'whatsAppTemplate.max' => __('settings.validation.whatsapp_max'),
             'emailTemplate.required' => __('settings.validation.email_required'),
             'emailTemplate.max' => __('settings.validation.email_max'),
+            'landlordName.max' => __('settings.validation.landlord_name_max'),
+            'landlordRep.max' => __('settings.validation.landlord_rep_max'),
+            'contractEmailTemplate.required' => __('settings.validation.contract_email_required'),
+            'contractEmailTemplate.max' => __('settings.validation.contract_email_max'),
+            'contractWhatsAppTemplate.required' => __('settings.validation.contract_whatsapp_required'),
+            'contractWhatsAppTemplate.max' => __('settings.validation.contract_whatsapp_max'),
         ]);
 
         Organization::query()
@@ -104,6 +126,10 @@ class Index extends Component
                 'penalty_calculation_policy' => OrganizationSettingsService::DEFAULT_PENALTY_CALCULATION_POLICY,
                 'whatsapp_template' => trim((string) $validated['whatsAppTemplate']),
                 'email_template' => trim((string) $validated['emailTemplate']),
+                'landlord_name' => $this->nullableTrimmed($validated['landlordName'] ?? null),
+                'landlord_rep' => $this->nullableTrimmed($validated['landlordRep'] ?? null),
+                'contract_email_template' => trim((string) $validated['contractEmailTemplate']),
+                'contract_whatsapp_template' => trim((string) $validated['contractWhatsAppTemplate']),
             ]
         );
 
@@ -283,7 +309,8 @@ class Index extends Component
             'categories' => $categories,
             'canManageSettings' => $this->canManageSettings(),
             'canManageExpenseCategories' => $this->canManageExpenseCategories(),
-            'templateVariables' => $settingsService->templateVariables(),
+            'templateVariables' => $settingsService->receiptTemplateVariables(),
+            'contractTemplateVariables' => $settingsService->contractTemplateVariables(),
             'penaltyRoundingScale' => OrganizationSettingsService::DEFAULT_PENALTY_ROUNDING_SCALE,
             'penaltyPolicy' => OrganizationSettingsService::DEFAULT_PENALTY_CALCULATION_POLICY,
         ])->layout('layouts.app', [

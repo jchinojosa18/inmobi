@@ -7,6 +7,7 @@ use App\Models\ExpenseCategory;
 use App\Models\Organization;
 use App\Models\OrganizationSetting;
 use App\Models\User;
+use App\Support\OrganizationSettingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
@@ -215,6 +216,57 @@ class OrganizationSettingsTest extends TestCase
             ->assertHasErrors(['expenseCategory']);
 
         $this->assertDatabaseHas('expense_categories', ['id' => $category->id]);
+    }
+
+    public function test_admin_can_save_landlord_and_contract_template_settings(): void
+    {
+        Role::findOrCreate('Admin', 'web');
+
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->create(['organization_id' => $organization->id]);
+        $admin->assignRole('Admin');
+
+        Livewire::actingAs($admin)
+            ->test(SettingsIndex::class)
+            ->set('landlordName', 'INMOBILIARIA EJEMPLO SA DE CV')
+            ->set('landlordRep', 'JUAN PEREZ LOPEZ')
+            ->set('contractEmailTemplate', 'Hola {tenant_name} contrato {unit_name} {shared_contract_url}')
+            ->set('contractWhatsAppTemplate', 'Hola {tenant_name} renta ${rent_amount} {starts_at} {ends_at} {shared_contract_url}')
+            ->call('saveSettings')
+            ->assertDispatched('settings-saved');
+
+        $this->assertDatabaseHas('organization_settings', [
+            'organization_id' => $organization->id,
+            'landlord_name' => 'INMOBILIARIA EJEMPLO SA DE CV',
+            'landlord_rep' => 'JUAN PEREZ LOPEZ',
+        ]);
+
+        $settings = app(OrganizationSettingsService::class)->forOrganization($organization->id);
+
+        $this->assertSame('INMOBILIARIA EJEMPLO SA DE CV', $settings['landlord_name']);
+        $this->assertSame('JUAN PEREZ LOPEZ', $settings['landlord_rep']);
+        $this->assertSame(
+            'Hola {tenant_name} contrato {unit_name} {shared_contract_url}',
+            $settings['contract_email_template']
+        );
+        $this->assertSame(
+            'Hola {tenant_name} renta ${rent_amount} {starts_at} {ends_at} {shared_contract_url}',
+            $settings['contract_whatsapp_template']
+        );
+    }
+
+    public function test_organization_settings_service_returns_default_contract_templates(): void
+    {
+        $organization = Organization::factory()->create();
+
+        $settings = app(OrganizationSettingsService::class)->forOrganization($organization->id);
+
+        $this->assertNull($settings['landlord_name']);
+        $this->assertNull($settings['landlord_rep']);
+        $this->assertSame(OrganizationSettingsService::DEFAULT_CONTRACT_EMAIL_TEMPLATE, $settings['contract_email_template']);
+        $this->assertSame(OrganizationSettingsService::DEFAULT_CONTRACT_WHATSAPP_TEMPLATE, $settings['contract_whatsapp_template']);
+        $this->assertContains('shared_contract_url', app(OrganizationSettingsService::class)->contractTemplateVariables());
+        $this->assertContains('rent_amount', app(OrganizationSettingsService::class)->contractTemplateVariables());
     }
 
     public function test_save_settings_button_disables_while_saving_and_shows_saved_toast_copy(): void
