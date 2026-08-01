@@ -15,6 +15,7 @@ class RenewContractAction
     public function __construct(
         private readonly DepositBalanceService $depositBalanceService,
         private readonly RegisterDepositHoldAction $registerDepositHoldAction,
+        private readonly GenerateLeaseAgreementPdfAction $generateLeaseAgreementPdfAction,
     ) {}
 
     /**
@@ -163,6 +164,11 @@ class RenewContractAction
             ];
         }, 3);
 
+        $document = $this->generateLeaseAgreementPdfAction->execute(
+            $transactionResult['newContract']->fresh(),
+            $userId,
+        );
+
         return new RenewContractResult(
             newContract: $transactionResult['newContract'],
             oldContract: $transactionResult['oldContract'],
@@ -171,6 +177,7 @@ class RenewContractAction
             differenceHoldCharge: $transactionResult['differenceHoldCharge'],
             transferredAmount: $transactionResult['transferredAmount'],
             differenceAmount: $transactionResult['differenceAmount'],
+            document: $document,
         );
     }
 

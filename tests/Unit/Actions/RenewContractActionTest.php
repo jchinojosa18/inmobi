@@ -5,13 +5,16 @@ namespace Tests\Unit\Actions;
 use App\Actions\Contracts\RenewContractAction;
 use App\Models\Charge;
 use App\Models\Contract;
+use App\Models\Document;
 use App\Models\Organization;
+use App\Models\OrganizationSetting;
 use App\Models\Payment;
 use App\Models\Property;
 use App\Models\Tenant;
 use App\Models\Unit;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
@@ -34,6 +37,9 @@ class RenewContractActionTest extends TestCase
 
     public function test_renew_creates_new_contract_ends_old_and_transfers_deposit(): void
     {
+        Storage::fake('local');
+        config(['filesystems.documents_disk' => 'local']);
+
         [$source] = $this->createRenewableSource(depositHoldAmount: 9500.0);
 
         $result = app(RenewContractAction::class)->execute(
@@ -92,6 +98,11 @@ class RenewContractActionTest extends TestCase
 
         $this->assertCount(2, $holdsOnNew);
         $this->assertSame(10000.0, (float) $holdsOnNew->sum('amount'));
+
+        $this->assertNotNull($result->document);
+        $this->assertInstanceOf(Document::class, $result->document);
+        $this->assertSame($newContract->id, (int) $result->document->documentable_id);
+        $this->assertSame('lease_agreement', data_get($result->document->meta, 'kind'));
     }
 
     public function test_renew_blocked_when_outstanding_balance(): void
@@ -160,6 +171,13 @@ class RenewContractActionTest extends TestCase
         $tenant = Tenant::factory()->create(['organization_id' => $organization->id]);
 
         TenantContext::setOrganizationId($organization->id);
+
+        OrganizationSetting::query()
+            ->withoutOrganizationScope()
+            ->updateOrCreate(
+                ['organization_id' => $organization->id],
+                ['landlord_name' => 'Arrendador Demo S.A. de C.V.'],
+            );
 
         $contract = Contract::factory()->create([
             'organization_id' => $organization->id,
