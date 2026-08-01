@@ -21,6 +21,15 @@
                     {{ __('common.register_payment') }}
                 </x-ui.button>
             @endif
+            @if ($canManageContracts && $canRenew)
+                <x-ui.button
+                    type="button"
+                    variant="accent"
+                    onclick="Livewire.dispatch('open-contract-renew', { contractId: {{ $contract->id }} })"
+                >
+                    {{ __('contracts.renew_contract') }}
+                </x-ui.button>
+            @endif
             @if ($canManageContracts)
                 <x-ui.button
                     type="button"
@@ -61,6 +70,12 @@
         <livewire:contracts.settlement-wizard
             :contract="$contract"
             :key="'settlement-wizard-'.$contract->id"
+        />
+    @endif
+
+    @if ($canManageContracts)
+        <livewire:contracts.renew-wizard
+            :key="'renew-wizard-'.$contract->id"
         />
     @endif
 

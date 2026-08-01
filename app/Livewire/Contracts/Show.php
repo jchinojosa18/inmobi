@@ -27,6 +27,9 @@ class Show extends Component
     #[On('contract-updated')]
     public function onContractUpdated(): void {}
 
+    #[On('contract-renewed')]
+    public function onContractRenewed(): void {}
+
     #[On('deposit-hold-registered')]
     #[On('deposit-hold-voided')]
     public function onDepositHoldChanged(): void {}
@@ -145,6 +148,10 @@ class Show extends Component
         $allocatedTotal = round((float) $operationalRows->sum('paid'), 2);
         $creditTotal = (float) ($contract->creditBalance?->balance ?? 0);
         $pendingBalance = max(0, round((float) $operationalRows->sum('balance'), 2));
+        $outstandingForRenew = $depositBalanceService->outstandingBalanceExcludingDepositHold($contract);
+        $canRenew = $contract->status === Contract::STATUS_ACTIVE
+            && ! data_get($contract->meta, 'settlement_batch_id')
+            && $outstandingForRenew <= 0;
 
         $back = NavigationReturn::resolveContractShowBack(
             $this->returnUrl !== '' ? $this->returnUrl : null,
@@ -200,6 +207,7 @@ class Show extends Component
             'canManageCharges' => auth()->user()?->can('charges.manage') ?? false,
             'canViewPayments' => auth()->user()?->can('payments.view') ?? false,
             'canSettleContracts' => auth()->user()?->can('contracts.settle') ?? false,
+            'canRenew' => $canRenew,
             'contractDepositAmount' => $contractDepositAmount,
             'registeredDeposit' => $registeredDeposit,
             'remainingDeposit' => $remainingDeposit,
