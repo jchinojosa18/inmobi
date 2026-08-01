@@ -13,6 +13,7 @@ use App\Models\Property;
 use App\Models\Tenant;
 use App\Models\Unit;
 use App\Support\TenantContext;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -39,6 +40,7 @@ class RenewContractActionTest extends TestCase
     {
         Storage::fake('local');
         config(['filesystems.documents_disk' => 'local']);
+        CarbonImmutable::setTestNow('2026-08-01 10:00:00');
 
         [$source] = $this->createRenewableSource(depositHoldAmount: 9500.0);
 
@@ -103,6 +105,18 @@ class RenewContractActionTest extends TestCase
         $this->assertInstanceOf(Document::class, $result->document);
         $this->assertSame($newContract->id, (int) $result->document->documentable_id);
         $this->assertSame('lease_agreement', data_get($result->document->meta, 'kind'));
+
+        $rentCharge = Charge::query()
+            ->withoutOrganizationScope()
+            ->where('contract_id', $newContract->id)
+            ->where('type', Charge::TYPE_RENT)
+            ->where('period', '2026-08')
+            ->first();
+
+        $this->assertNotNull($rentCharge);
+        $this->assertSame(10000.0, (float) $rentCharge->amount);
+
+        CarbonImmutable::setTestNow();
     }
 
     public function test_renew_blocked_when_outstanding_balance(): void

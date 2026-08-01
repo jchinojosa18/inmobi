@@ -25,6 +25,7 @@ class RunDailyPenaltiesAction
     private const EXCLUDED_TYPES = [
         Charge::TYPE_DEPOSIT_HOLD,
         Charge::TYPE_DEPOSIT_APPLY,
+        Charge::TYPE_DEPOSIT_TRANSFER_OUT,
         'DEPOSIT',
         'SECURITY_DEPOSIT',
     ];

@@ -17,6 +17,7 @@ class ChargeAllocationPrioritizer
     private const EXCLUDED_TYPES = [
         Charge::TYPE_DEPOSIT_HOLD,
         Charge::TYPE_DEPOSIT_APPLY,
+        Charge::TYPE_DEPOSIT_TRANSFER_OUT,
     ];
 
     /**

@@ -66,6 +66,7 @@ class RenewContractAction
             $this->assertRenewable($lockedSource);
 
             $available = $this->depositBalanceService->availableDepositAmount($lockedSource);
+            $transferAmount = round(min($available, $depositAmount), 2);
 
             $sourceMeta = is_array($lockedSource->meta) ? $lockedSource->meta : [];
 
@@ -107,7 +108,7 @@ class RenewContractAction
             $transferOutCharge = null;
             $transferredHoldCharge = null;
 
-            if ($available > 0) {
+            if ($transferAmount > 0) {
                 $transferOutCharge = Charge::query()
                     ->withoutOrganizationScope()
                     ->create([
@@ -117,7 +118,7 @@ class RenewContractAction
                         'type' => Charge::TYPE_DEPOSIT_TRANSFER_OUT,
                         'period' => $startsAt->format('Y-m'),
                         'charge_date' => $startsAt->toDateString(),
-                        'amount' => -$available,
+                        'amount' => -$transferAmount,
                         'meta' => [
                             'renewed_to_contract_id' => $newContract->id,
                             'created_by_user_id' => $userId,
@@ -133,7 +134,7 @@ class RenewContractAction
                         'type' => Charge::TYPE_DEPOSIT_HOLD,
                         'period' => $startsAt->format('Y-m'),
                         'charge_date' => $startsAt->toDateString(),
-                        'amount' => $available,
+                        'amount' => $transferAmount,
                         'meta' => [
                             'source' => 'deposit_transfer',
                             'transferred_from_contract_id' => $lockedSource->id,
@@ -143,7 +144,7 @@ class RenewContractAction
                     ]);
             }
 
-            $differenceAmount = round(max($depositAmount - $available, 0), 2);
+            $differenceAmount = round(max($depositAmount - $transferAmount, 0), 2);
             $differenceHoldCharge = null;
 
             if ($registerDifference && $differenceAmount > 0) {
@@ -166,7 +167,7 @@ class RenewContractAction
                 'transferOutCharge' => $transferOutCharge,
                 'transferredHoldCharge' => $transferredHoldCharge,
                 'differenceHoldCharge' => $differenceHoldCharge,
-                'transferredAmount' => $available,
+                'transferredAmount' => $transferAmount,
                 'differenceAmount' => $differenceAmount,
             ];
         }, 3);

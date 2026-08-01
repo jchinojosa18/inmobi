@@ -134,6 +134,10 @@ class CashFlowReportService
             ->withoutOrganizationScope()
             ->where('charges.organization_id', $organizationId)
             ->where('charges.type', Charge::TYPE_DEPOSIT_HOLD)
+            ->where(function (Builder $builder): void {
+                $builder->whereNull('charges.meta->source')
+                    ->orWhere('charges.meta->source', '!=', 'deposit_transfer');
+            })
             ->whereBetween('charges.charge_date', [
                 $dateFrom->toDateString(),
                 $dateTo->toDateString(),

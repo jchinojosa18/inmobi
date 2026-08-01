@@ -125,6 +125,47 @@ class CashFlowReportServiceTest extends TestCase
         $this->assertNull($partial['closedMonthSnapshot']);
     }
 
+    public function test_transferred_deposit_holds_are_excluded_from_deposits_received(): void
+    {
+        [$user, $organization] = $this->seedIncomeAndExpenseForMarch();
+        unset($user);
+
+        $contract = Contract::query()
+            ->withoutOrganizationScope()
+            ->where('organization_id', $organization->id)
+            ->firstOrFail();
+
+        Charge::query()->create([
+            'organization_id' => $organization->id,
+            'contract_id' => $contract->id,
+            'unit_id' => $contract->unit_id,
+            'type' => Charge::TYPE_DEPOSIT_HOLD,
+            'period' => '2026-03',
+            'charge_date' => '2026-03-08',
+            'amount' => 500,
+            'meta' => [],
+        ]);
+        Charge::query()->create([
+            'organization_id' => $organization->id,
+            'contract_id' => $contract->id,
+            'unit_id' => $contract->unit_id,
+            'type' => Charge::TYPE_DEPOSIT_HOLD,
+            'period' => '2026-03',
+            'charge_date' => '2026-03-09',
+            'amount' => 9500,
+            'meta' => ['source' => 'deposit_transfer'],
+        ]);
+
+        $from = CarbonImmutable::parse('2026-03-01', 'America/Tijuana')->startOfDay();
+        $to = CarbonImmutable::parse('2026-03-31', 'America/Tijuana')->endOfDay();
+        $report = app(CashFlowReportService::class)->build((int) $organization->id, $from, $to, null);
+
+        $this->assertSame(1000.0, $report['incomeTotal']);
+        $this->assertSame(500.0, $report['depositsReceivedTotal']);
+        $this->assertSame(1, $report['depositsReceivedCount']);
+        $this->assertSame(1500.0, $report['grossCashInTotal']);
+    }
+
     public function test_deposit_holds_are_reported_without_changing_operating_totals(): void
     {
         [$user, $organization] = $this->seedIncomeAndExpenseForMarch();

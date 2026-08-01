@@ -107,8 +107,8 @@ class GenerateLeaseAgreementPdfAction
 
     private function termDescription(CarbonImmutable $startsAt, CarbonImmutable $endsAt): string
     {
-        $months = max($startsAt->diffInMonths($endsAt), 1);
+        $months = max((int) round($startsAt->diffInMonths($endsAt->addDay())), 1);
 
-        return $months.' meses';
+        return $months.' '.($months === 1 ? 'mes' : 'meses');
     }
 }

@@ -69,6 +69,67 @@ class LeaseAgreementPdfTest extends TestCase
         app(GenerateLeaseAgreementPdfAction::class)->execute($contract, null);
     }
 
+    public function test_view_data_term_description_is_whole_months(): void
+    {
+        [$organization, $contract] = $this->createContractGraph();
+        $this->configureLandlord($organization);
+
+        $data = app(GenerateLeaseAgreementPdfAction::class)->viewData($contract);
+
+        $this->assertSame('12 meses', $data['term_description']);
+    }
+
+    public function test_other_organization_user_gets_403_on_pdf_route(): void
+    {
+        Storage::fake('local');
+        config(['filesystems.documents_disk' => 'local']);
+
+        [$organization, $contract] = $this->createContractGraph();
+        $this->configureLandlord($organization);
+
+        $otherOrg = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $otherOrg->id]);
+
+        $this->actingAs($user)
+            ->get(route('contracts.agreement.pdf', ['contractId' => $contract->id]))
+            ->assertForbidden();
+    }
+
+    public function test_unsigned_share_url_gets_403(): void
+    {
+        Storage::fake('local');
+        config(['filesystems.documents_disk' => 'local']);
+
+        [, $contract] = $this->createContractGraph();
+
+        $this->get(route('contracts.agreement.share', ['contractId' => $contract->id]))
+            ->assertForbidden();
+    }
+
+    public function test_tampered_share_url_gets_403(): void
+    {
+        Storage::fake('local');
+        config(['filesystems.documents_disk' => 'local']);
+
+        [$organization, $contract] = $this->createContractGraph();
+        $this->configureLandlord($organization);
+
+        app(GenerateLeaseAgreementPdfAction::class)->execute($contract, null);
+
+        $relative = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'contracts.agreement.share',
+            now()->addDays(7),
+            ['contractId' => $contract->id],
+            absolute: false,
+        );
+        $signedUrl = \Illuminate\Support\Facades\URL::to($relative);
+        $tamperedUrl = str_replace('signature=', 'signature=tampered', $signedUrl);
+        $pathWithQuery = parse_url($tamperedUrl, PHP_URL_PATH).'?'.parse_url($tamperedUrl, PHP_URL_QUERY);
+
+        $this->get($pathWithQuery)
+            ->assertForbidden();
+    }
+
     public function test_authenticated_pdf_route_returns_pdf(): void
     {
         Storage::fake('local');

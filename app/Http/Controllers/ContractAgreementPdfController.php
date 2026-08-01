@@ -19,12 +19,12 @@ class ContractAgreementPdfController extends Controller
             ->withoutOrganizationScope()
             ->findOrFail($contractId);
 
-        if (
-            $request->routeIs('contracts.agreement.pdf')
-            && $request->user() !== null
-            && (int) $request->user()->organization_id !== (int) $contract->organization_id
-        ) {
-            abort(403);
+        if ($request->routeIs('contracts.agreement.pdf')) {
+            abort_unless(
+                $request->user() !== null
+                    && (int) $request->user()->organization_id === (int) $contract->organization_id,
+                403,
+            );
         }
 
         $data = $action->viewData($contract);
