@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Actions\Charges\GenerateMonthlyRentChargesAction;
 use App\Domain\Shared\OrganizationScopedModel;
 use App\Models\Concerns\Auditable;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -139,6 +140,15 @@ class Contract extends OrganizationScopedModel
     public function documents(): MorphMany
     {
         return $this->morphMany(Document::class, 'documentable');
+    }
+
+    public function isExpired(?CarbonImmutable $today = null): bool
+    {
+        $today ??= CarbonImmutable::now('America/Tijuana')->startOfDay();
+
+        return $this->status === self::STATUS_ACTIVE
+            && $this->ends_at !== null
+            && $this->ends_at->toDateString() < $today->toDateString();
     }
 
     /**

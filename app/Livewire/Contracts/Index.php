@@ -213,7 +213,13 @@ class Index extends Component
             });
         }
 
-        if ($this->status_filter !== 'all') {
+        if ($this->status_filter === 'expired') {
+            $today = now('America/Tijuana')->toDateString();
+            $query
+                ->where('contracts.status', Contract::STATUS_ACTIVE)
+                ->whereNotNull('contracts.ends_at')
+                ->whereDate('contracts.ends_at', '<', $today);
+        } elseif ($this->status_filter !== 'all') {
             $query->where('contracts.status', $this->status_filter);
         }
 

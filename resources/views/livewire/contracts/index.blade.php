@@ -26,6 +26,7 @@
 
             <x-ui.select id="contracts-status" :label="__('contracts.status')" wire:model.live="status_filter">
                 <option value="active">{{ __('contracts.status_active') }}</option>
+                <option value="expired">{{ __('contracts.status_expired') }}</option>
                 <option value="ended">{{ __('contracts.status_ended') }}</option>
                 <option value="all">{{ __('contracts.all_masculine') }}</option>
             </x-ui.select>
@@ -111,9 +112,15 @@
                 <tr wire:key="contract-row-{{ $contract->id }}" class="transition hover:bg-slate-50/80">
                     <td class="px-4 py-3 align-top">
                         <p class="font-medium text-slate-900">#{{ $contract->id }}</p>
-                        <x-ui.badge :variant="$contract->status === 'active' ? 'success' : 'neutral'" class="mt-1">
-                            {{ $contract->status === 'active' ? __('common.active') : __('common.finished') }}
-                        </x-ui.badge>
+                        @if ($contract->isExpired())
+                            <x-ui.badge variant="warning" class="mt-1">
+                                {{ __('contracts.status_expired_label') }}
+                            </x-ui.badge>
+                        @else
+                            <x-ui.badge :variant="$contract->status === 'active' ? 'success' : 'neutral'" class="mt-1">
+                                {{ $contract->status === 'active' ? __('common.active') : __('common.finished') }}
+                            </x-ui.badge>
+                        @endif
                     </td>
 
                     <td class="px-4 py-3 align-top">
