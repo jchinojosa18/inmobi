@@ -52,6 +52,7 @@ class BuildMonthCloseSnapshotAction
             ->whereNotIn('type', [
                 Charge::TYPE_DEPOSIT_HOLD,
                 Charge::TYPE_DEPOSIT_APPLY,
+                Charge::TYPE_DEPOSIT_TRANSFER_OUT,
                 'DEPOSIT',
                 'SECURITY_DEPOSIT',
             ])
@@ -70,6 +71,7 @@ class BuildMonthCloseSnapshotAction
             ->whereNotIn('charges.type', [
                 Charge::TYPE_DEPOSIT_HOLD,
                 Charge::TYPE_DEPOSIT_APPLY,
+                Charge::TYPE_DEPOSIT_TRANSFER_OUT,
                 'DEPOSIT',
                 'SECURITY_DEPOSIT',
             ])

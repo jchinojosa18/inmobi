@@ -381,7 +381,11 @@ class Show extends Component
 
     private function isDepositLedgerType(string $type): bool
     {
-        return in_array($type, [Charge::TYPE_DEPOSIT_HOLD, Charge::TYPE_DEPOSIT_APPLY], true);
+        return in_array($type, [
+            Charge::TYPE_DEPOSIT_HOLD,
+            Charge::TYPE_DEPOSIT_APPLY,
+            Charge::TYPE_DEPOSIT_TRANSFER_OUT,
+        ], true);
     }
 
     /**
@@ -546,7 +550,11 @@ class Show extends Component
         ?CarbonImmutable $dueDate,
         ?CarbonImmutable $graceUntil
     ): array {
-        if (in_array($charge->type, [Charge::TYPE_DEPOSIT_HOLD, Charge::TYPE_DEPOSIT_APPLY], true)) {
+        if (in_array($charge->type, [
+            Charge::TYPE_DEPOSIT_HOLD,
+            Charge::TYPE_DEPOSIT_APPLY,
+            Charge::TYPE_DEPOSIT_TRANSFER_OUT,
+        ], true)) {
             return ['label' => __('contracts.charge_statuses.guarantee'), 'tone' => 'blue'];
         }
 

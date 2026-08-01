@@ -56,12 +56,23 @@ class DepositBalanceService
             ->sum('amount'), 2);
     }
 
+    public function transferredOutDepositAmount(Contract $contract): float
+    {
+        return round(abs((float) Charge::query()
+            ->withoutOrganizationScope()
+            ->where('organization_id', $contract->organization_id)
+            ->where('contract_id', $contract->id)
+            ->where('type', Charge::TYPE_DEPOSIT_TRANSFER_OUT)
+            ->sum('amount')), 2);
+    }
+
     public function availableDepositAmount(Contract $contract): float
     {
         return round(max(
             $this->registeredDepositHoldAmount($contract)
             - $this->appliedDepositAmount($contract)
-            - $this->refundedDepositAmount($contract),
+            - $this->refundedDepositAmount($contract)
+            - $this->transferredOutDepositAmount($contract),
             0
         ), 2);
     }
@@ -72,7 +83,7 @@ class DepositBalanceService
             ->withoutOrganizationScope()
             ->where('organization_id', $contract->organization_id)
             ->where('contract_id', $contract->id)
-            ->where('type', '!=', Charge::TYPE_DEPOSIT_HOLD)
+            ->whereNotIn('type', [Charge::TYPE_DEPOSIT_HOLD, Charge::TYPE_DEPOSIT_TRANSFER_OUT])
             ->sum('amount');
 
         $allocatedTotal = (float) PaymentAllocation::query()
@@ -85,7 +96,7 @@ class DepositBalanceService
             ->whereNull('charges.deleted_at')
             ->whereNull('payments.deleted_at')
             ->where('charges.contract_id', $contract->id)
-            ->where('charges.type', '!=', Charge::TYPE_DEPOSIT_HOLD)
+            ->whereNotIn('charges.type', [Charge::TYPE_DEPOSIT_HOLD, Charge::TYPE_DEPOSIT_TRANSFER_OUT])
             ->sum('payment_allocations.amount');
 
         return round(max($chargesTotal - $allocatedTotal, 0), 2);

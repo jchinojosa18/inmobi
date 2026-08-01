@@ -36,6 +36,8 @@ class Charge extends OrganizationScopedModel
 
     public const TYPE_DEPOSIT_APPLY = 'DEPOSIT_APPLY';
 
+    public const TYPE_DEPOSIT_TRANSFER_OUT = 'DEPOSIT_TRANSFER_OUT';
+
     public const STATUS_PENDING = 'pending';
 
     public const STATUS_PARTIAL = 'partial';
