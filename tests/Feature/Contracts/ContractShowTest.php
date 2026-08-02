@@ -163,7 +163,7 @@ class ContractShowTest extends TestCase
 
         $response->assertOk();
         $response->assertSeeText('Julio 2026');
-        $response->assertSeeText('PENALTY');
+        $response->assertSeeText(__('contracts.charge_types.PENALTY'));
         $response->assertDontSeeText('Sin periodo');
         $response->assertSeeHtml('text-rose-600');
     }
