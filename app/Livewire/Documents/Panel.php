@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Documents;
 
+use App\Mail\ContractDocumentMail;
 use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\Document;
@@ -10,9 +11,13 @@ use App\Models\Payment;
 use App\Models\Unit;
 use App\Support\AuditLogger;
 use App\Support\ContractDocumentCategory;
+use App\Support\DateDisplay;
+use App\Support\DocumentShareUrl;
 use App\Support\FileViewerItem;
+use App\Support\OrganizationSettingsService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -57,6 +62,18 @@ class Panel extends Component
     public bool $showDeleteConfirm = false;
 
     public ?int $pendingDeleteDocumentId = null;
+
+    public bool $showShareModal = false;
+
+    public ?int $sharingDocumentId = null;
+
+    public ?string $shareUrl = null;
+
+    public ?string $whatsAppUrl = null;
+
+    public ?string $shareTenantEmail = null;
+
+    public ?string $shareEmailFeedback = null;
 
     public function mount(
         string $documentableType,
@@ -229,6 +246,66 @@ class Panel extends Component
         session()->flash('success', __('contracts.document_deleted_success'));
     }
 
+    public function openShareModal(int $documentId): void
+    {
+        $document = $this->findShareableContractDocument($documentId);
+        $contract = $this->resolveDocumentable();
+        $contract->loadMissing(['tenant', 'unit.property']);
+
+        $this->sharingDocumentId = $document->id;
+        $this->shareUrl = DocumentShareUrl::make($document->id);
+        $this->shareTenantEmail = $contract->tenant?->email;
+        $this->shareEmailFeedback = null;
+        $this->whatsAppUrl = $this->buildContractDocumentWhatsAppUrl($contract, $this->shareUrl);
+        $this->showShareModal = true;
+    }
+
+    public function closeShareModal(): void
+    {
+        $this->showShareModal = false;
+        $this->sharingDocumentId = null;
+        $this->shareUrl = null;
+        $this->whatsAppUrl = null;
+        $this->shareTenantEmail = null;
+        $this->shareEmailFeedback = null;
+    }
+
+    public function sendContractDocumentEmail(): void
+    {
+        if (! (auth()->user()?->can('receipts.send') ?? false)) {
+            abort(403);
+        }
+
+        if ($this->sharingDocumentId === null) {
+            return;
+        }
+
+        $document = $this->findShareableContractDocument($this->sharingDocumentId);
+        $contract = $this->resolveDocumentable();
+        $contract->loadMissing(['tenant']);
+        $email = $contract->tenant?->email;
+
+        if (! is_string($email) || $email === '') {
+            $this->shareEmailFeedback = __('documents.no_tenant_email');
+
+            return;
+        }
+
+        $disk = (string) data_get($document->meta, 'disk', config('filesystems.documents_disk', 'local'));
+        if (! Storage::disk($disk)->exists($document->path)) {
+            $this->shareEmailFeedback = __('documents.file_missing');
+
+            return;
+        }
+
+        try {
+            Mail::to($email)->send(new ContractDocumentMail($document));
+            $this->shareEmailFeedback = __('documents.email_sent');
+        } catch (\Throwable) {
+            $this->shareEmailFeedback = __('documents.email_failed');
+        }
+    }
+
     protected function rules(): array
     {
         if ($this->isContractVariant()) {
@@ -295,6 +372,7 @@ class Panel extends Component
                 ->values()
                 ->all(),
             'canUploadDocuments' => auth()->user()?->can('documents.upload') ?? false,
+            'canSendReceipts' => auth()->user()?->can('receipts.send') ?? false,
             'variant' => $this->variant,
             'availableCategories' => $this->isContractVariant()
                 ? $this->availableContractCategories()
@@ -366,6 +444,50 @@ class Panel extends Component
         }
 
         return $model;
+    }
+
+    private function findShareableContractDocument(int $documentId): Document
+    {
+        if (! $this->isContractVariant()) {
+            abort(404);
+        }
+
+        $document = Document::query()
+            ->where('documentable_type', Contract::class)
+            ->where('documentable_id', $this->documentableId)
+            ->findOrFail($documentId);
+
+        if ($document->category !== ContractDocumentCategory::Contract) {
+            abort(403);
+        }
+
+        return $document;
+    }
+
+    private function buildContractDocumentWhatsAppUrl(Contract $contract, string $shareUrl): string
+    {
+        $settingsService = app(OrganizationSettingsService::class);
+        $settings = $settingsService->forOrganization((int) $contract->organization_id);
+        $unitName = trim((string) ($contract->unit?->property?->name.' / '.$contract->unit?->name));
+        $phone = preg_replace('/\D+/', '', (string) $contract->tenant?->phone) ?: null;
+
+        $message = $settingsService->renderTemplate(
+            (string) $settings['contract_whatsapp_template'],
+            [
+                'tenant_name' => (string) ($contract->tenant?->full_name ?? 'cliente'),
+                'unit_name' => $unitName !== '' ? $unitName : 'unidad',
+                'shared_contract_url' => $shareUrl,
+                'rent_amount' => number_format((float) $contract->rent_amount, 2, '.', ''),
+                'starts_at' => DateDisplay::formatDate($contract->starts_at),
+                'ends_at' => DateDisplay::formatDate($contract->ends_at),
+            ]
+        );
+
+        $encoded = rawurlencode($message);
+
+        return $phone !== null
+            ? "https://wa.me/{$phone}?text={$encoded}"
+            : "https://wa.me/?text={$encoded}";
     }
 
     public function formatFileSize(int $size): string

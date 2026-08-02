@@ -48,6 +48,16 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                         </svg>
                                     </x-ui.file-viewer-trigger>
+                                    @if ($item['category'] === 'contract')
+                                        <x-ui.button
+                                            type="button"
+                                            variant="secondary"
+                                            size="sm"
+                                            wire:click="openShareModal({{ $item['id'] }})"
+                                        >
+                                            {{ __('documents.share') }}
+                                        </x-ui.button>
+                                    @endif
                                     @if ($canUploadDocuments)
                                         <x-ui.button
                                             type="button"
@@ -197,5 +207,79 @@
         >
             <p class="text-slate-700">{{ __('documents.confirm_delete') }}</p>
         </x-ui.confirm-modal>
+    @endif
+
+    @if ($showShareModal)
+        <x-ui.modal
+            :open="true"
+            :title="__('documents.share_title')"
+            :aria-label="__('documents.share_title')"
+            max-width="md"
+            close-action="closeShareModal"
+        >
+            <p class="text-sm text-slate-600">{{ __('documents.share_description') }}</p>
+
+            <div class="mt-4 space-y-4">
+                @if ($canSendReceipts)
+                    <div>
+                        <x-ui.input
+                            id="contract-doc-email"
+                            :label="__('documents.email_recipient')"
+                            type="email"
+                            :value="$shareTenantEmail"
+                            disabled
+                        />
+                        @if ($shareTenantEmail)
+                            <x-ui.button
+                                type="button"
+                                class="mt-3"
+                                wire:click="sendContractDocumentEmail"
+                                wire:loading.attr="disabled"
+                            >
+                                {{ __('documents.send_email') }}
+                            </x-ui.button>
+                        @else
+                            <p class="mt-2 text-sm text-amber-700">{{ __('documents.no_tenant_email') }}</p>
+                        @endif
+                        @if ($shareEmailFeedback)
+                            <p class="mt-2 text-sm text-slate-700">{{ $shareEmailFeedback }}</p>
+                        @endif
+                    </div>
+                @endif
+
+                <div class="flex flex-wrap gap-2">
+                    @if ($shareUrl)
+                        <button
+                            type="button"
+                            x-data="{ copied: false }"
+                            x-on:click="navigator.clipboard.writeText(@js($shareUrl)); copied = true; setTimeout(() => copied = false, 2000)"
+                            class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                        >
+                            <span x-text="copied ? @js(__('documents.copied')) : @js(__('documents.copy_link'))"></span>
+                        </button>
+                    @endif
+
+                    @if ($whatsAppUrl)
+                        <a
+                            href="{{ $whatsAppUrl }}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="inline-flex items-center gap-1.5 rounded-md border border-emerald-300 px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50"
+                        >
+                            {{ __('documents.open_whatsapp') }}
+                        </a>
+                    @endif
+                </div>
+
+                @if ($shareUrl)
+                    <div>
+                        <p class="mb-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">
+                            {{ __('documents.shareable_link') }}
+                        </p>
+                        <textarea readonly rows="3" class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs">{{ $shareUrl }}</textarea>
+                    </div>
+                @endif
+            </div>
+        </x-ui.modal>
     @endif
 </x-ui.card>
