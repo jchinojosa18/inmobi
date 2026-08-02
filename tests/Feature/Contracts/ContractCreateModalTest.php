@@ -5,13 +5,18 @@ namespace Tests\Feature\Contracts;
 use App\Livewire\Contracts\CreateModal;
 use App\Models\Charge;
 use App\Models\Contract;
+use App\Models\Document;
 use App\Models\Organization;
+use App\Models\OrganizationSetting;
 use App\Models\Property;
 use App\Models\Tenant;
 use App\Models\Unit;
 use App\Models\User;
+use App\Support\ContractDocumentCategory;
+use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -158,6 +163,90 @@ class ContractCreateModalTest extends TestCase
             ->assertSeeHtml('wire:model="tenant_id"');
     }
 
+    public function test_create_generates_contract_category_document(): void
+    {
+        Storage::fake('local');
+        config(['filesystems.documents_disk' => 'local']);
+
+        [$organization, $user, $unit, $tenant] = $this->createOpenCreateGraph();
+        $this->seedLandlord($organization->id);
+
+        Livewire::actingAs($user)
+            ->test(CreateModal::class)
+            ->dispatch('open-contract-create')
+            ->set('unit_id', $unit->id)
+            ->set('tenant_id', $tenant->id)
+            ->set('rent_amount', '10000')
+            ->set('deposit_amount', '10000')
+            ->set('due_day', '5')
+            ->set('grace_days', '3')
+            ->set('penalty_rate_daily', '5')
+            ->set('status', Contract::STATUS_ACTIVE)
+            ->set('starts_at', '2026-08-01')
+            ->set('ends_at', '2027-07-31')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $contract = Contract::query()->withoutOrganizationScope()
+            ->where('unit_id', $unit->id)
+            ->where('tenant_id', $tenant->id)
+            ->first();
+
+        $this->assertNotNull($contract);
+
+        $this->assertTrue(
+            Document::query()->withoutOrganizationScope()
+                ->where('documentable_type', Contract::class)
+                ->where('documentable_id', $contract->id)
+                ->where('category', ContractDocumentCategory::Contract->value)
+                ->exists()
+        );
+    }
+
+    public function test_create_requires_ends_at(): void
+    {
+        [$organization, $user, $unit, $tenant] = $this->createOpenCreateGraph();
+        $this->seedLandlord($organization->id);
+
+        Livewire::actingAs($user)
+            ->test(CreateModal::class)
+            ->dispatch('open-contract-create')
+            ->set('unit_id', $unit->id)
+            ->set('tenant_id', $tenant->id)
+            ->set('rent_amount', '10000')
+            ->set('deposit_amount', '10000')
+            ->set('due_day', '5')
+            ->set('grace_days', '3')
+            ->set('penalty_rate_daily', '5')
+            ->set('starts_at', '2026-08-01')
+            ->set('ends_at', null)
+            ->call('save')
+            ->assertHasErrors(['ends_at']);
+    }
+
+    public function test_create_requires_landlord_name(): void
+    {
+        Storage::fake('local');
+        [$organization, $user, $unit, $tenant] = $this->createOpenCreateGraph();
+
+        Livewire::actingAs($user)
+            ->test(CreateModal::class)
+            ->dispatch('open-contract-create')
+            ->set('unit_id', $unit->id)
+            ->set('tenant_id', $tenant->id)
+            ->set('rent_amount', '10000')
+            ->set('deposit_amount', '10000')
+            ->set('due_day', '5')
+            ->set('grace_days', '3')
+            ->set('penalty_rate_daily', '5')
+            ->set('starts_at', '2026-08-01')
+            ->set('ends_at', '2027-07-31')
+            ->call('save')
+            ->assertHasErrors(['landlord_name']);
+
+        $this->assertSame(0, Contract::query()->withoutOrganizationScope()->where('unit_id', $unit->id)->count());
+    }
+
     public function test_edit_save_ignores_tampered_unit_and_tenant(): void
     {
         [$organization, $contract, $user] = $this->createContractGraph();
@@ -214,12 +303,16 @@ class ContractCreateModalTest extends TestCase
             'status' => 'active',
         ]);
 
+        $this->seedLandlord($organization->id);
+
         $contract = Contract::factory()->create([
             'organization_id' => $organization->id,
             'unit_id' => $unit->id,
             'tenant_id' => $tenant->id,
             'rent_amount' => 10000,
             'penalty_rate_daily' => 0.05,
+            'starts_at' => '2026-01-01',
+            'ends_at' => '2026-12-31',
         ]);
 
         $user = User::factory()->create([
@@ -227,5 +320,38 @@ class ContractCreateModalTest extends TestCase
         ]);
 
         return [$organization, $contract, $user];
+    }
+
+    private function seedLandlord(int $organizationId): void
+    {
+        TenantContext::setOrganizationId($organizationId);
+        OrganizationSetting::query()
+            ->withoutOrganizationScope()
+            ->updateOrCreate(
+                ['organization_id' => $organizationId],
+                ['landlord_name' => 'Arrendador Demo S.A. de C.V.'],
+            );
+    }
+
+    /**
+     * @return array{0: Organization, 1: User, 2: Unit, 3: Tenant}
+     */
+    private function createOpenCreateGraph(): array
+    {
+        $organization = Organization::factory()->create();
+        $property = Property::factory()->create(['organization_id' => $organization->id]);
+        $unit = Unit::factory()->create([
+            'organization_id' => $organization->id,
+            'property_id' => $property->id,
+            'status' => 'active',
+        ]);
+        $tenant = Tenant::factory()->create([
+            'organization_id' => $organization->id,
+            'status' => 'active',
+            'email' => 'tenant@example.com',
+        ]);
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+
+        return [$organization, $user, $unit, $tenant];
     }
 }

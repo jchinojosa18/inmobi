@@ -2,14 +2,17 @@
 
 namespace App\Livewire\Contracts;
 
+use App\Actions\Contracts\GenerateLeaseAgreementPdfAction;
 use App\Models\Contract;
 use App\Models\Tenant;
 use App\Models\Unit;
 use App\Support\AuditLogger;
+use App\Support\OrganizationSettingsService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -103,8 +106,10 @@ class CreateModal extends Component
         $this->resetForm();
     }
 
-    public function save(): mixed
-    {
+    public function save(
+        OrganizationSettingsService $organizationSettingsService,
+        GenerateLeaseAgreementPdfAction $generateLeaseAgreementPdfAction,
+    ): mixed {
         if (! (auth()->user()?->can('contracts.manage') ?? false)) {
             abort(403);
         }
@@ -122,6 +127,10 @@ class CreateModal extends Component
         if ($normalizedPenaltyRate > self::MAX_DAILY_RATE_DECIMAL) {
             $this->addError('penalty_rate_daily', __('contracts.validation.penalty_rate_security'));
 
+            return null;
+        }
+
+        if ($this->contractId === null && ! $this->assertLandlordNameConfigured($organizationSettingsService)) {
             return null;
         }
 
@@ -151,7 +160,7 @@ class CreateModal extends Component
                 $contract->penalty_rate_daily = $validated['penalty_rate_daily'];
                 $contract->status = $validated['status'];
                 $contract->starts_at = $validated['starts_at'];
-                $contract->ends_at = $validated['ends_at'] ?: null;
+                $contract->ends_at = $validated['ends_at'];
                 $contract->meta = [
                     'notes' => $validated['meta_notes'] ?: null,
                 ];
@@ -189,6 +198,16 @@ class CreateModal extends Component
                 'starts_at' => $contract->starts_at?->toDateString(),
             ],
         );
+
+        if ($isNew) {
+            try {
+                $generateLeaseAgreementPdfAction->execute($contract->fresh(), auth()->id());
+            } catch (ValidationException $e) {
+                $this->addError('landlord_name', $e->errors()['landlord_name'][0] ?? __('contracts.validation.renew_failed'));
+
+                return null;
+            }
+        }
 
         session()->flash('success', $isNew
             ? __('contracts.flash.contract_created')
@@ -275,7 +294,7 @@ class CreateModal extends Component
             'penalty_rate_daily' => ['required', 'numeric', 'min:0.0001', 'max:100'],
             'status' => ['required', Rule::in([Contract::STATUS_ACTIVE, Contract::STATUS_ENDED])],
             'starts_at' => ['required', 'date'],
-            'ends_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
+            'ends_at' => ['required', 'date', 'after_or_equal:starts_at'],
             'meta_notes' => ['nullable', 'string', 'max:1000'],
         ];
     }
@@ -310,6 +329,7 @@ class CreateModal extends Component
             'status.in' => __('contracts.validation.status_invalid'),
             'starts_at.required' => __('contracts.validation.starts_at_required'),
             'starts_at.date' => __('contracts.validation.starts_at_invalid'),
+            'ends_at.required' => __('contracts.validation.ends_at_required'),
             'ends_at.date' => __('contracts.validation.ends_at_invalid'),
             'ends_at.after_or_equal' => __('contracts.validation.ends_at_after_start'),
             'meta_notes.max' => __('contracts.validation.notes_max'),
@@ -328,6 +348,20 @@ class CreateModal extends Component
     private function toDisplayPenaltyRate(float $storedDecimalRate): string
     {
         return number_format($storedDecimalRate * 100, 2, '.', '');
+    }
+
+    private function assertLandlordNameConfigured(OrganizationSettingsService $organizationSettingsService): bool
+    {
+        $settings = $organizationSettingsService->forOrganization((int) auth()->user()?->organization_id);
+        $landlordName = is_string($settings['landlord_name'] ?? null) ? trim($settings['landlord_name']) : '';
+
+        if ($landlordName === '') {
+            $this->addError('landlord_name', 'Configure el nombre del arrendador en Configuración antes de generar el contrato.');
+
+            return false;
+        }
+
+        return true;
     }
 
     private function resetForm(): void
