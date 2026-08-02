@@ -26,7 +26,9 @@
 
             <x-ui.select id="contracts-status" :label="__('contracts.status')" wire:model.live="status_filter">
                 <option value="active">{{ __('contracts.status_active') }}</option>
+                <option value="expiring">{{ __('contracts.status_expiring') }}</option>
                 <option value="expired">{{ __('contracts.status_expired') }}</option>
+                <option value="attention">{{ __('contracts.status_attention') }}</option>
                 <option value="ended">{{ __('contracts.status_ended') }}</option>
                 <option value="all">{{ __('contracts.all_masculine') }}</option>
             </x-ui.select>
@@ -81,6 +83,11 @@
                 </button>
             </th>
             <th class="px-4 py-3">
+                <button type="button" wire:click="sortBy('ends_at')" class="inline-flex items-center gap-1 hover:text-slate-800">
+                    {{ __('contracts.expiration') }} <span>{{ $sortIndicator('ends_at') }}</span>
+                </button>
+            </th>
+            <th class="px-4 py-3">
                 <button type="button" wire:click="sortBy('next_due')" class="inline-flex items-center gap-1 hover:text-slate-800">
                     {{ __('contracts.next_due') }} <span>{{ $sortIndicator('next_due') }}</span>
                 </button>
@@ -113,8 +120,12 @@
                     <td class="px-4 py-3 align-top">
                         <p class="font-medium text-slate-900">#{{ $contract->id }}</p>
                         @if ($contract->isExpired())
-                            <x-ui.badge variant="warning" class="mt-1">
+                            <x-ui.badge variant="danger" class="mt-1">
                                 {{ __('contracts.status_expired_label') }}
+                            </x-ui.badge>
+                        @elseif ($contract->isExpiringSoon())
+                            <x-ui.badge variant="warning" class="mt-1">
+                                {{ __('contracts.status_expiring_label') }}
                             </x-ui.badge>
                         @else
                             <x-ui.badge :variant="$contract->status === 'active' ? 'success' : 'neutral'" class="mt-1">
@@ -141,6 +152,26 @@
                                 ({{ $contract->unit->code }})
                             @endif
                         </p>
+                    </td>
+
+                    <td class="px-4 py-3 align-top">
+                        @if ($contract->ends_at)
+                            @php $daysUntilEnd = $contract->daysUntilEnd(); @endphp
+                            <p class="font-medium text-slate-900">
+                                <x-ui.display-date :value="$contract->ends_at" />
+                            </p>
+                            <p class="text-xs text-slate-500">
+                                @if ($daysUntilEnd === 0)
+                                    {{ __('contracts.ends_today') }}
+                                @elseif ($daysUntilEnd > 0)
+                                    {{ __('contracts.ends_in_days', ['days' => $daysUntilEnd]) }}
+                                @else
+                                    {{ __('contracts.ended_days_ago', ['days' => abs($daysUntilEnd)]) }}
+                                @endif
+                            </p>
+                        @else
+                            <p class="text-slate-500">—</p>
+                        @endif
                     </td>
 
                     <td class="px-4 py-3 align-top">
@@ -184,7 +215,7 @@
                     </td>
                 </tr>
             @empty
-                <x-ui.empty-state :title="__('contracts.empty')" :colspan="7" />
+                <x-ui.empty-state :title="__('contracts.empty')" :colspan="8" />
             @endforelse
         </x-slot:body>
         <x-slot:footer>

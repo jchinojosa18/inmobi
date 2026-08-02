@@ -45,12 +45,20 @@
         <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800" role="alert">
             {{ __('contracts.expired_banner', ['date' => \App\Support\DateDisplay::formatDate($contract->ends_at)]) }}
         </div>
+    @elseif ($contract->isExpiringSoon())
+        <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800" role="alert">
+            {{ __('contracts.expiring_banner', ['date' => \App\Support\DateDisplay::formatDate($contract->ends_at)]) }}
+        </div>
     @endif
 
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <x-ui.stat-card
             :label="__('contracts.status')"
-            :value="$contract->isExpired() ? __('contracts.status_expired_label') : ($contract->status === 'active' ? __('common.active') : __('common.finished'))"
+            :value="$contract->isExpired()
+                ? __('contracts.status_expired_label')
+                : ($contract->isExpiringSoon()
+                    ? __('contracts.status_expiring_label')
+                    : ($contract->status === 'active' ? __('common.active') : __('common.finished')))"
         />
         <x-ui.stat-card
             :label="__('contracts.deposit_paid')"

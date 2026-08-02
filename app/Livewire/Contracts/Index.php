@@ -9,6 +9,7 @@ use App\Models\Property;
 use App\Models\Unit;
 use App\Support\ContractOverdueQuery;
 use App\Support\TenantContext;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
@@ -96,7 +97,7 @@ class Index extends Component
 
     public function sortBy(string $field): void
     {
-        $allowed = ['urgency', 'tenant', 'unit', 'next_due', 'balance'];
+        $allowed = ['urgency', 'tenant', 'unit', 'ends_at', 'next_due', 'balance'];
 
         if (! in_array($field, $allowed, true)) {
             return;
@@ -219,6 +220,21 @@ class Index extends Component
                 ->where('contracts.status', Contract::STATUS_ACTIVE)
                 ->whereNotNull('contracts.ends_at')
                 ->whereDate('contracts.ends_at', '<', $today);
+        } elseif ($this->status_filter === 'expiring') {
+            $today = CarbonImmutable::now('America/Tijuana')->startOfDay();
+            $horizon = $today->addDays(Contract::EXPIRING_SOON_DAYS)->toDateString();
+            $query
+                ->where('contracts.status', Contract::STATUS_ACTIVE)
+                ->whereNotNull('contracts.ends_at')
+                ->whereDate('contracts.ends_at', '>=', $today->toDateString())
+                ->whereDate('contracts.ends_at', '<=', $horizon);
+        } elseif ($this->status_filter === 'attention') {
+            $today = CarbonImmutable::now('America/Tijuana')->startOfDay();
+            $horizon = $today->addDays(Contract::EXPIRING_SOON_DAYS)->toDateString();
+            $query
+                ->where('contracts.status', Contract::STATUS_ACTIVE)
+                ->whereNotNull('contracts.ends_at')
+                ->whereDate('contracts.ends_at', '<=', $horizon);
         } elseif ($this->status_filter !== 'all') {
             $query->where('contracts.status', $this->status_filter);
         }
@@ -254,6 +270,12 @@ class Index extends Component
                 $query
                     ->orderBy('units.name', $direction)
                     ->orderBy('units.code', $direction)
+                    ->orderBy('contracts.id', 'desc');
+                break;
+
+            case 'ends_at':
+                $query
+                    ->orderByRaw("COALESCE(contracts.ends_at, '9999-12-31') {$direction}")
                     ->orderBy('contracts.id', 'desc');
                 break;
 
