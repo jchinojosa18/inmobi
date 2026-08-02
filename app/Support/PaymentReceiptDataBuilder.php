@@ -25,34 +25,43 @@ class PaymentReceiptDataBuilder
      */
     public function build(Payment $payment): array
     {
-        $payment->loadMissing(['contract.tenant', 'contract.unit.property', 'allocations.charge']);
+        // Shared/WhatsApp links have no auth tenant context; scoped relations would
+        // fail-closed (empty). Bind the payment's org for the duration of the build.
+        $previousOrganizationId = TenantContext::currentOrganizationId();
+        TenantContext::setOrganizationId((int) $payment->organization_id);
 
-        $allocations = $payment->allocations
-            ->map(function ($allocation): array {
-                return [
-                    'charge_type' => (string) $allocation->charge?->type,
-                    'period' => $allocation->charge?->period,
-                    'charge_date' => DateDisplay::formatDate($allocation->charge?->charge_date, ''),
-                    'amount' => (float) $allocation->amount,
-                ];
-            })
-            ->values()
-            ->all();
+        try {
+            $payment->loadMissing(['contract.tenant', 'contract.unit.property', 'allocations.charge']);
 
-        return [
-            'folio' => $payment->receipt_folio,
-            'paid_at' => DateDisplay::formatDateTime($payment->paid_at, ''),
-            'method' => $payment->method,
-            'amount' => (float) $payment->amount,
-            'reference' => $payment->reference,
-            'tenant_name' => (string) $payment->contract?->tenant?->full_name,
-            'tenant_email' => $payment->contract?->tenant?->email,
-            'tenant_phone' => $payment->contract?->tenant?->phone,
-            'property_name' => (string) $payment->contract?->unit?->property?->name,
-            'unit_name' => (string) $payment->contract?->unit?->name,
-            'allocations' => $allocations,
-            'allocated_total' => (float) $payment->allocations->sum('amount'),
-            'credited_amount' => (float) data_get($payment->meta, 'credited_amount', 0),
-        ];
+            $allocations = $payment->allocations
+                ->map(function ($allocation): array {
+                    return [
+                        'charge_type' => (string) $allocation->charge?->type,
+                        'period' => $allocation->charge?->period,
+                        'charge_date' => DateDisplay::formatDate($allocation->charge?->charge_date, ''),
+                        'amount' => (float) $allocation->amount,
+                    ];
+                })
+                ->values()
+                ->all();
+
+            return [
+                'folio' => $payment->receipt_folio,
+                'paid_at' => DateDisplay::formatDateTime($payment->paid_at, ''),
+                'method' => $payment->method,
+                'amount' => (float) $payment->amount,
+                'reference' => $payment->reference,
+                'tenant_name' => (string) $payment->contract?->tenant?->full_name,
+                'tenant_email' => $payment->contract?->tenant?->email,
+                'tenant_phone' => $payment->contract?->tenant?->phone,
+                'property_name' => (string) $payment->contract?->unit?->property?->name,
+                'unit_name' => (string) $payment->contract?->unit?->name,
+                'allocations' => $allocations,
+                'allocated_total' => (float) $payment->allocations->sum('amount'),
+                'credited_amount' => (float) data_get($payment->meta, 'credited_amount', 0),
+            ];
+        } finally {
+            TenantContext::setOrganizationId($previousOrganizationId);
+        }
     }
 }

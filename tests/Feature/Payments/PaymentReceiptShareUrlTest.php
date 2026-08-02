@@ -71,8 +71,12 @@ class PaymentReceiptShareUrlTest extends TestCase
         $unit = Unit::factory()->create([
             'organization_id' => $organization->id,
             'property_id' => $property->id,
+            'name' => 'Depto 12-B',
         ]);
-        $tenant = Tenant::factory()->create(['organization_id' => $organization->id]);
+        $tenant = Tenant::factory()->create([
+            'organization_id' => $organization->id,
+            'full_name' => 'Carlos Mendoza Ruiz',
+        ]);
         $contract = Contract::factory()->create([
             'organization_id' => $organization->id,
             'unit_id' => $unit->id,
