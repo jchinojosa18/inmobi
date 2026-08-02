@@ -76,6 +76,17 @@ class Document extends OrganizationScopedModel
         return $this->morphTo();
     }
 
+    public function isGeneratedLeaseAgreement(): bool
+    {
+        if (data_get($this->meta, 'kind') === 'lease_agreement') {
+            return true;
+        }
+
+        $tags = is_array($this->tags) ? $this->tags : [];
+
+        return in_array('lease_agreement', $tags, true) || in_array('generated', $tags, true);
+    }
+
     /**
      * @return list<string>
      */

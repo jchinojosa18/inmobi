@@ -78,7 +78,6 @@ class CreateModal extends Component
 
         $this->resetForm();
         $this->open = true;
-        $this->send_email = auth()->user()?->can('receipts.send') ?? false;
 
         if ($unitId !== null && $unitId > 0) {
             $unit = Unit::query()
@@ -117,6 +116,26 @@ class CreateModal extends Component
         $this->ends_at = optional($contract->ends_at)->format('Y-m-d');
         $this->meta_notes = data_get($contract->meta, 'notes');
         $this->open = true;
+    }
+
+    public function updatedTenantId(?int $value): void
+    {
+        if (! (auth()->user()?->can('receipts.send') ?? false)) {
+            $this->send_email = false;
+
+            return;
+        }
+
+        if ($value === null || $value <= 0) {
+            $this->send_email = false;
+
+            return;
+        }
+
+        $tenant = Tenant::query()->find($value);
+        $email = is_string($tenant?->email) ? trim($tenant->email) : '';
+
+        $this->send_email = $email !== '';
     }
 
     public function cancelForm(): void
@@ -232,16 +251,15 @@ class CreateModal extends Component
                 return null;
             }
 
-            $sendEmail = $this->send_email && (auth()->user()?->can('receipts.send') ?? false);
+            $contract->loadMissing('tenant');
+            $tenantEmail = is_string($contract->tenant?->email) ? trim($contract->tenant->email) : '';
+            $sendEmail = $this->send_email
+                && (auth()->user()?->can('receipts.send') ?? false)
+                && $tenantEmail !== '';
 
             if ($sendEmail) {
                 try {
-                    $contract->loadMissing('tenant');
-                    $email = $contract->tenant?->email;
-
-                    if (is_string($email) && $email !== '') {
-                        Mail::to($email)->send(new ContractAgreementMail($contract));
-                    }
+                    Mail::to($tenantEmail)->send(new ContractAgreementMail($contract));
                 } catch (\Throwable $e) {
                     report($e);
                 }
@@ -256,12 +274,17 @@ class CreateModal extends Component
             $this->unitLabel = trim((string) ($contract->unit?->property?->name.' / '.$contract->unit?->name));
             $this->step = 'done';
             session()->flash('success', __('contracts.flash.contract_created'));
+            $this->dispatch('contract-updated');
 
             return null;
         }
 
         try {
-            $this->replaceContractAgreementDocument($contract, $generateLeaseAgreementPdfAction);
+            if (! $this->replaceContractAgreementDocument($contract, $generateLeaseAgreementPdfAction)) {
+                $this->addError('contract_document', __('contracts.validation.manual_contract_document_blocks_regenerate'));
+
+                return null;
+            }
         } catch (ValidationException $e) {
             $this->addError('landlord_name', $e->errors()['landlord_name'][0] ?? __('contracts.validation.renew_failed'));
 
@@ -449,25 +472,57 @@ class CreateModal extends Component
     private function replaceContractAgreementDocument(
         Contract $contract,
         GenerateLeaseAgreementPdfAction $generateLeaseAgreementPdfAction,
-    ): void {
+    ): bool {
         $existing = Document::query()
             ->where('documentable_type', Contract::class)
             ->where('documentable_id', $contract->id)
             ->where('category', ContractDocumentCategory::Contract)
             ->get();
 
-        foreach ($existing as $document) {
-            $disk = (string) data_get($document->meta, 'disk', config('filesystems.documents_disk', 'local'));
+        $generated = $existing->filter(fn (Document $document): bool => $document->isGeneratedLeaseAgreement());
+        $manual = $existing->reject(fn (Document $document): bool => $document->isGeneratedLeaseAgreement());
 
-            if (Storage::disk($disk)->exists($document->path)) {
-                Storage::disk($disk)->delete($document->path);
-            }
-
-            $document->update(['category' => null]);
-            $document->delete();
+        if ($manual->isNotEmpty()) {
+            return false;
         }
 
-        $generateLeaseAgreementPdfAction->execute($contract->fresh(), auth()->id());
+        if ($generated->isEmpty()) {
+            $generateLeaseAgreementPdfAction->execute($contract->fresh(), auth()->id());
+
+            return true;
+        }
+
+        foreach ($generated as $document) {
+            $document->update(['category' => null]);
+        }
+
+        try {
+            $generateLeaseAgreementPdfAction->execute($contract->fresh(), auth()->id());
+        } catch (\Throwable $exception) {
+            foreach ($generated as $document) {
+                $document->update(['category' => ContractDocumentCategory::Contract]);
+            }
+
+            throw $exception;
+        }
+
+        foreach ($generated as $document) {
+            $this->deleteGeneratedLeaseAgreementDocument($document);
+        }
+
+        return true;
+    }
+
+    private function deleteGeneratedLeaseAgreementDocument(Document $document): void
+    {
+        $disk = (string) data_get($document->meta, 'disk', config('filesystems.documents_disk', 'local'));
+
+        if (Storage::disk($disk)->exists($document->path)) {
+            Storage::disk($disk)->delete($document->path);
+        }
+
+        $document->update(['category' => null]);
+        $document->delete();
     }
 
     private function assertLandlordNameConfigured(OrganizationSettingsService $organizationSettingsService): bool

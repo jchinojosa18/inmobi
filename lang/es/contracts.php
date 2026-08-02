@@ -221,6 +221,7 @@ return [
         'renew_failed' => 'No se pudo renovar el contrato.',
         'notes_max' => 'Las notas no deben exceder 1000 caracteres.',
         'unit_active_contract' => 'La unidad ya cuenta con un contrato activo.',
+        'manual_contract_document_blocks_regenerate' => 'Ya existe un contrato subido manualmente. Elimínalo antes de regenerar el PDF.',
         'deposit_received_required' => 'La fecha de recepción es obligatoria.',
         'deposit_received_invalid' => 'La fecha de recepción no es válida.',
         'deposit_amount_required' => 'El monto del depósito es obligatorio.',

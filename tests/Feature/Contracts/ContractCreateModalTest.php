@@ -311,7 +311,7 @@ class ContractCreateModalTest extends TestCase
         $this->assertSame(0, Contract::query()->withoutOrganizationScope()->where('unit_id', $unit->id)->count());
     }
 
-    public function test_edit_replaces_contract_category_document(): void
+    public function test_edit_replaces_generated_contract_category_document(): void
     {
         Storage::fake('local');
         config(['filesystems.documents_disk' => 'local']);
@@ -329,7 +329,12 @@ class ContractCreateModalTest extends TestCase
             'type' => 'CONTRACT_DOCUMENT',
             'mime' => 'application/pdf',
             'path' => $oldPath,
-            'meta' => ['disk' => 'local'],
+            'tags' => ['contract', 'generated', 'lease_agreement'],
+            'meta' => [
+                'disk' => 'local',
+                'generated' => true,
+                'kind' => 'lease_agreement',
+            ],
         ]);
 
         Livewire::actingAs($user)
@@ -342,6 +347,7 @@ class ContractCreateModalTest extends TestCase
             ->assertHasNoErrors();
 
         $this->assertSoftDeleted('documents', ['id' => $old->id]);
+        $this->assertFalse(Storage::disk('local')->exists($oldPath));
 
         $remaining = Document::query()->withoutOrganizationScope()
             ->where('documentable_type', Contract::class)
@@ -351,6 +357,116 @@ class ContractCreateModalTest extends TestCase
 
         $this->assertCount(1, $remaining);
         $this->assertNotSame($old->id, $remaining->first()->id);
+        $this->assertTrue($remaining->first()->isGeneratedLeaseAgreement());
+    }
+
+    public function test_edit_preserves_manual_upload_contract_document(): void
+    {
+        Storage::fake('local');
+        config(['filesystems.documents_disk' => 'local']);
+
+        [$organization, $contract, $user] = $this->createContractGraph();
+        $this->seedLandlord($organization->id);
+
+        $manualPath = 'documents/contract/'.$organization->id.'/manual.pdf';
+        Storage::disk('local')->put($manualPath, 'MANUAL');
+        $manual = Document::factory()->create([
+            'organization_id' => $organization->id,
+            'documentable_type' => Contract::class,
+            'documentable_id' => $contract->id,
+            'category' => ContractDocumentCategory::Contract->value,
+            'type' => 'CONTRACT_DOCUMENT',
+            'mime' => 'application/pdf',
+            'path' => $manualPath,
+            'tags' => ['contract', 'manual-upload'],
+            'meta' => ['disk' => 'local'],
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(CreateModal::class)
+            ->dispatch('open-contract-edit', contractId: $contract->id)
+            ->set('ends_at', '2027-12-31')
+            ->set('rent_amount', '12500')
+            ->call('save')
+            ->assertSet('open', true)
+            ->assertHasErrors(['contract_document']);
+
+        $manual->refresh();
+
+        $this->assertNull($manual->deleted_at);
+        $this->assertTrue(Storage::disk('local')->exists($manualPath));
+
+        $this->assertSame(1, Document::query()->withoutOrganizationScope()
+            ->where('documentable_type', Contract::class)
+            ->where('documentable_id', $contract->id)
+            ->where('category', ContractDocumentCategory::Contract->value)
+            ->count());
+    }
+
+    public function test_open_create_defaults_send_email_to_false(): void
+    {
+        [$organization, $occupiedContract, $user] = $this->createContractGraph();
+        Permission::findOrCreate('receipts.send', 'web');
+        $user->givePermissionTo('receipts.send');
+
+        Livewire::actingAs($user)
+            ->test(CreateModal::class)
+            ->dispatch('open-contract-create')
+            ->assertSet('send_email', false);
+    }
+
+    public function test_create_does_not_send_email_when_send_email_is_false(): void
+    {
+        Mail::fake();
+        Storage::fake('local');
+        config(['filesystems.documents_disk' => 'local']);
+
+        [$organization, $user, $unit, $tenant] = $this->createOpenCreateGraph();
+        $this->seedLandlord($organization->id);
+        Permission::findOrCreate('receipts.send', 'web');
+        $user->givePermissionTo('receipts.send');
+
+        Livewire::actingAs($user)
+            ->test(CreateModal::class)
+            ->dispatch('open-contract-create')
+            ->set('unit_id', $unit->id)
+            ->set('tenant_id', $tenant->id)
+            ->set('send_email', false)
+            ->set('rent_amount', '10000')
+            ->set('deposit_amount', '10000')
+            ->set('due_day', '5')
+            ->set('grace_days', '3')
+            ->set('penalty_rate_daily', '5')
+            ->set('starts_at', '2026-08-01')
+            ->set('ends_at', '2027-07-31')
+            ->call('save')
+            ->assertSet('step', 'done');
+
+        Mail::assertNothingSent();
+    }
+
+    public function test_create_dispatches_contract_updated_on_success(): void
+    {
+        Storage::fake('local');
+        config(['filesystems.documents_disk' => 'local']);
+
+        [$organization, $user, $unit, $tenant] = $this->createOpenCreateGraph();
+        $this->seedLandlord($organization->id);
+
+        Livewire::actingAs($user)
+            ->test(CreateModal::class)
+            ->dispatch('open-contract-create')
+            ->set('unit_id', $unit->id)
+            ->set('tenant_id', $tenant->id)
+            ->set('rent_amount', '10000')
+            ->set('deposit_amount', '10000')
+            ->set('due_day', '5')
+            ->set('grace_days', '3')
+            ->set('penalty_rate_daily', '5')
+            ->set('starts_at', '2026-08-01')
+            ->set('ends_at', '2027-07-31')
+            ->call('save')
+            ->assertDispatched('contract-updated');
     }
 
     public function test_edit_requires_ends_at(): void

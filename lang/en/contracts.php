@@ -208,6 +208,7 @@ return [
         'renew_failed' => 'The contract could not be renewed.',
         'notes_max' => 'Notes must not exceed 1000 characters.',
         'unit_active_contract' => 'This unit already has an active contract.',
+        'manual_contract_document_blocks_regenerate' => 'A manually uploaded contract document already exists. Delete it before regenerating the PDF.',
         'deposit_received_required' => 'Received date is required.',
         'deposit_received_invalid' => 'Received date is not valid.',
         'deposit_amount_required' => 'Deposit amount is required.',

@@ -16,6 +16,12 @@
                 </div>
             @enderror
 
+            @error('contract_document')
+                <div class="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    {{ $message }}
+                </div>
+            @enderror
+
             <form wire:submit="save" class="grid gap-4 md:grid-cols-2">
                 <div>
                     <x-ui.select :label="__('common.unit').' *'" wire:model="unit_id" :disabled="$isEdit">
