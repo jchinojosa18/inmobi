@@ -54,6 +54,18 @@ class DocumentShareUrlTest extends TestCase
         $this->get($pathWithQuery)->assertNotFound();
     }
 
+    public function test_shared_document_returns_not_found_when_file_missing_on_disk(): void
+    {
+        Storage::fake('local');
+        $document = $this->makeContractCategoryDocument();
+        Storage::disk('local')->delete($document->path);
+
+        $shareUrl = DocumentShareUrl::make($document->id);
+        $pathWithQuery = parse_url($shareUrl, PHP_URL_PATH).'?'.parse_url($shareUrl, PHP_URL_QUERY);
+
+        $this->get($pathWithQuery)->assertNotFound();
+    }
+
     private function makeContractCategoryDocument(
         string $contents = '%PDF-1.4 test',
         ContractDocumentCategory $category = ContractDocumentCategory::Contract,

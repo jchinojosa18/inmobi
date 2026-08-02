@@ -16,7 +16,6 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
-use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -44,7 +43,7 @@ class ContractDocumentSharePanelTest extends TestCase
             ->assertStatus(403);
     }
 
-    public function test_send_email_requires_receipts_send_and_tenant_email(): void
+    public function test_send_email_delivers_to_tenant(): void
     {
         Mail::fake();
         Storage::fake('local');
@@ -64,6 +63,50 @@ class ContractDocumentSharePanelTest extends TestCase
             ->assertHasNoErrors();
 
         Mail::assertSent(ContractDocumentMail::class, fn (ContractDocumentMail $mail) => $mail->hasTo('tenant@example.com'));
+    }
+
+    public function test_send_email_requires_receipts_send_permission(): void
+    {
+        Mail::fake();
+        Storage::fake('local');
+        [$user, $contract, $contractDoc] = $this->setupPanelWithContractDoc(
+            email: 'tenant@example.com',
+            withReceiptsSend: false,
+        );
+
+        Livewire::actingAs($user)
+            ->test(Panel::class, [
+                'documentableType' => Contract::class,
+                'documentableId' => $contract->id,
+                'variant' => 'contract',
+            ])
+            ->call('openShareModal', $contractDoc->id)
+            ->call('sendContractDocumentEmail')
+            ->assertStatus(403);
+
+        Mail::assertNothingSent();
+    }
+
+    public function test_send_email_without_tenant_email_shows_feedback(): void
+    {
+        Mail::fake();
+        Storage::fake('local');
+        [$user, $contract, $contractDoc] = $this->setupPanelWithContractDoc(
+            email: null,
+            withReceiptsSend: true,
+        );
+
+        Livewire::actingAs($user)
+            ->test(Panel::class, [
+                'documentableType' => Contract::class,
+                'documentableId' => $contract->id,
+                'variant' => 'contract',
+            ])
+            ->call('openShareModal', $contractDoc->id)
+            ->call('sendContractDocumentEmail')
+            ->assertSet('shareEmailFeedback', __('documents.no_tenant_email'));
+
+        Mail::assertNothingSent();
     }
 
     public function test_whatsapp_url_uses_document_share_link(): void
@@ -126,15 +169,16 @@ class ContractDocumentSharePanelTest extends TestCase
         bool $withReceiptsSend = false,
     ): array {
         $organization = Organization::factory()->create();
-        Role::findOrCreate('Admin', 'web');
-        Permission::findOrCreate('documents.view', 'web');
-        Permission::findOrCreate('receipts.send', 'web');
+        $roleName = 'ContractDocShareTester';
+        $role = Role::findOrCreate($roleName, 'web');
+        $permissions = ['documents.view'];
+        if ($withReceiptsSend) {
+            $permissions[] = 'receipts.send';
+        }
+        $role->syncPermissions($permissions);
 
         $user = User::factory()->create(['organization_id' => $organization->id]);
-        $user->givePermissionTo('documents.view');
-        if ($withReceiptsSend) {
-            $user->givePermissionTo('receipts.send');
-        }
+        $user->syncRoles([$roleName]);
 
         $property = Property::factory()->create(['organization_id' => $organization->id]);
         $unit = Unit::factory()->create([

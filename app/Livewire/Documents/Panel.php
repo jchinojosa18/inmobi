@@ -248,6 +248,10 @@ class Panel extends Component
 
     public function openShareModal(int $documentId): void
     {
+        if (! (auth()->user()?->can('documents.view') ?? false)) {
+            abort(403);
+        }
+
         $document = $this->findShareableContractDocument($documentId);
         $contract = $this->resolveDocumentable();
         $contract->loadMissing(['tenant', 'unit.property']);
@@ -301,7 +305,8 @@ class Panel extends Component
         try {
             Mail::to($email)->send(new ContractDocumentMail($document));
             $this->shareEmailFeedback = __('documents.email_sent');
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            report($e);
             $this->shareEmailFeedback = __('documents.email_failed');
         }
     }
