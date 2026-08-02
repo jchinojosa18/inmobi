@@ -21,6 +21,8 @@ class Contract extends OrganizationScopedModel
 
     public const STATUS_ENDED = 'ended';
 
+    public const EXPIRING_SOON_DAYS = 30;
+
     /**
      * @var list<string>
      */
@@ -149,6 +151,34 @@ class Contract extends OrganizationScopedModel
         return $this->status === self::STATUS_ACTIVE
             && $this->ends_at !== null
             && $this->ends_at->toDateString() < $today->toDateString();
+    }
+
+    public function isExpiringSoon(?CarbonImmutable $today = null): bool
+    {
+        $today ??= CarbonImmutable::now('America/Tijuana')->startOfDay();
+
+        if ($this->status !== self::STATUS_ACTIVE || $this->ends_at === null) {
+            return false;
+        }
+
+        $endsAt = $this->ends_at->toDateString();
+        $todayDate = $today->toDateString();
+        $horizon = $today->addDays(self::EXPIRING_SOON_DAYS)->toDateString();
+
+        return $endsAt >= $todayDate && $endsAt <= $horizon;
+    }
+
+    public function daysUntilEnd(?CarbonImmutable $today = null): ?int
+    {
+        if ($this->ends_at === null) {
+            return null;
+        }
+
+        $today ??= CarbonImmutable::now('America/Tijuana')->startOfDay();
+
+        $endDate = CarbonImmutable::parse($this->ends_at->toDateString(), 'America/Tijuana');
+
+        return (int) $today->diffInDays($endDate, false);
     }
 
     /**
