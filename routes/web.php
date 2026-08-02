@@ -8,6 +8,7 @@ use App\Http\Controllers\ContractAgreementPdfController;
 use App\Http\Controllers\ContractSettlementPdfController;
 use App\Http\Controllers\DepositReceiptPdfController;
 use App\Http\Controllers\Documents\DownloadController as DocumentDownloadController;
+use App\Http\Controllers\Documents\SharedDownloadController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\PaymentReceiptPdfController;
 use App\Http\Controllers\Reports\CashFlowCsvExportController;
@@ -233,6 +234,10 @@ Route::get('/receipts/{paymentId}/shared.pdf', PaymentReceiptPdfController::clas
 Route::get('/contracts/{contractId}/agreement/shared.pdf', ContractAgreementPdfController::class)
     ->middleware('signed:relative')
     ->name('contracts.agreement.share');
+
+Route::get('/documents/{documentId}/shared', SharedDownloadController::class)
+    ->middleware('signed:relative')
+    ->name('documents.shared');
 
 Route::get('/admin/health', function () {
     return response()->json([
