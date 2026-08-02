@@ -59,7 +59,7 @@ Transacción única:
 1. **Validar** guards (saldo, unidad, org, fechas).
 2. **Crear** contrato nuevo:
    - Copia: `organization_id`, `unit_id`, `tenant_id`, `due_day`, `grace_days`, `penalty_rate_daily` (editables en wizard).
-   - Captura: `rent_amount`, `deposit_amount` (default = nueva renta), `starts_at`, `ends_at`, `status=active`.
+   - Captura: `rent_amount`, `deposit_amount` (default = depósito disponible a transferir; **no** se iguala solo a la nueva renta), `starts_at`, `ends_at`, `status=active`.
    - `meta.renewed_from_contract_id` = id origen.
    - Origen: `meta.renewed_to_contract_id` = id nuevo.
 3. **Cerrar origen** (sin finiquito):

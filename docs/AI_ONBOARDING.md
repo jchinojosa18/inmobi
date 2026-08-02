@@ -57,6 +57,7 @@ Puertos por defecto (ver [`compose.yaml`](../compose.yaml)):
 Credenciales de prueba comunes:
 - Seed base (`DatabaseSeeder`): `test@example.com` / `password`
 - Seed demo smoke (`DemoDataSeeder`): `admin-smoke@inmo.test` / `password`
+- Seed renovación (`ContractRenewalDemoSeeder`, también llamado desde DemoDataSeeder): `renew-admin@inmo.test` / `password` — contrato vencido renovable + uno bloqueado por saldo
 
 Self-signup (sin seed):
 - `GET /register`

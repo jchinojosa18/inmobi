@@ -124,7 +124,7 @@ class RenewWizardTest extends TestCase
         );
     }
 
-    public function test_open_prefills_dates_and_deposit_from_contract(): void
+    public function test_open_prefills_dates_and_deposit_from_available_hold(): void
     {
         CarbonImmutable::setTestNow('2026-08-01 10:00:00');
 
@@ -134,11 +134,31 @@ class RenewWizardTest extends TestCase
             ->test(RenewWizard::class)
             ->dispatch('open-contract-renew', contractId: $contract->id)
             ->assertSet('rent_amount', '0.00')
-            ->assertSet('deposit_amount', '0.00')
+            ->assertSet('deposit_amount', '9500.00')
             ->assertSet('due_day', '5')
             ->assertSet('grace_days', '3')
             ->assertSet('starts_at', '2026-08-01')
             ->assertSet('ends_at', '2027-07-31');
+
+        CarbonImmutable::setTestNow();
+    }
+
+    public function test_increasing_rent_does_not_auto_increase_deposit_or_difference(): void
+    {
+        CarbonImmutable::setTestNow('2026-08-01 10:00:00');
+
+        [$organization, $contract, $user] = $this->createRenewableGraph();
+        $contract->update(['rent_amount' => 9500]);
+
+        Livewire::actingAs($user)
+            ->test(RenewWizard::class)
+            ->dispatch('open-contract-renew', contractId: $contract->id)
+            ->assertSet('rent_amount', '9500.00')
+            ->assertSet('deposit_amount', '9500.00')
+            ->set('rent_amount', '10000')
+            ->assertSet('deposit_amount', '9500.00')
+            ->assertSee(__('contracts.available'))
+            ->assertDontSee(__('contracts.register_deposit_difference', ['amount' => number_format(500, 2)]));
 
         CarbonImmutable::setTestNow();
     }

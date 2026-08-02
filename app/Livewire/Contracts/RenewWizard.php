@@ -68,8 +68,12 @@ class RenewWizard extends Component
         $unitName = trim((string) ($contract->unit?->property?->name.' / '.$contract->unit?->name));
         $this->unitLabel = $unitName !== '' ? $unitName : null;
 
+        $availableDeposit = app(DepositBalanceService::class)
+            ->availableDepositAmount($contract);
+
         $this->rent_amount = (string) $contract->rent_amount;
-        $this->deposit_amount = $this->rent_amount;
+        // Keep transferred/current deposit; do not auto-match new rent.
+        $this->deposit_amount = number_format($availableDeposit, 2, '.', '');
         $this->due_day = (string) $contract->due_day;
         $this->grace_days = (string) $contract->grace_days;
 

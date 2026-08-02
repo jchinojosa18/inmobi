@@ -8,6 +8,7 @@ use App\Models\Contract;
 use App\Models\Expense;
 use App\Models\MonthClose;
 use App\Models\Organization;
+use App\Models\OrganizationSetting;
 use App\Models\Payment;
 use App\Models\PaymentAllocation;
 use App\Models\Plaza;
@@ -15,6 +16,7 @@ use App\Models\Property;
 use App\Models\Tenant;
 use App\Models\Unit;
 use App\Models\User;
+use App\Support\OrganizationSettingsService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\PermissionRegistrar;
@@ -261,6 +263,20 @@ class DemoDataSeeder extends Seeder
 
         $rentGenerator->execute($currentMonth->subMonth()->format('Y-m'));
         $rentGenerator->execute($currentMonth->format('Y-m'));
+
+        OrganizationSetting::query()
+            ->withoutOrganizationScope()
+            ->updateOrCreate(
+                ['organization_id' => $organization->id],
+                [
+                    'landlord_name' => 'Demo Smoke Arrendador',
+                    'landlord_rep' => 'Smoke Admin',
+                    'contract_email_template' => OrganizationSettingsService::DEFAULT_CONTRACT_EMAIL_TEMPLATE,
+                    'contract_whatsapp_template' => OrganizationSettingsService::DEFAULT_CONTRACT_WHATSAPP_TEMPLATE,
+                ]
+            );
+
+        $this->call(ContractRenewalDemoSeeder::class);
     }
 
     private function resetDemoFinancialData(int $organizationId): void

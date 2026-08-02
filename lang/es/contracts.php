@@ -45,6 +45,7 @@ return [
     'renew_landlord_required' => 'Configura el nombre del arrendador antes de generar el contrato.',
     'renew_go_to_settings' => 'Ir a Configuración',
     'renew_deposit_difference' => 'Diferencia de depósito',
+    'renew_deposit_hint' => 'Por defecto se mantiene el depósito transferido. Solo aumenta si modificas este monto.',
     'register_deposit_difference' => 'Registrar diferencia de depósito ($:amount) como recibida',
     'send_contract_email' => 'Enviar contrato por correo a :email',
     'view_contract_pdf' => 'Ver PDF del contrato',

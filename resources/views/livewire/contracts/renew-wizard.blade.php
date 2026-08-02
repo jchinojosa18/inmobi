@@ -61,6 +61,7 @@
 
                 <div>
                     <x-ui.input :label="__('contracts.deposit').' *'" type="number" step="0.01" min="0" wire:model.blur="deposit_amount" />
+                    <p class="mt-1 text-xs text-slate-500">{{ __('contracts.renew_deposit_hint') }}</p>
                     @error('deposit_amount') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
