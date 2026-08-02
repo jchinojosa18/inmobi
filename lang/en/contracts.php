@@ -40,6 +40,8 @@ return [
     'new_contract' => 'New contract',
     'edit_contract_title' => 'Edit contract',
     'form_description' => 'Basic contract record linking a unit and tenant.',
+    'create_success_title' => 'Contract created successfully',
+    'send_agreement_email' => 'Email agreement to tenant',
     'view_detail' => 'View details',
     'select_unit' => 'Select unit',
     'select_tenant' => 'Select tenant',

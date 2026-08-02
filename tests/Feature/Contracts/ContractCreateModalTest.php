@@ -3,6 +3,7 @@
 namespace Tests\Feature\Contracts;
 
 use App\Livewire\Contracts\CreateModal;
+use App\Mail\ContractAgreementMail;
 use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\Document;
@@ -16,8 +17,10 @@ use App\Support\ContractDocumentCategory;
 use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
+use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 class ContractCreateModalTest extends TestCase
@@ -222,6 +225,67 @@ class ContractCreateModalTest extends TestCase
             ->set('ends_at', null)
             ->call('save')
             ->assertHasErrors(['ends_at']);
+    }
+
+    public function test_create_send_email_dispatches_contract_agreement_mail(): void
+    {
+        Mail::fake();
+        Storage::fake('local');
+        config(['filesystems.documents_disk' => 'local']);
+
+        [$organization, $user, $unit, $tenant] = $this->createOpenCreateGraph();
+        $this->seedLandlord($organization->id);
+        Permission::findOrCreate('receipts.send', 'web');
+        $user->givePermissionTo('receipts.send');
+
+        Livewire::actingAs($user)
+            ->test(CreateModal::class)
+            ->dispatch('open-contract-create')
+            ->set('unit_id', $unit->id)
+            ->set('tenant_id', $tenant->id)
+            ->set('rent_amount', '10000')
+            ->set('deposit_amount', '10000')
+            ->set('due_day', '5')
+            ->set('grace_days', '3')
+            ->set('penalty_rate_daily', '5')
+            ->set('starts_at', '2026-08-01')
+            ->set('ends_at', '2027-07-31')
+            ->set('send_email', true)
+            ->call('save')
+            ->assertSet('step', 'done')
+            ->assertNotSet('shareUrl', null)
+            ->assertNotSet('pdfUrl', null);
+
+        Mail::assertSent(ContractAgreementMail::class, fn (ContractAgreementMail $mail) => $mail->hasTo('tenant@example.com'));
+    }
+
+    public function test_create_done_builds_whatsapp_url_with_share_link(): void
+    {
+        Storage::fake('local');
+        config(['filesystems.documents_disk' => 'local']);
+
+        [$organization, $user, $unit, $tenant] = $this->createOpenCreateGraph();
+        $tenant->update(['phone' => '526641112233']);
+        $this->seedLandlord($organization->id);
+
+        $component = Livewire::actingAs($user)
+            ->test(CreateModal::class)
+            ->dispatch('open-contract-create')
+            ->set('unit_id', $unit->id)
+            ->set('tenant_id', $tenant->id)
+            ->set('rent_amount', '10000')
+            ->set('deposit_amount', '10000')
+            ->set('due_day', '5')
+            ->set('grace_days', '3')
+            ->set('penalty_rate_daily', '5')
+            ->set('starts_at', '2026-08-01')
+            ->set('ends_at', '2027-07-31')
+            ->set('send_email', false)
+            ->call('save');
+
+        $this->assertSame('done', $component->get('step'));
+        $this->assertStringContainsString('wa.me', (string) $component->get('whatsAppUrl'));
+        $this->assertStringContainsString('/agreement/shared.pdf', (string) $component->get('shareUrl'));
     }
 
     public function test_create_requires_landlord_name(): void

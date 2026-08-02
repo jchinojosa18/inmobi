@@ -3,14 +3,18 @@
 namespace App\Livewire\Contracts;
 
 use App\Actions\Contracts\GenerateLeaseAgreementPdfAction;
+use App\Mail\ContractAgreementMail;
 use App\Models\Contract;
 use App\Models\Tenant;
 use App\Models\Unit;
 use App\Support\AuditLogger;
+use App\Support\ContractAgreementShareUrl;
+use App\Support\DateDisplay;
 use App\Support\OrganizationSettingsService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\On;
@@ -21,6 +25,22 @@ class CreateModal extends Component
     private const MAX_DAILY_RATE_DECIMAL = 0.5;
 
     public bool $open = false;
+
+    public string $step = 'form';
+
+    public bool $send_email = false;
+
+    public ?string $pdfUrl = null;
+
+    public ?string $shareUrl = null;
+
+    public ?string $whatsAppUrl = null;
+
+    public ?int $createdContractId = null;
+
+    public ?string $tenantName = null;
+
+    public ?string $unitLabel = null;
 
     public ?int $contractId = null;
 
@@ -55,6 +75,7 @@ class CreateModal extends Component
 
         $this->resetForm();
         $this->open = true;
+        $this->send_email = auth()->user()?->can('receipts.send') ?? false;
 
         if ($unitId !== null && $unitId > 0) {
             $unit = Unit::query()
@@ -207,17 +228,38 @@ class CreateModal extends Component
 
                 return null;
             }
+
+            $sendEmail = $this->send_email && (auth()->user()?->can('receipts.send') ?? false);
+
+            if ($sendEmail) {
+                try {
+                    $contract->loadMissing('tenant');
+                    $email = $contract->tenant?->email;
+
+                    if (is_string($email) && $email !== '') {
+                        Mail::to($email)->send(new ContractAgreementMail($contract));
+                    }
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
+
+            $contract = $contract->fresh(['tenant', 'unit.property']);
+            $this->createdContractId = $contract->id;
+            $this->pdfUrl = route('contracts.agreement.pdf', ['contractId' => $contract->id]);
+            $this->shareUrl = ContractAgreementShareUrl::make($contract->id);
+            $this->whatsAppUrl = $this->buildContractWhatsAppUrl($contract, $this->shareUrl, $organizationSettingsService);
+            $this->tenantName = (string) ($contract->tenant?->full_name ?? '');
+            $this->unitLabel = trim((string) ($contract->unit?->property?->name.' / '.$contract->unit?->name));
+            $this->step = 'done';
+            session()->flash('success', __('contracts.flash.contract_created'));
+
+            return null;
         }
 
-        session()->flash('success', $isNew
-            ? __('contracts.flash.contract_created')
-            : __('contracts.flash.contract_updated'));
+        session()->flash('success', __('contracts.flash.contract_updated'));
 
         $this->close();
-
-        if ($isNew) {
-            return redirect()->route('contracts.show', $contract);
-        }
 
         $this->dispatch('contract-updated');
 
@@ -252,11 +294,53 @@ class CreateModal extends Component
 
         $tenants = $tenantsQuery->get(['id', 'full_name', 'email']);
 
+        $selectedTenantEmail = null;
+
+        if ($this->tenant_id !== null) {
+            $selectedTenant = $tenants->firstWhere('id', $this->tenant_id);
+            $email = is_string($selectedTenant?->email) ? trim($selectedTenant->email) : '';
+
+            if ($email !== '') {
+                $selectedTenantEmail = $email;
+            }
+        }
+
         return view('livewire.contracts.create-modal', [
             'units' => $units,
             'tenants' => $tenants,
             'isEdit' => $this->contractId !== null,
+            'canSendReceipts' => auth()->user()?->can('receipts.send') ?? false,
+            'selectedTenantEmail' => $selectedTenantEmail,
         ]);
+    }
+
+    private function buildContractWhatsAppUrl(
+        Contract $contract,
+        string $shareUrl,
+        OrganizationSettingsService $settingsService,
+    ): ?string {
+        $phone = preg_replace('/\D+/', '', (string) $contract->tenant?->phone);
+
+        if ($phone === '') {
+            return null;
+        }
+
+        $settings = $settingsService->forOrganization((int) $contract->organization_id);
+        $unitName = trim((string) ($contract->unit?->property?->name.' / '.$contract->unit?->name));
+
+        $text = $settingsService->renderTemplate(
+            (string) $settings['contract_whatsapp_template'],
+            [
+                'tenant_name' => (string) ($contract->tenant?->full_name ?? 'cliente'),
+                'unit_name' => $unitName !== '' ? $unitName : 'unidad',
+                'shared_contract_url' => $shareUrl,
+                'rent_amount' => number_format((float) $contract->rent_amount, 2, '.', ''),
+                'starts_at' => DateDisplay::formatDate($contract->starts_at),
+                'ends_at' => DateDisplay::formatDate($contract->ends_at),
+            ]
+        );
+
+        return 'https://wa.me/'.$phone.'?text='.rawurlencode($text);
     }
 
     /**
@@ -296,6 +380,7 @@ class CreateModal extends Component
             'starts_at' => ['required', 'date'],
             'ends_at' => ['required', 'date', 'after_or_equal:starts_at'],
             'meta_notes' => ['nullable', 'string', 'max:1000'],
+            'send_email' => ['boolean'],
         ];
     }
 
@@ -367,6 +452,14 @@ class CreateModal extends Component
     private function resetForm(): void
     {
         $this->reset([
+            'step',
+            'send_email',
+            'pdfUrl',
+            'shareUrl',
+            'whatsAppUrl',
+            'createdContractId',
+            'tenantName',
+            'unitLabel',
             'contractId',
             'unit_id',
             'tenant_id',
@@ -381,6 +474,8 @@ class CreateModal extends Component
             'meta_notes',
         ]);
 
+        $this->step = 'form';
+        $this->send_email = false;
         $this->deposit_amount = '';
         $this->due_day = '';
         $this->grace_days = '';
