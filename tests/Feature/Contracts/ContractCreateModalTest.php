@@ -311,6 +311,62 @@ class ContractCreateModalTest extends TestCase
         $this->assertSame(0, Contract::query()->withoutOrganizationScope()->where('unit_id', $unit->id)->count());
     }
 
+    public function test_edit_replaces_contract_category_document(): void
+    {
+        Storage::fake('local');
+        config(['filesystems.documents_disk' => 'local']);
+
+        [$organization, $contract, $user] = $this->createContractGraph();
+        $this->seedLandlord($organization->id);
+
+        $oldPath = 'documents/contract/'.$organization->id.'/old.pdf';
+        Storage::disk('local')->put($oldPath, 'OLD');
+        $old = Document::factory()->create([
+            'organization_id' => $organization->id,
+            'documentable_type' => Contract::class,
+            'documentable_id' => $contract->id,
+            'category' => ContractDocumentCategory::Contract->value,
+            'type' => 'CONTRACT_DOCUMENT',
+            'mime' => 'application/pdf',
+            'path' => $oldPath,
+            'meta' => ['disk' => 'local'],
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(CreateModal::class)
+            ->dispatch('open-contract-edit', contractId: $contract->id)
+            ->set('ends_at', '2027-12-31')
+            ->set('rent_amount', '12500')
+            ->call('save')
+            ->assertSet('open', false)
+            ->assertHasNoErrors();
+
+        $this->assertSoftDeleted('documents', ['id' => $old->id]);
+
+        $remaining = Document::query()->withoutOrganizationScope()
+            ->where('documentable_type', Contract::class)
+            ->where('documentable_id', $contract->id)
+            ->where('category', ContractDocumentCategory::Contract->value)
+            ->get();
+
+        $this->assertCount(1, $remaining);
+        $this->assertNotSame($old->id, $remaining->first()->id);
+    }
+
+    public function test_edit_requires_ends_at(): void
+    {
+        [$organization, $contract, $user] = $this->createContractGraph();
+        $this->seedLandlord($organization->id);
+        $contract->update(['ends_at' => null]);
+
+        Livewire::actingAs($user)
+            ->test(CreateModal::class)
+            ->dispatch('open-contract-edit', contractId: $contract->id)
+            ->set('ends_at', null)
+            ->call('save')
+            ->assertHasErrors(['ends_at']);
+    }
+
     public function test_edit_save_ignores_tampered_unit_and_tenant(): void
     {
         [$organization, $contract, $user] = $this->createContractGraph();

@@ -5,16 +5,19 @@ namespace App\Livewire\Contracts;
 use App\Actions\Contracts\GenerateLeaseAgreementPdfAction;
 use App\Mail\ContractAgreementMail;
 use App\Models\Contract;
+use App\Models\Document;
 use App\Models\Tenant;
 use App\Models\Unit;
 use App\Support\AuditLogger;
 use App\Support\ContractAgreementShareUrl;
+use App\Support\ContractDocumentCategory;
 use App\Support\DateDisplay;
 use App\Support\OrganizationSettingsService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\On;
@@ -151,7 +154,7 @@ class CreateModal extends Component
             return null;
         }
 
-        if ($this->contractId === null && ! $this->assertLandlordNameConfigured($organizationSettingsService)) {
+        if (! $this->assertLandlordNameConfigured($organizationSettingsService)) {
             return null;
         }
 
@@ -253,6 +256,14 @@ class CreateModal extends Component
             $this->unitLabel = trim((string) ($contract->unit?->property?->name.' / '.$contract->unit?->name));
             $this->step = 'done';
             session()->flash('success', __('contracts.flash.contract_created'));
+
+            return null;
+        }
+
+        try {
+            $this->replaceContractAgreementDocument($contract, $generateLeaseAgreementPdfAction);
+        } catch (ValidationException $e) {
+            $this->addError('landlord_name', $e->errors()['landlord_name'][0] ?? __('contracts.validation.renew_failed'));
 
             return null;
         }
@@ -433,6 +444,30 @@ class CreateModal extends Component
     private function toDisplayPenaltyRate(float $storedDecimalRate): string
     {
         return number_format($storedDecimalRate * 100, 2, '.', '');
+    }
+
+    private function replaceContractAgreementDocument(
+        Contract $contract,
+        GenerateLeaseAgreementPdfAction $generateLeaseAgreementPdfAction,
+    ): void {
+        $existing = Document::query()
+            ->where('documentable_type', Contract::class)
+            ->where('documentable_id', $contract->id)
+            ->where('category', ContractDocumentCategory::Contract)
+            ->get();
+
+        foreach ($existing as $document) {
+            $disk = (string) data_get($document->meta, 'disk', config('filesystems.documents_disk', 'local'));
+
+            if (Storage::disk($disk)->exists($document->path)) {
+                Storage::disk($disk)->delete($document->path);
+            }
+
+            $document->update(['category' => null]);
+            $document->delete();
+        }
+
+        $generateLeaseAgreementPdfAction->execute($contract->fresh(), auth()->id());
     }
 
     private function assertLandlordNameConfigured(OrganizationSettingsService $organizationSettingsService): bool
