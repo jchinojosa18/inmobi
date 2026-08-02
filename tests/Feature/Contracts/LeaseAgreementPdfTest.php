@@ -79,6 +79,18 @@ class LeaseAgreementPdfTest extends TestCase
         $this->assertSame('12 meses', $data['term_description']);
     }
 
+    public function test_lease_agreement_view_includes_illicit_use_clause(): void
+    {
+        [$organization, $contract] = $this->createContractGraph();
+        $this->configureLandlord($organization);
+
+        $html = view('pdf.lease-agreement', app(GenerateLeaseAgreementPdfAction::class)->viewData($contract))->render();
+
+        $this->assertStringContainsString('USO ILÍCITO DEL INMUEBLE', $html);
+        $this->assertStringContainsString('trata de personas', $html);
+        $this->assertStringContainsString('artículos 2297, 2298 y 2391', $html);
+    }
+
     public function test_other_organization_user_gets_403_on_pdf_route(): void
     {
         Storage::fake('local');

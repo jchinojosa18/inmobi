@@ -5,9 +5,13 @@ namespace Database\Seeders;
 use App\Actions\Contracts\RegisterDepositHoldAction;
 use App\Models\Charge;
 use App\Models\Contract;
+use App\Models\CreditBalance;
+use App\Models\Document;
+use App\Models\Expense;
 use App\Models\Organization;
 use App\Models\OrganizationSetting;
 use App\Models\Payment;
+use App\Models\PaymentAllocation;
 use App\Models\Plaza;
 use App\Models\Property;
 use App\Models\Tenant;
@@ -244,6 +248,60 @@ class ContractRenewalDemoSeeder extends Seeder
         if ($contractIds->isEmpty()) {
             return;
         }
+
+        $chargeIds = Charge::query()
+            ->withoutOrganizationScope()
+            ->withTrashed()
+            ->whereIn('contract_id', $contractIds)
+            ->pluck('id');
+
+        $paymentIds = Payment::query()
+            ->withoutOrganizationScope()
+            ->withTrashed()
+            ->whereIn('contract_id', $contractIds)
+            ->pluck('id');
+
+        // FK order: allocations → payments/charges → contracts (same idea as DemoDataSeeder).
+        PaymentAllocation::query()
+            ->withoutOrganizationScope()
+            ->withTrashed()
+            ->where(function ($query) use ($chargeIds, $paymentIds): void {
+                if ($chargeIds->isNotEmpty()) {
+                    $query->whereIn('charge_id', $chargeIds);
+                }
+                if ($paymentIds->isNotEmpty()) {
+                    $query->orWhereIn('payment_id', $paymentIds);
+                }
+                if ($chargeIds->isEmpty() && $paymentIds->isEmpty()) {
+                    $query->whereRaw('1 = 0');
+                }
+            })
+            ->forceDelete();
+
+        CreditBalance::query()
+            ->withoutOrganizationScope()
+            ->withTrashed()
+            ->whereIn('contract_id', $contractIds)
+            ->forceDelete();
+
+        Payment::query()
+            ->withoutOrganizationScope()
+            ->withTrashed()
+            ->whereIn('contract_id', $contractIds)
+            ->forceDelete();
+
+        Expense::query()
+            ->withoutOrganizationScope()
+            ->withTrashed()
+            ->whereIn('contract_id', $contractIds)
+            ->forceDelete();
+
+        Document::query()
+            ->withoutOrganizationScope()
+            ->withTrashed()
+            ->where('documentable_type', Contract::class)
+            ->whereIn('documentable_id', $contractIds)
+            ->forceDelete();
 
         Charge::query()
             ->withoutOrganizationScope()
