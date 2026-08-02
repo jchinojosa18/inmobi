@@ -5,11 +5,14 @@ namespace Tests\Feature\Contracts;
 use App\Livewire\Contracts\CreateModal;
 use App\Models\Contract;
 use App\Models\Organization;
+use App\Models\OrganizationSetting;
 use App\Models\Property;
 use App\Models\Tenant;
 use App\Models\Unit;
 use App\Models\User;
+use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -19,7 +22,11 @@ class ContractPenaltyRateNormalizationTest extends TestCase
 
     public function test_percentage_input_is_normalized_to_decimal_on_create(): void
     {
+        Storage::fake('local');
+        config(['filesystems.documents_disk' => 'local']);
+
         [$organization, $unit, $tenant, $user] = $this->createGraph();
+        $this->seedLandlord($organization->id);
 
         Livewire::actingAs($user)
             ->test(CreateModal::class)
@@ -33,6 +40,7 @@ class ContractPenaltyRateNormalizationTest extends TestCase
             ->set('penalty_rate_daily', '5')
             ->set('status', Contract::STATUS_ACTIVE)
             ->set('starts_at', '2026-03-01')
+            ->set('ends_at', '2027-02-28')
             ->call('save');
 
         $contract = Contract::query()
@@ -46,7 +54,11 @@ class ContractPenaltyRateNormalizationTest extends TestCase
 
     public function test_decimal_input_is_preserved_on_create(): void
     {
+        Storage::fake('local');
+        config(['filesystems.documents_disk' => 'local']);
+
         [$organization, $unit, $tenant, $user] = $this->createGraph();
+        $this->seedLandlord($organization->id);
 
         Livewire::actingAs($user)
             ->test(CreateModal::class)
@@ -60,6 +72,7 @@ class ContractPenaltyRateNormalizationTest extends TestCase
             ->set('penalty_rate_daily', '0.05')
             ->set('status', Contract::STATUS_ACTIVE)
             ->set('starts_at', '2026-03-01')
+            ->set('ends_at', '2027-02-28')
             ->call('save');
 
         $contract = Contract::query()
@@ -104,6 +117,7 @@ class ContractPenaltyRateNormalizationTest extends TestCase
             ->set('penalty_rate_daily', '60')
             ->set('status', Contract::STATUS_ACTIVE)
             ->set('starts_at', '2026-03-01')
+            ->set('ends_at', '2027-02-28')
             ->call('save')
             ->assertHasErrors('penalty_rate_daily');
 
@@ -139,5 +153,16 @@ class ContractPenaltyRateNormalizationTest extends TestCase
         ]);
 
         return [$organization, $unit, $tenant, $user];
+    }
+
+    private function seedLandlord(int $organizationId): void
+    {
+        TenantContext::setOrganizationId($organizationId);
+        OrganizationSetting::query()
+            ->withoutOrganizationScope()
+            ->updateOrCreate(
+                ['organization_id' => $organizationId],
+                ['landlord_name' => 'Arrendador Demo S.A. de C.V.'],
+            );
     }
 }
