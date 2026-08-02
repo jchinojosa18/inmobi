@@ -71,7 +71,14 @@
             </li>
             <li>
                 @can('contracts.view')
-                <a href="{{ route('contracts.index') }}" class="{{ $lc('contracts.*') }}">
+                @php
+                    $attentionCount = (int) ($contractAttentionNav['count'] ?? 0);
+                    $attentionHasExpired = (bool) ($contractAttentionNav['has_expired'] ?? false);
+                    $contractsHref = $attentionCount > 0
+                        ? route('contracts.index', ['status' => 'attention'])
+                        : route('contracts.index');
+                @endphp
+                <a href="{{ $contractsHref }}" class="{{ $lc('contracts.*') }}">
                     <svg class="{{ $ic('contracts.*') }}" viewBox="0 0 24 24" fill="none"
                          stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -81,7 +88,15 @@
                                  1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0
                                  1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
                     </svg>
-                    {{ __('ui.nav.contracts') }}
+                    <span class="flex-1">{{ __('ui.nav.contracts') }}</span>
+                    @if ($attentionCount > 0)
+                        <span
+                            id="contract-attention-badge"
+                            class="inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white {{ $attentionHasExpired ? 'bg-rose-600' : 'bg-amber-500' }}"
+                        >
+                            {{ $attentionCount > 99 ? '99+' : $attentionCount }}
+                        </span>
+                    @endif
                 </a>
                 @endcan
             </li>

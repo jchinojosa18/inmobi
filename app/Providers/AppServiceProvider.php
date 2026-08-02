@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Listeners\RecordAuthEvent;
 use App\Models\AuthEvent;
+use App\Support\ContractAttentionNav;
 use App\Support\SystemHeartbeatService;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
@@ -15,6 +16,7 @@ use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -32,6 +34,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        View::composer('layouts.partials.sidebar', function ($view): void {
+            $view->with('contractAttentionNav', ContractAttentionNav::summary());
+        });
+
         $this->registerAuthRateLimiters();
 
         Event::listen(Login::class, [RecordAuthEvent::class, 'handleLogin']);
