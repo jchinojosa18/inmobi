@@ -173,6 +173,13 @@
             :label="__('dashboard.active_contracts')"
             :value="(string) $activeContracts"
         />
+        <a href="{{ route('contracts.index', ['status' => 'expiring']) }}" class="block">
+            <x-ui.stat-card
+                :label="__('dashboard.expiring_soon_contracts')"
+                :value="(string) $expiringSoonCount"
+                tone="warning"
+            />
+        </a>
         <x-ui.stat-card
             :label="__('dashboard.units')"
             :value="__('dashboard.occupied_available', ['occupied' => $occupiedUnits, 'available' => $availableUnits])"
@@ -257,6 +264,47 @@
                     </tr>
                 @empty
                     <x-ui.empty-state :title="__('dashboard.no_grace')" :colspan="6" />
+                @endforelse
+            </x-slot:body>
+        </x-ui.table>
+
+        <x-ui.table>
+            <x-slot:header>
+                <h2 class="text-sm font-semibold text-slate-900">{{ __('dashboard.expiring_soon_top10') }}</h2>
+            </x-slot:header>
+            <x-slot:head>
+                <th class="px-4 py-3">{{ __('common.contract') }}</th>
+                <th class="px-4 py-3">{{ __('common.tenant') }}</th>
+                <th class="px-4 py-3">{{ __('common.unit') }}</th>
+                <th class="px-4 py-3">{{ __('contracts.expiration') }}</th>
+                <th class="px-4 py-3 text-right">{{ __('dashboard.days_remaining') }}</th>
+                <th class="px-4 py-3 text-right">{{ __('common.action') }}</th>
+            </x-slot:head>
+            <x-slot:body>
+                @forelse ($expiringSoonContracts as $row)
+                    <tr wire:key="dashboard-expiring-{{ $row->contract_id }}" class="transition hover:bg-slate-50/80">
+                        <td class="px-4 py-3 text-slate-700">#{{ $row->contract_id }}</td>
+                        <td class="px-4 py-3 text-slate-700">
+                            {{ $row->tenant_name }}
+                            <p class="text-xs text-slate-500">{{ $row->tenant_phone ?: ($row->tenant_email ?: __('common.no_contact')) }}</p>
+                        </td>
+                        <td class="px-4 py-3 text-slate-700">
+                            {{ $row->property_name }} / {{ $row->unit_name ?? ($row->unit_code ?? '-') }}
+                        </td>
+                        <td class="px-4 py-3 text-slate-700">
+                            <x-ui.display-date :value="$row->ends_at" />
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            <x-ui.badge variant="warning">{{ (int) $row->days_remaining }} {{ __('common.days') }}</x-ui.badge>
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            <x-ui.button href="{{ route('contracts.show', $row->contract_id) }}" variant="secondary" size="sm">
+                                {{ __('contracts.view') }}
+                            </x-ui.button>
+                        </td>
+                    </tr>
+                @empty
+                    <x-ui.empty-state :title="__('dashboard.no_expiring_soon')" :colspan="6" />
                 @endforelse
             </x-slot:body>
         </x-ui.table>

@@ -162,6 +162,7 @@ class Index extends Component
             'grace',
             $currentPlazaId
         );
+        [$expiringSoonCount, $expiringSoonContracts] = $this->expiringSoonSummary($currentPlazaId);
         $recentPayments = $this->recentPayments($currentPlazaId);
         $onboardingChecklist = $this->buildOnboardingChecklist($organizationId, $now, $settingsService);
 
@@ -175,6 +176,8 @@ class Index extends Component
             'availableUnits' => $availableUnits,
             'overdueContracts' => $overdueContracts,
             'graceContracts' => $graceContracts,
+            'expiringSoonCount' => $expiringSoonCount,
+            'expiringSoonContracts' => $expiringSoonContracts,
             'recentPayments' => $recentPayments,
             'onboardingChecklist' => $onboardingChecklist,
             'canCreatePayments' => auth()->user()?->can('payments.create') ?? false,
@@ -458,6 +461,52 @@ class Index extends Component
         }
 
         return $query;
+    }
+
+    /**
+     * @return array{0: int, 1: Collection<int, object>}
+     */
+    private function expiringSoonSummary(?int $currentPlazaId): array
+    {
+        $today = CarbonImmutable::now('America/Tijuana')->startOfDay();
+        $horizon = $today->addDays(Contract::EXPIRING_SOON_DAYS)->toDateString();
+        $todayDate = $today->toDateString();
+
+        $base = Contract::query()
+            ->join('units', 'units.id', '=', 'contracts.unit_id')
+            ->join('properties', 'properties.id', '=', 'units.property_id')
+            ->join('tenants', 'tenants.id', '=', 'contracts.tenant_id')
+            ->where('contracts.status', Contract::STATUS_ACTIVE)
+            ->whereNotNull('contracts.ends_at')
+            ->whereDate('contracts.ends_at', '>=', $todayDate)
+            ->whereDate('contracts.ends_at', '<=', $horizon)
+            ->when($currentPlazaId !== null, fn (Builder $q) => $q->where('properties.plaza_id', $currentPlazaId));
+
+        $count = (clone $base)->count('contracts.id');
+
+        $rows = (clone $base)
+            ->select([
+                'contracts.id as contract_id',
+                'contracts.ends_at',
+                'tenants.full_name as tenant_name',
+                'tenants.email as tenant_email',
+                'tenants.phone as tenant_phone',
+                'properties.name as property_name',
+                'units.name as unit_name',
+                'units.code as unit_code',
+            ])
+            ->orderBy('contracts.ends_at')
+            ->limit(10)
+            ->get();
+
+        $rows = $rows->map(function ($row) use ($today): object {
+            $ends = CarbonImmutable::parse($row->ends_at, 'America/Tijuana')->startOfDay();
+            $row->days_remaining = (int) $today->diffInDays($ends, false);
+
+            return $row;
+        });
+
+        return [$count, $rows];
     }
 
     /**
