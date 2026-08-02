@@ -9,6 +9,12 @@
             {{ __('contracts.form_description') }}
         </p>
 
+        @error('landlord_name')
+            <div class="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {{ $message }}
+            </div>
+        @enderror
+
         <form wire:submit="save" class="grid gap-4 md:grid-cols-2">
             <div>
                 <x-ui.select :label="__('common.unit').' *'" wire:model="unit_id" :disabled="$isEdit">
@@ -71,7 +77,7 @@
             </div>
 
             <div>
-                <x-ui.input :label="__('contracts.end_date')" type="date" wire:model.blur="ends_at" />
+                <x-ui.input :label="__('contracts.end_date').' *'" type="date" wire:model.blur="ends_at" />
                 @error('ends_at') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
             </div>
 
