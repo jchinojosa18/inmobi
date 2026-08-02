@@ -156,19 +156,21 @@
 
                     <td class="px-4 py-3 align-top">
                         @if ($contract->ends_at)
-                            @php $daysUntilEnd = $contract->daysUntilEnd(); @endphp
                             <p class="font-medium text-slate-900">
                                 <x-ui.display-date :value="$contract->ends_at" />
                             </p>
-                            <p class="text-xs text-slate-500">
-                                @if ($daysUntilEnd === 0)
-                                    {{ __('contracts.ends_today') }}
-                                @elseif ($daysUntilEnd > 0)
-                                    {{ __('contracts.ends_in_days', ['days' => $daysUntilEnd]) }}
-                                @else
-                                    {{ __('contracts.ended_days_ago', ['days' => abs($daysUntilEnd)]) }}
-                                @endif
-                            </p>
+                            @if ($contract->status === 'active')
+                                @php $daysUntilEnd = $contract->daysUntilEnd(); @endphp
+                                <p class="text-xs text-slate-500">
+                                    @if ($daysUntilEnd === 0)
+                                        {{ __('contracts.ends_today') }}
+                                    @elseif ($daysUntilEnd > 0)
+                                        {{ __('contracts.ends_in_days', ['days' => $daysUntilEnd]) }}
+                                    @else
+                                        {{ __('contracts.ended_days_ago', ['days' => abs($daysUntilEnd)]) }}
+                                    @endif
+                                </p>
+                            @endif
                         @else
                             <p class="text-slate-500">—</p>
                         @endif

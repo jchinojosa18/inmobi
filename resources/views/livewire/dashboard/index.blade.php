@@ -282,14 +282,14 @@
             </x-slot:head>
             <x-slot:body>
                 @forelse ($expiringSoonContracts as $row)
-                    <tr wire:key="dashboard-expiring-{{ $row->contract_id }}" class="transition hover:bg-slate-50/80">
-                        <td class="px-4 py-3 text-slate-700">#{{ $row->contract_id }}</td>
+                    <tr wire:key="dashboard-expiring-{{ $row->id }}" class="transition hover:bg-slate-50/80">
+                        <td class="px-4 py-3 text-slate-700">#{{ $row->id }}</td>
                         <td class="px-4 py-3 text-slate-700">
-                            {{ $row->tenant_name }}
-                            <p class="text-xs text-slate-500">{{ $row->tenant_phone ?: ($row->tenant_email ?: __('common.no_contact')) }}</p>
+                            {{ $row->tenant->full_name }}
+                            <p class="text-xs text-slate-500">{{ $row->tenant->phone ?: ($row->tenant->email ?: __('common.no_contact')) }}</p>
                         </td>
                         <td class="px-4 py-3 text-slate-700">
-                            {{ $row->property_name }} / {{ $row->unit_name ?? ($row->unit_code ?? '-') }}
+                            {{ $row->unit->property->name }} / {{ $row->unit->name ?? ($row->unit->code ?? '-') }}
                         </td>
                         <td class="px-4 py-3 text-slate-700">
                             <x-ui.display-date :value="$row->ends_at" />
@@ -298,7 +298,7 @@
                             <x-ui.badge variant="warning">{{ (int) $row->days_remaining }} {{ __('common.days') }}</x-ui.badge>
                         </td>
                         <td class="px-4 py-3 text-right">
-                            <x-ui.button href="{{ route('contracts.show', $row->contract_id) }}" variant="secondary" size="sm">
+                            <x-ui.button href="{{ route('contracts.show', $row) }}" variant="secondary" size="sm">
                                 {{ __('contracts.view') }}
                             </x-ui.button>
                         </td>

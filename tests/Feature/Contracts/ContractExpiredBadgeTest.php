@@ -126,6 +126,30 @@ class ContractExpiredBadgeTest extends TestCase
         $response->assertDontSeeText('Finalizado No Expirado');
     }
 
+    public function test_ended_contract_does_not_show_expiration_days_subtitle(): void
+    {
+        CarbonImmutable::setTestNow('2026-08-01 10:00:00', 'America/Tijuana');
+
+        [$user] = $this->createOrganizationWithUser();
+
+        $this->createContractForOrganization(
+            $user->organization_id,
+            tenantName: 'Contrato Finalizado Subtitulo',
+            endsAt: '2026-07-31',
+            status: Contract::STATUS_ENDED,
+        );
+
+        $response = $this->actingAs($user)->get(route('contracts.index', [
+            'status' => 'all',
+        ]));
+
+        $response->assertOk();
+        $response->assertSeeText('Contrato Finalizado Subtitulo');
+        $response->assertSeeText(DateDisplay::formatDate('2026-07-31'));
+        $response->assertSeeText(__('common.finished'));
+        $response->assertDontSeeText(__('contracts.ended_days_ago', ['days' => 1]));
+    }
+
     public function test_show_displays_expired_banner(): void
     {
         CarbonImmutable::setTestNow('2026-08-01 10:00:00', 'America/Tijuana');

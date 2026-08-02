@@ -464,7 +464,7 @@ class Index extends Component
     }
 
     /**
-     * @return array{0: int, 1: Collection<int, object>}
+     * @return array{0: int, 1: Collection<int, Contract>}
      */
     private function expiringSoonSummary(?int $currentPlazaId): array
     {
@@ -485,25 +485,20 @@ class Index extends Component
         $count = (clone $base)->count('contracts.id');
 
         $rows = (clone $base)
-            ->select([
-                'contracts.id as contract_id',
-                'contracts.ends_at',
-                'tenants.full_name as tenant_name',
-                'tenants.email as tenant_email',
-                'tenants.phone as tenant_phone',
-                'properties.name as property_name',
-                'units.name as unit_name',
-                'units.code as unit_code',
+            ->select('contracts.*')
+            ->with([
+                'tenant:id,organization_id,full_name,email,phone',
+                'unit:id,organization_id,property_id,name,code',
+                'unit.property:id,organization_id,name',
             ])
             ->orderBy('contracts.ends_at')
             ->limit(10)
             ->get();
 
-        $rows = $rows->map(function ($row) use ($today): object {
-            $ends = CarbonImmutable::parse($row->ends_at, 'America/Tijuana')->startOfDay();
-            $row->days_remaining = (int) $today->diffInDays($ends, false);
+        $rows = $rows->map(function (Contract $contract) use ($today): Contract {
+            $contract->days_remaining = $contract->daysUntilEnd($today);
 
-            return $row;
+            return $contract;
         });
 
         return [$count, $rows];
