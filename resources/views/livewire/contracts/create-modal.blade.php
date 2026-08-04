@@ -100,7 +100,7 @@
                         {{ __('contracts.generate_contract_pdf') }}
                     </label>
 
-                    @if (! $isEdit && $generate_pdf && $canSendReceipts && $selectedTenantEmail)
+                    @if ($generate_pdf && $canSendReceipts && $selectedTenantEmail)
                         <label class="flex items-center gap-2 text-sm text-slate-700">
                             <input type="checkbox" wire:model="send_email" class="rounded border-slate-300" />
                             {{ __('contracts.send_agreement_email') }}

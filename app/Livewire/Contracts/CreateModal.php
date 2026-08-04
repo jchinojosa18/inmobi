@@ -265,19 +265,7 @@ class CreateModal extends Component
                     return null;
                 }
 
-                $contract->loadMissing('tenant');
-                $tenantEmail = is_string($contract->tenant?->email) ? trim($contract->tenant->email) : '';
-                $sendEmail = $this->send_email
-                    && (auth()->user()?->can('receipts.send') ?? false)
-                    && $tenantEmail !== '';
-
-                if ($sendEmail) {
-                    try {
-                        Mail::to($tenantEmail)->send(new ContractAgreementMail($contract));
-                    } catch (\Throwable $e) {
-                        report($e);
-                    }
-                }
+                $this->maybeSendContractAgreementEmail($contract);
 
                 $contract = $contract->fresh(['tenant', 'unit.property']);
                 $this->pdfUrl = route('contracts.agreement.pdf', ['contractId' => $contract->id]);
@@ -312,6 +300,8 @@ class CreateModal extends Component
 
                 return null;
             }
+
+            $this->maybeSendContractAgreementEmail($contract);
         }
 
         session()->flash('success', __('contracts.flash.contract_updated'));
@@ -369,6 +359,25 @@ class CreateModal extends Component
             'canSendReceipts' => auth()->user()?->can('receipts.send') ?? false,
             'selectedTenantEmail' => $selectedTenantEmail,
         ]);
+    }
+
+    private function maybeSendContractAgreementEmail(Contract $contract): void
+    {
+        $contract->loadMissing('tenant');
+        $tenantEmail = is_string($contract->tenant?->email) ? trim($contract->tenant->email) : '';
+        $sendEmail = $this->send_email
+            && (auth()->user()?->can('receipts.send') ?? false)
+            && $tenantEmail !== '';
+
+        if (! $sendEmail) {
+            return;
+        }
+
+        try {
+            Mail::to($tenantEmail)->send(new ContractAgreementMail($contract));
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     private function buildContractWhatsAppUrl(

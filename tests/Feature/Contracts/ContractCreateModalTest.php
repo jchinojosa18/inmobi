@@ -259,6 +259,69 @@ class ContractCreateModalTest extends TestCase
         Mail::assertSent(ContractAgreementMail::class, fn (ContractAgreementMail $mail) => $mail->hasTo('tenant@example.com'));
     }
 
+    public function test_edit_shows_send_email_checkbox_when_tenant_has_email(): void
+    {
+        [$organization, $contract, $user] = $this->createContractGraph();
+        Permission::findOrCreate('receipts.send', 'web');
+        $user->givePermissionTo('receipts.send');
+
+        Livewire::actingAs($user)
+            ->test(CreateModal::class)
+            ->dispatch('open-contract-edit', contractId: $contract->id)
+            ->assertSet('generate_pdf', true)
+            ->assertSet('send_email', false)
+            ->assertSee(__('contracts.send_agreement_email'));
+    }
+
+    public function test_edit_send_email_dispatches_contract_agreement_mail(): void
+    {
+        Mail::fake();
+        Storage::fake('local');
+        config(['filesystems.documents_disk' => 'local']);
+
+        [$organization, $contract, $user] = $this->createContractGraph();
+        $this->seedLandlord($organization->id);
+        Permission::findOrCreate('receipts.send', 'web');
+        $user->givePermissionTo('receipts.send');
+
+        $tenantEmail = (string) $contract->tenant()->withoutOrganizationScope()->value('email');
+        $this->assertNotSame('', trim($tenantEmail));
+
+        Livewire::actingAs($user)
+            ->test(CreateModal::class)
+            ->dispatch('open-contract-edit', contractId: $contract->id)
+            ->set('generate_pdf', true)
+            ->set('send_email', true)
+            ->set('rent_amount', '12500')
+            ->call('save')
+            ->assertHasNoErrors()
+            ->assertSet('open', false);
+
+        Mail::assertSent(ContractAgreementMail::class, fn (ContractAgreementMail $mail) => $mail->hasTo($tenantEmail));
+    }
+
+    public function test_edit_without_generate_pdf_does_not_send_email(): void
+    {
+        Mail::fake();
+        Storage::fake('local');
+        config(['filesystems.documents_disk' => 'local']);
+
+        [$organization, $contract, $user] = $this->createContractGraph();
+        Permission::findOrCreate('receipts.send', 'web');
+        $user->givePermissionTo('receipts.send');
+
+        Livewire::actingAs($user)
+            ->test(CreateModal::class)
+            ->dispatch('open-contract-edit', contractId: $contract->id)
+            ->set('generate_pdf', false)
+            ->set('send_email', true)
+            ->set('rent_amount', '12500')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        Mail::assertNothingSent();
+    }
+
     public function test_create_done_builds_whatsapp_url_with_share_link(): void
     {
         Storage::fake('local');
