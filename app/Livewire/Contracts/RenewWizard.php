@@ -36,6 +36,8 @@ class RenewWizard extends Component
 
     public bool $register_difference = false;
 
+    public bool $generate_pdf = true;
+
     public bool $send_email = false;
 
     public ?string $pdfUrl = null;
@@ -85,6 +87,13 @@ class RenewWizard extends Component
         $this->send_email = $tenantEmail !== '' && (auth()->user()?->can('receipts.send') ?? false);
     }
 
+    public function updatedGeneratePdf(bool $value): void
+    {
+        if (! $value) {
+            $this->send_email = false;
+        }
+    }
+
     public function cancelForm(): void
     {
         $this->close();
@@ -108,7 +117,10 @@ class RenewWizard extends Component
 
         $contract = Contract::query()->findOrFail((int) $this->contractId);
 
-        $sendEmail = $this->send_email && (auth()->user()?->can('receipts.send') ?? false);
+        $generatePdf = $this->generate_pdf;
+        $sendEmail = $generatePdf
+            && $this->send_email
+            && (auth()->user()?->can('receipts.send') ?? false);
 
         try {
             $result = $action->execute(
@@ -121,6 +133,7 @@ class RenewWizard extends Component
                     'due_day' => (int) $this->due_day,
                     'grace_days' => (int) $this->grace_days,
                     'register_difference' => $this->register_difference,
+                    'generate_pdf' => $generatePdf,
                     'send_email' => $sendEmail,
                 ],
                 userId: auth()->id(),
@@ -147,9 +160,16 @@ class RenewWizard extends Component
 
         $newContract = $result->newContract->fresh(['tenant', 'unit.property']);
         $this->newContractId = $newContract->id;
-        $this->pdfUrl = route('contracts.agreement.pdf', ['contractId' => $newContract->id]);
-        $this->shareUrl = ContractAgreementShareUrl::make($newContract->id);
-        $this->whatsAppUrl = $this->buildContractWhatsAppUrl($newContract, $this->shareUrl, $settingsService);
+
+        if ($generatePdf) {
+            $this->pdfUrl = route('contracts.agreement.pdf', ['contractId' => $newContract->id]);
+            $this->shareUrl = ContractAgreementShareUrl::make($newContract->id);
+            $this->whatsAppUrl = $this->buildContractWhatsAppUrl($newContract, $this->shareUrl, $settingsService);
+        } else {
+            $this->pdfUrl = null;
+            $this->shareUrl = null;
+            $this->whatsAppUrl = null;
+        }
 
         session()->flash('success', __('contracts.flash.renewed'));
         $this->step = 'done';
@@ -244,6 +264,7 @@ class RenewWizard extends Component
             'due_day' => ['required', 'integer', 'min:1', 'max:31'],
             'grace_days' => ['required', 'integer', 'min:0', 'max:31'],
             'register_difference' => ['boolean'],
+            'generate_pdf' => ['boolean'],
             'send_email' => ['boolean'],
         ];
     }
@@ -288,6 +309,7 @@ class RenewWizard extends Component
             'due_day',
             'grace_days',
             'register_difference',
+            'generate_pdf',
             'send_email',
             'pdfUrl',
             'shareUrl',

@@ -22,12 +22,14 @@
             @endif
 
             @unless ($landlordConfigured)
-                <div class="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                    {{ __('contracts.renew_landlord_required') }}
-                    <a href="{{ route('settings.index') }}" class="font-medium underline hover:text-amber-900">
-                        {{ __('contracts.renew_go_to_settings') }}
-                    </a>
-                </div>
+                @if ($generate_pdf)
+                    <div class="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                        {{ __('contracts.renew_landlord_required') }}
+                        <a href="{{ route('settings.index') }}" class="font-medium underline hover:text-amber-900">
+                            {{ __('contracts.renew_go_to_settings') }}
+                        </a>
+                    </div>
+                @endif
             @endunless
 
             <div class="mb-4 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
@@ -84,14 +86,19 @@
                     </div>
                 @endif
 
-                @if ($canSendEmail && $tenantEmail)
-                    <div class="md:col-span-2">
+                <div class="md:col-span-2 space-y-2">
+                    <label class="flex items-center gap-2 text-sm cursor-pointer select-none">
+                        <input type="checkbox" wire:model.live="generate_pdf" class="rounded accent-slate-700">
+                        <span>{{ __('contracts.generate_contract_pdf') }}</span>
+                    </label>
+
+                    @if ($generate_pdf && $canSendEmail && $tenantEmail)
                         <label class="flex items-center gap-2 text-sm cursor-pointer select-none">
                             <input type="checkbox" wire:model.live="send_email" class="rounded accent-slate-700">
                             <span>{!! __('contracts.send_contract_email', ['email' => '<strong>'.$tenantEmail.'</strong>']) !!}</span>
                         </label>
-                    </div>
-                @endif
+                    @endif
+                </div>
 
                 <div class="md:col-span-2 flex flex-wrap items-center justify-end gap-2">
                     <x-ui.button type="button" wire:click="cancelForm" variant="secondary">

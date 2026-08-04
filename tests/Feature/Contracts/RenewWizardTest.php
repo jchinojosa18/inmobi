@@ -184,6 +184,44 @@ class RenewWizardTest extends TestCase
             ->assertSeeHtml(route('settings.index'));
     }
 
+    public function test_renew_without_generate_pdf_shows_only_detail_action(): void
+    {
+        Mail::fake();
+        Storage::fake('local');
+        config(['filesystems.documents_disk' => 'local']);
+
+        CarbonImmutable::setTestNow('2026-08-01 10:00:00');
+
+        [$organization, $contract, $user] = $this->createRenewableGraph(
+            email: 'tenant@example.com',
+            phone: '526611234567',
+        );
+
+        Livewire::actingAs($user)
+            ->test(RenewWizard::class)
+            ->dispatch('open-contract-renew', contractId: $contract->id)
+            ->assertSet('generate_pdf', true)
+            ->set('generate_pdf', false)
+            ->assertSet('send_email', false)
+            ->set('rent_amount', '10000')
+            ->set('deposit_amount', '10000')
+            ->set('starts_at', '2026-08-01')
+            ->set('ends_at', '2027-07-31')
+            ->set('send_email', true) // must be ignored server-side when PDF off
+            ->call('renew')
+            ->assertHasNoErrors()
+            ->assertSet('step', 'done')
+            ->assertNotSet('newContractId', null)
+            ->assertSet('pdfUrl', null)
+            ->assertSet('shareUrl', null)
+            ->assertSet('whatsAppUrl', null)
+            ->assertDispatched('contract-renewed');
+
+        Mail::assertNothingSent();
+
+        CarbonImmutable::setTestNow();
+    }
+
     public function test_renew_button_visible_on_show_when_renewable(): void
     {
         [$organization, $contract, $user] = $this->createRenewableGraph();
