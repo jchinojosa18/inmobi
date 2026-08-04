@@ -50,6 +50,7 @@ return [
     'form_description' => 'Basic contract record linking a unit and tenant.',
     'create_success_title' => 'Contract created successfully',
     'send_agreement_email' => 'Email agreement to tenant',
+    'generate_contract_pdf' => 'Generate contract PDF',
     'view_detail' => 'View details',
     'select_unit' => 'Select unit',
     'select_tenant' => 'Select tenant',

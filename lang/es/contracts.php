@@ -58,6 +58,7 @@ return [
     'register_deposit_difference' => 'Registrar diferencia de depósito ($:amount) como recibida',
     'send_contract_email' => 'Enviar contrato por correo a :email',
     'send_agreement_email' => 'Enviar contrato por correo al inquilino',
+    'generate_contract_pdf' => 'Generar PDF del contrato',
     'view_contract_pdf' => 'Ver PDF del contrato',
     'new_contract' => 'Nuevo contrato',
     'edit_contract_title' => 'Editar contrato',

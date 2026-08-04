@@ -94,14 +94,19 @@
                     @error('meta_notes') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
-                @if (! $isEdit && $canSendReceipts && $selectedTenantEmail)
-                    <div class="md:col-span-2">
+                <div class="md:col-span-2 space-y-2">
+                    <label class="flex items-center gap-2 text-sm text-slate-700">
+                        <input type="checkbox" wire:model.live="generate_pdf" class="rounded border-slate-300" />
+                        {{ __('contracts.generate_contract_pdf') }}
+                    </label>
+
+                    @if (! $isEdit && $generate_pdf && $canSendReceipts && $selectedTenantEmail)
                         <label class="flex items-center gap-2 text-sm text-slate-700">
                             <input type="checkbox" wire:model="send_email" class="rounded border-slate-300" />
                             {{ __('contracts.send_agreement_email') }}
                         </label>
-                    </div>
-                @endif
+                    @endif
+                </div>
 
                 <div class="md:col-span-2 flex flex-wrap items-center justify-end gap-2">
                     <x-ui.button type="button" wire:click="cancelForm" variant="secondary">

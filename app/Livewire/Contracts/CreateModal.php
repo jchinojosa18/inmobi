@@ -33,6 +33,8 @@ class CreateModal extends Component
 
     public bool $send_email = false;
 
+    public bool $generate_pdf = true;
+
     public ?string $pdfUrl = null;
 
     public ?string $shareUrl = null;
@@ -118,9 +120,16 @@ class CreateModal extends Component
         $this->open = true;
     }
 
+    public function updatedGeneratePdf(bool $value): void
+    {
+        if (! $value) {
+            $this->send_email = false;
+        }
+    }
+
     public function updatedTenantId(?int $value): void
     {
-        if (! (auth()->user()?->can('receipts.send') ?? false)) {
+        if (! (auth()->user()?->can('receipts.send') ?? false) || ! $this->generate_pdf) {
             $this->send_email = false;
 
             return;
@@ -173,7 +182,7 @@ class CreateModal extends Component
             return null;
         }
 
-        if (! $this->assertLandlordNameConfigured($organizationSettingsService)) {
+        if ($this->generate_pdf && ! $this->assertLandlordNameConfigured($organizationSettingsService)) {
             return null;
         }
 
@@ -243,33 +252,41 @@ class CreateModal extends Component
         );
 
         if ($isNew) {
-            try {
-                $generateLeaseAgreementPdfAction->execute($contract->fresh(), auth()->id());
-            } catch (ValidationException $e) {
-                $this->addError('landlord_name', $e->errors()['landlord_name'][0] ?? __('contracts.validation.renew_failed'));
-
-                return null;
-            }
-
-            $contract->loadMissing('tenant');
-            $tenantEmail = is_string($contract->tenant?->email) ? trim($contract->tenant->email) : '';
-            $sendEmail = $this->send_email
-                && (auth()->user()?->can('receipts.send') ?? false)
-                && $tenantEmail !== '';
-
-            if ($sendEmail) {
+            if ($this->generate_pdf) {
                 try {
-                    Mail::to($tenantEmail)->send(new ContractAgreementMail($contract));
-                } catch (\Throwable $e) {
-                    report($e);
+                    $generateLeaseAgreementPdfAction->execute($contract->fresh(), auth()->id());
+                } catch (ValidationException $e) {
+                    $this->addError('landlord_name', $e->errors()['landlord_name'][0] ?? __('contracts.validation.renew_failed'));
+
+                    return null;
                 }
+
+                $contract->loadMissing('tenant');
+                $tenantEmail = is_string($contract->tenant?->email) ? trim($contract->tenant->email) : '';
+                $sendEmail = $this->send_email
+                    && (auth()->user()?->can('receipts.send') ?? false)
+                    && $tenantEmail !== '';
+
+                if ($sendEmail) {
+                    try {
+                        Mail::to($tenantEmail)->send(new ContractAgreementMail($contract));
+                    } catch (\Throwable $e) {
+                        report($e);
+                    }
+                }
+
+                $contract = $contract->fresh(['tenant', 'unit.property']);
+                $this->pdfUrl = route('contracts.agreement.pdf', ['contractId' => $contract->id]);
+                $this->shareUrl = ContractAgreementShareUrl::make($contract->id);
+                $this->whatsAppUrl = $this->buildContractWhatsAppUrl($contract, $this->shareUrl, $organizationSettingsService);
+            } else {
+                $contract = $contract->fresh(['tenant', 'unit.property']);
+                $this->pdfUrl = null;
+                $this->shareUrl = null;
+                $this->whatsAppUrl = null;
             }
 
-            $contract = $contract->fresh(['tenant', 'unit.property']);
             $this->createdContractId = $contract->id;
-            $this->pdfUrl = route('contracts.agreement.pdf', ['contractId' => $contract->id]);
-            $this->shareUrl = ContractAgreementShareUrl::make($contract->id);
-            $this->whatsAppUrl = $this->buildContractWhatsAppUrl($contract, $this->shareUrl, $organizationSettingsService);
             $this->tenantName = (string) ($contract->tenant?->full_name ?? '');
             $this->unitLabel = trim((string) ($contract->unit?->property?->name.' / '.$contract->unit?->name));
             $this->step = 'done';
@@ -544,6 +561,7 @@ class CreateModal extends Component
         $this->reset([
             'step',
             'send_email',
+            'generate_pdf',
             'pdfUrl',
             'shareUrl',
             'whatsAppUrl',
@@ -566,6 +584,7 @@ class CreateModal extends Component
 
         $this->step = 'form';
         $this->send_email = false;
+        $this->generate_pdf = true;
         $this->deposit_amount = '';
         $this->due_day = '';
         $this->grace_days = '';

@@ -403,6 +403,80 @@ class ContractCreateModalTest extends TestCase
             ->count());
     }
 
+    public function test_open_create_defaults_generate_pdf_to_true(): void
+    {
+        [$organization, $occupiedContract, $user] = $this->createContractGraph();
+
+        Livewire::actingAs($user)
+            ->test(CreateModal::class)
+            ->dispatch('open-contract-create')
+            ->assertSet('generate_pdf', true);
+    }
+
+    public function test_create_without_generate_pdf_skips_document_and_share_actions(): void
+    {
+        Mail::fake();
+        Storage::fake('local');
+        config(['filesystems.documents_disk' => 'local']);
+
+        [$organization, $user, $unit, $tenant] = $this->createOpenCreateGraph();
+        // Intentionally do NOT seed landlord — create must succeed without PDF.
+        Permission::findOrCreate('receipts.send', 'web');
+        $user->givePermissionTo('receipts.send');
+
+        Livewire::actingAs($user)
+            ->test(CreateModal::class)
+            ->dispatch('open-contract-create')
+            ->set('unit_id', $unit->id)
+            ->set('tenant_id', $tenant->id)
+            ->set('rent_amount', '10000')
+            ->set('deposit_amount', '10000')
+            ->set('due_day', '5')
+            ->set('grace_days', '3')
+            ->set('penalty_rate_daily', '5')
+            ->set('starts_at', '2026-08-01')
+            ->set('ends_at', '2027-07-31')
+            ->set('generate_pdf', false)
+            ->set('send_email', true)
+            ->call('save')
+            ->assertHasNoErrors()
+            ->assertSet('step', 'done')
+            ->assertSet('pdfUrl', null)
+            ->assertSet('shareUrl', null)
+            ->assertSet('whatsAppUrl', null)
+            ->assertNotSet('createdContractId', null);
+
+        $contract = Contract::query()->withoutOrganizationScope()
+            ->where('unit_id', $unit->id)
+            ->where('tenant_id', $tenant->id)
+            ->first();
+
+        $this->assertNotNull($contract);
+        $this->assertFalse(
+            Document::query()->withoutOrganizationScope()
+                ->where('documentable_type', Contract::class)
+                ->where('documentable_id', $contract->id)
+                ->where('category', ContractDocumentCategory::Contract->value)
+                ->exists()
+        );
+        Mail::assertNothingSent();
+    }
+
+    public function test_unchecking_generate_pdf_clears_send_email(): void
+    {
+        [$organization, $user, $unit, $tenant] = $this->createOpenCreateGraph();
+        Permission::findOrCreate('receipts.send', 'web');
+        $user->givePermissionTo('receipts.send');
+
+        Livewire::actingAs($user)
+            ->test(CreateModal::class)
+            ->dispatch('open-contract-create')
+            ->set('tenant_id', $tenant->id)
+            ->assertSet('send_email', true)
+            ->set('generate_pdf', false)
+            ->assertSet('send_email', false);
+    }
+
     public function test_open_create_defaults_send_email_to_false(): void
     {
         [$organization, $occupiedContract, $user] = $this->createContractGraph();
