@@ -22,28 +22,41 @@
                 </div>
             @enderror
 
-            <form wire:submit="save" class="grid gap-4 md:grid-cols-2">
-                <div>
-                    <x-ui.select :label="__('common.unit').' *'" wire:model="unit_id" :disabled="$isEdit">
-                        <option value="">{{ __('contracts.select_unit') }}</option>
-                        @foreach ($units as $unit)
-                            <option value="{{ $unit->id }}">
-                                {{ $unit->property?->name }} — {{ $unit->name }}@if($unit->code) ({{ $unit->code }}) @endif
-                            </option>
-                        @endforeach
-                    </x-ui.select>
-                    @error('unit_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+            @if ($isEdit && ($tenantName || $unitLabel))
+                <div class="mb-4 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                    @if ($tenantName)
+                        <p>{{ __('common.tenant') }}: <strong>{{ $tenantName }}</strong></p>
+                    @endif
+                    @if ($unitLabel)
+                        <p>{{ __('common.unit') }}: <strong>{{ $unitLabel }}</strong></p>
+                    @endif
                 </div>
+            @endif
 
-                <div>
-                    <x-ui.select :label="__('common.tenant').' *'" wire:model.live="tenant_id" :disabled="$isEdit">
-                        <option value="">{{ __('contracts.select_tenant') }}</option>
-                        @foreach ($tenants as $tenant)
-                            <option value="{{ $tenant->id }}">{{ $tenant->full_name }}</option>
-                        @endforeach
-                    </x-ui.select>
-                    @error('tenant_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-                </div>
+            <form wire:submit="save" class="grid gap-4 md:grid-cols-2">
+                @unless ($isEdit)
+                    <div>
+                        <x-ui.select :label="__('common.unit').' *'" wire:model="unit_id">
+                            <option value="">{{ __('contracts.select_unit') }}</option>
+                            @foreach ($units as $unit)
+                                <option value="{{ $unit->id }}">
+                                    {{ $unit->property?->name }} — {{ $unit->name }}@if($unit->code) ({{ $unit->code }}) @endif
+                                </option>
+                            @endforeach
+                        </x-ui.select>
+                        @error('unit_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div>
+                        <x-ui.select :label="__('common.tenant').' *'" wire:model.live="tenant_id">
+                            <option value="">{{ __('contracts.select_tenant') }}</option>
+                            @foreach ($tenants as $tenant)
+                                <option value="{{ $tenant->id }}">{{ $tenant->full_name }}</option>
+                            @endforeach
+                        </x-ui.select>
+                        @error('tenant_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                    </div>
+                @endunless
 
                 <div>
                     <x-ui.input :label="__('contracts.monthly_rent').' *'" type="number" step="0.01" min="0" wire:model.blur="rent_amount" />
@@ -95,15 +108,15 @@
                 </div>
 
                 <div class="md:col-span-2 space-y-2">
-                    <label class="flex items-center gap-2 text-sm text-slate-700">
-                        <input type="checkbox" wire:model.live="generate_pdf" class="rounded border-slate-300" />
-                        {{ __('contracts.generate_contract_pdf') }}
+                    <label class="flex items-center gap-2 text-sm cursor-pointer select-none">
+                        <input type="checkbox" wire:model.live="generate_pdf" class="rounded accent-slate-700">
+                        <span>{{ __('contracts.generate_contract_pdf') }}</span>
                     </label>
 
                     @if ($generate_pdf && $canSendReceipts && $selectedTenantEmail)
-                        <label class="flex items-center gap-2 text-sm text-slate-700">
-                            <input type="checkbox" wire:model="send_email" class="rounded border-slate-300" />
-                            {{ __('contracts.send_agreement_email') }}
+                        <label class="flex items-center gap-2 text-sm cursor-pointer select-none">
+                            <input type="checkbox" wire:model.live="send_email" class="rounded accent-slate-700">
+                            <span>{!! __('contracts.send_contract_email', ['email' => '<strong>'.$selectedTenantEmail.'</strong>']) !!}</span>
                         </label>
                     @endif
                 </div>

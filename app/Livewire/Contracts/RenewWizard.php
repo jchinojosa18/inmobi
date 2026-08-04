@@ -83,15 +83,33 @@ class RenewWizard extends Component
         $this->starts_at = $suggestedStart->toDateString();
         $this->ends_at = $suggestedStart->addYear()->subDay()->toDateString();
 
-        $tenantEmail = trim((string) ($contract->tenant?->email ?? ''));
-        $this->send_email = $tenantEmail !== '' && (auth()->user()?->can('receipts.send') ?? false);
+        $this->syncSendEmailFromTenant(
+            trim((string) ($contract->tenant?->email ?? '')),
+        );
     }
 
     public function updatedGeneratePdf(bool $value): void
     {
         if (! $value) {
             $this->send_email = false;
+
+            return;
         }
+
+        $contract = $this->contractId !== null
+            ? Contract::query()->with('tenant:id,email')->find($this->contractId)
+            : null;
+
+        $this->syncSendEmailFromTenant(
+            trim((string) ($contract?->tenant?->email ?? '')),
+        );
+    }
+
+    private function syncSendEmailFromTenant(string $tenantEmail): void
+    {
+        $this->send_email = $this->generate_pdf
+            && $tenantEmail !== ''
+            && (auth()->user()?->can('receipts.send') ?? false);
     }
 
     public function cancelForm(): void

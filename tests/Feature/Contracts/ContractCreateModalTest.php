@@ -154,16 +154,24 @@ class ContractCreateModalTest extends TestCase
             ->assertSet('unit_id', null);
     }
 
-    public function test_edit_modal_locks_unit_and_tenant_fields(): void
+    public function test_edit_modal_shows_tenant_and_unit_summary(): void
     {
         [$organization, $contract, $user] = $this->createContractGraph();
+        $contract->loadMissing(['tenant:id,full_name', 'unit.property:id,name']);
+
+        $unitLabel = trim((string) ($contract->unit?->property?->name.' / '.$contract->unit?->name));
 
         Livewire::actingAs($user)
             ->test(CreateModal::class)
             ->dispatch('open-contract-edit', contractId: $contract->id)
-            ->assertSeeHtml('disabled="disabled"')
-            ->assertSeeHtml('wire:model="unit_id"')
-            ->assertSeeHtml('wire:model.live="tenant_id"');
+            ->assertSet('tenantName', $contract->tenant?->full_name)
+            ->assertSet('unitLabel', $unitLabel)
+            ->assertSee(__('common.tenant').':')
+            ->assertSee($contract->tenant?->full_name)
+            ->assertSee(__('common.unit').':')
+            ->assertSee($unitLabel)
+            ->assertDontSeeHtml('wire:model="unit_id"')
+            ->assertDontSeeHtml('wire:model.live="tenant_id"');
     }
 
     public function test_create_generates_contract_category_document(): void
@@ -265,12 +273,14 @@ class ContractCreateModalTest extends TestCase
         Permission::findOrCreate('receipts.send', 'web');
         $user->givePermissionTo('receipts.send');
 
+        $tenantEmail = (string) $contract->tenant()->withoutOrganizationScope()->value('email');
+
         Livewire::actingAs($user)
             ->test(CreateModal::class)
             ->dispatch('open-contract-edit', contractId: $contract->id)
             ->assertSet('generate_pdf', true)
-            ->assertSet('send_email', false)
-            ->assertSee(__('contracts.send_agreement_email'));
+            ->assertSet('send_email', true)
+            ->assertSeeHtml('<strong>'.e($tenantEmail).'</strong>');
     }
 
     public function test_edit_send_email_dispatches_contract_agreement_mail(): void
@@ -597,10 +607,10 @@ class ContractCreateModalTest extends TestCase
             ->test(CreateModal::class)
             ->dispatch('open-contract-create')
             ->assertSet('generate_pdf', true)
-            ->assertDontSee(__('contracts.send_agreement_email'))
+            ->assertDontSeeHtml('<strong>tenant@example.com</strong>')
             ->set('tenant_id', $tenant->id)
             ->assertSet('send_email', true)
-            ->assertSee(__('contracts.send_agreement_email'));
+            ->assertSeeHtml('<strong>tenant@example.com</strong>');
     }
 
     public function test_rechecking_generate_pdf_restores_send_email_when_tenant_has_email(): void
@@ -618,7 +628,7 @@ class ContractCreateModalTest extends TestCase
             ->assertSet('send_email', false)
             ->set('generate_pdf', true)
             ->assertSet('send_email', true)
-            ->assertSee(__('contracts.send_agreement_email'));
+            ->assertSeeHtml('<strong>tenant@example.com</strong>');
     }
 
     public function test_open_create_defaults_send_email_to_false(): void

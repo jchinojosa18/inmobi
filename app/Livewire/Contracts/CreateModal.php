@@ -102,12 +102,17 @@ class CreateModal extends Component
             abort(403);
         }
 
-        $contract = Contract::query()->findOrFail($contractId);
+        $contract = Contract::query()
+            ->with(['tenant:id,full_name,email', 'unit.property:id,name'])
+            ->findOrFail($contractId);
 
         $this->resetForm();
         $this->contractId = $contract->id;
         $this->unit_id = $contract->unit_id;
         $this->tenant_id = $contract->tenant_id;
+        $this->tenantName = $contract->tenant?->full_name;
+        $unitName = trim((string) ($contract->unit?->property?->name.' / '.$contract->unit?->name));
+        $this->unitLabel = $unitName !== '' ? $unitName : null;
         $this->rent_amount = (string) $contract->rent_amount;
         $this->deposit_amount = (string) $contract->deposit_amount;
         $this->due_day = (string) $contract->due_day;
@@ -117,6 +122,7 @@ class CreateModal extends Component
         $this->starts_at = optional($contract->starts_at)->format('Y-m-d') ?: now()->toDateString();
         $this->ends_at = optional($contract->ends_at)->format('Y-m-d');
         $this->meta_notes = data_get($contract->meta, 'notes');
+        $this->updatedTenantId($this->tenant_id);
         $this->open = true;
     }
 
