@@ -49,7 +49,13 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4">Sin allocations registradas.</td>
+                        <td colspan="4">
+                            @if (($receipt['credited_amount'] ?? 0) > 0)
+                                Sin cargos pendientes; el monto quedó como saldo a favor.
+                            @else
+                                Sin aplicación a cargos.
+                            @endif
+                        </td>
                     </tr>
                 @endforelse
             </tbody>
@@ -57,7 +63,10 @@
 
         <p style="margin-top: 10px;">
             <strong>Total aplicado:</strong> ${{ number_format($receipt['allocated_total'], 2) }}<br>
-            <strong>Saldo a favor generado:</strong> ${{ number_format($receipt['credited_amount'], 2) }}
+            <strong>Saldo:</strong> ${{ number_format($receipt['pending_balance'] ?? 0, 2) }}
+            @if (($receipt['credited_amount'] ?? 0) > 0)
+                <br><strong>Saldo a favor generado:</strong> ${{ number_format($receipt['credited_amount'], 2) }}
+            @endif
         </p>
     </div>
 </body>
