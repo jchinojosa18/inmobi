@@ -119,6 +119,16 @@ Saludos.';
     }
 
     /**
+     * Money placeholders in WhatsApp/email templates (thousands separators).
+     *
+     * @var list<string>
+     */
+    private const MONEY_TEMPLATE_VARIABLES = [
+        'amount_due',
+        'rent_amount',
+    ];
+
+    /**
      * @param  array<string, string|int|float|null>  $variables
      */
     public function renderTemplate(string $template, array $variables): string
@@ -127,10 +137,32 @@ Saludos.';
 
         foreach ($this->templateVariables() as $variable) {
             $value = $variables[$variable] ?? '';
+
+            if (in_array($variable, self::MONEY_TEMPLATE_VARIABLES, true)) {
+                $value = $this->formatTemplateMoney($value);
+            }
+
             $replacements['{'.$variable.'}'] = is_scalar($value) ? (string) $value : '';
         }
 
         return strtr($template, $replacements);
+    }
+
+    private function formatTemplateMoney(mixed $value): string
+    {
+        if ($value === null || $value === '') {
+            return '';
+        }
+
+        if (is_string($value) && ! is_numeric($value)) {
+            return $value;
+        }
+
+        if (! is_numeric($value)) {
+            return is_scalar($value) ? (string) $value : '';
+        }
+
+        return number_format((float) $value, 2);
     }
 
     /**

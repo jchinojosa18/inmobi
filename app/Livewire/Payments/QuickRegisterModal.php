@@ -180,7 +180,7 @@ class QuickRegisterModal extends Component
             [
                 'tenant_name' => (string) ($payment->contract?->tenant?->full_name ?? 'cliente'),
                 'unit_name' => $unitName !== '' ? $unitName : 'unidad',
-                'amount_due' => number_format((float) $payment->amount, 2, '.', ''),
+                'amount_due' => (float) $payment->amount,
                 'shared_receipt_url' => $this->shareUrl,
             ]
         );

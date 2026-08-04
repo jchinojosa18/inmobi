@@ -242,7 +242,7 @@ class RenewWizard extends Component
                 'tenant_name' => (string) ($contract->tenant?->full_name ?? 'cliente'),
                 'unit_name' => $unitName !== '' ? $unitName : 'unidad',
                 'shared_contract_url' => $shareUrl,
-                'rent_amount' => number_format((float) $contract->rent_amount, 2, '.', ''),
+                'rent_amount' => (float) $contract->rent_amount,
                 'starts_at' => DateDisplay::formatDate($contract->starts_at),
                 'ends_at' => DateDisplay::formatDate($contract->ends_at),
             ]

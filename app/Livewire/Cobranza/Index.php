@@ -137,7 +137,7 @@ class Index extends Component
                 [
                     'tenant_name' => (string) $row->tenant_name,
                     'unit_name' => $unitLabel,
-                    'amount_due' => number_format($pendingBalance, 2, '.', ''),
+                    'amount_due' => $pendingBalance,
                     'shared_receipt_url' => (string) ($shareableLink ?: ''),
                 ]
             );
