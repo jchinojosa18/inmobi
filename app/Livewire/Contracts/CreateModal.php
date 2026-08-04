@@ -124,7 +124,11 @@ class CreateModal extends Component
     {
         if (! $value) {
             $this->send_email = false;
+
+            return;
         }
+
+        $this->updatedTenantId($this->tenant_id);
     }
 
     public function updatedTenantId(?int $value): void

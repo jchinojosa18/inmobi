@@ -524,6 +524,40 @@ class ContractCreateModalTest extends TestCase
             ->assertSet('send_email', false);
     }
 
+    public function test_selecting_tenant_with_generate_pdf_shows_send_email_checkbox(): void
+    {
+        [$organization, $user, $unit, $tenant] = $this->createOpenCreateGraph();
+        Permission::findOrCreate('receipts.send', 'web');
+        $user->givePermissionTo('receipts.send');
+
+        Livewire::actingAs($user)
+            ->test(CreateModal::class)
+            ->dispatch('open-contract-create')
+            ->assertSet('generate_pdf', true)
+            ->assertDontSee(__('contracts.send_agreement_email'))
+            ->set('tenant_id', $tenant->id)
+            ->assertSet('send_email', true)
+            ->assertSee(__('contracts.send_agreement_email'));
+    }
+
+    public function test_rechecking_generate_pdf_restores_send_email_when_tenant_has_email(): void
+    {
+        [$organization, $user, $unit, $tenant] = $this->createOpenCreateGraph();
+        Permission::findOrCreate('receipts.send', 'web');
+        $user->givePermissionTo('receipts.send');
+
+        Livewire::actingAs($user)
+            ->test(CreateModal::class)
+            ->dispatch('open-contract-create')
+            ->set('tenant_id', $tenant->id)
+            ->assertSet('send_email', true)
+            ->set('generate_pdf', false)
+            ->assertSet('send_email', false)
+            ->set('generate_pdf', true)
+            ->assertSet('send_email', true)
+            ->assertSee(__('contracts.send_agreement_email'));
+    }
+
     public function test_open_create_defaults_send_email_to_false(): void
     {
         [$organization, $occupiedContract, $user] = $this->createContractGraph();

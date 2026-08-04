@@ -36,7 +36,7 @@
                 </div>
 
                 <div>
-                    <x-ui.select :label="__('common.tenant').' *'" wire:model="tenant_id" :disabled="$isEdit">
+                    <x-ui.select :label="__('common.tenant').' *'" wire:model.live="tenant_id" :disabled="$isEdit">
                         <option value="">{{ __('contracts.select_tenant') }}</option>
                         @foreach ($tenants as $tenant)
                             <option value="{{ $tenant->id }}">{{ $tenant->full_name }}</option>
