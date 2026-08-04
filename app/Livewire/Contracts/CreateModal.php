@@ -296,16 +296,18 @@ class CreateModal extends Component
             return null;
         }
 
-        try {
-            if (! $this->replaceContractAgreementDocument($contract, $generateLeaseAgreementPdfAction)) {
-                $this->addError('contract_document', __('contracts.validation.manual_contract_document_blocks_regenerate'));
+        if ($this->generate_pdf) {
+            try {
+                if (! $this->replaceContractAgreementDocument($contract, $generateLeaseAgreementPdfAction)) {
+                    $this->addError('contract_document', __('contracts.validation.manual_contract_document_blocks_regenerate'));
+
+                    return null;
+                }
+            } catch (ValidationException $e) {
+                $this->addError('landlord_name', $e->errors()['landlord_name'][0] ?? __('contracts.validation.renew_failed'));
 
                 return null;
             }
-        } catch (ValidationException $e) {
-            $this->addError('landlord_name', $e->errors()['landlord_name'][0] ?? __('contracts.validation.renew_failed'));
-
-            return null;
         }
 
         session()->flash('success', __('contracts.flash.contract_updated'));

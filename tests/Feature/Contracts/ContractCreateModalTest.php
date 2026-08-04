@@ -403,6 +403,53 @@ class ContractCreateModalTest extends TestCase
             ->count());
     }
 
+    public function test_edit_without_generate_pdf_preserves_existing_document(): void
+    {
+        Storage::fake('local');
+        config(['filesystems.documents_disk' => 'local']);
+
+        [$organization, $contract, $user] = $this->createContractGraph();
+        $this->seedLandlord($organization->id);
+
+        $path = 'documents/contract/'.$organization->id.'/existing.pdf';
+        Storage::disk('local')->put($path, 'pdf-bytes');
+
+        $existing = Document::factory()->create([
+            'organization_id' => $organization->id,
+            'documentable_type' => Contract::class,
+            'documentable_id' => $contract->id,
+            'category' => ContractDocumentCategory::Contract->value,
+            'type' => 'CONTRACT_DOCUMENT',
+            'mime' => 'application/pdf',
+            'path' => $path,
+            'tags' => ['contract', 'generated', 'lease_agreement'],
+            'meta' => [
+                'disk' => 'local',
+                'generated' => true,
+                'kind' => 'lease_agreement',
+            ],
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(CreateModal::class)
+            ->dispatch('open-contract-edit', contractId: $contract->id)
+            ->set('rent_amount', '12500')
+            ->set('generate_pdf', false)
+            ->call('save')
+            ->assertHasNoErrors()
+            ->assertSet('open', false);
+
+        $existing->refresh();
+        $this->assertNull($existing->deleted_at);
+        $this->assertSame($path, $existing->path);
+        $this->assertSame('12500.00', (string) $contract->fresh()->rent_amount);
+        $this->assertSame(1, Document::query()->withoutOrganizationScope()
+            ->where('documentable_type', Contract::class)
+            ->where('documentable_id', $contract->id)
+            ->where('category', ContractDocumentCategory::Contract->value)
+            ->count());
+    }
+
     public function test_open_create_defaults_generate_pdf_to_true(): void
     {
         [$organization, $occupiedContract, $user] = $this->createContractGraph();
