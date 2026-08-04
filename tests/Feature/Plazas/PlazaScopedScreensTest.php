@@ -33,8 +33,8 @@ class PlazaScopedScreensTest extends TestCase
             ->get(route('dashboard'));
 
         $dashboard->assertOk();
-        $dashboard->assertSeeText('Tenant Plaza A');
-        $dashboard->assertDontSeeText('Tenant Plaza B');
+        $dashboard->assertSeeText('TENANT PLAZA A');
+        $dashboard->assertDontSeeText('TENANT PLAZA B');
         $dashboard->assertSeeText('REC-PLAZA-A');
         $dashboard->assertDontSeeText('REC-PLAZA-B');
 
@@ -43,16 +43,16 @@ class PlazaScopedScreensTest extends TestCase
             ->get(route('cobranza.index', ['tab' => 'overdue']));
 
         $cobranza->assertOk();
-        $cobranza->assertSeeText('Tenant Plaza A');
-        $cobranza->assertDontSeeText('Tenant Plaza B');
+        $cobranza->assertSeeText('TENANT PLAZA A');
+        $cobranza->assertDontSeeText('TENANT PLAZA B');
 
         $contracts = $this->actingAs($data['user'])
             ->withSession([$sessionKey => $data['plazaA']->id])
             ->get(route('contracts.index', ['status' => 'all']));
 
         $contracts->assertOk();
-        $contracts->assertSeeText('Tenant Plaza A');
-        $contracts->assertDontSeeText('Tenant Plaza B');
+        $contracts->assertSeeText('TENANT PLAZA A');
+        $contracts->assertDontSeeText('TENANT PLAZA B');
 
         $expenses = $this->actingAs($data['user'])
             ->withSession([$sessionKey => $data['plazaA']->id])
@@ -87,24 +87,24 @@ class PlazaScopedScreensTest extends TestCase
             ->get(route('dashboard'));
 
         $dashboard->assertOk();
-        $dashboard->assertSeeText('Tenant Plaza A');
-        $dashboard->assertSeeText('Tenant Plaza B');
+        $dashboard->assertSeeText('TENANT PLAZA A');
+        $dashboard->assertSeeText('TENANT PLAZA B');
 
         $cobranza = $this->actingAs($data['user'])
             ->withSession([$sessionKey => null])
             ->get(route('cobranza.index', ['tab' => 'overdue']));
 
         $cobranza->assertOk();
-        $cobranza->assertSeeText('Tenant Plaza A');
-        $cobranza->assertSeeText('Tenant Plaza B');
+        $cobranza->assertSeeText('TENANT PLAZA A');
+        $cobranza->assertSeeText('TENANT PLAZA B');
 
         $contracts = $this->actingAs($data['user'])
             ->withSession([$sessionKey => null])
             ->get(route('contracts.index', ['status' => 'all']));
 
         $contracts->assertOk();
-        $contracts->assertSeeText('Tenant Plaza A');
-        $contracts->assertSeeText('Tenant Plaza B');
+        $contracts->assertSeeText('TENANT PLAZA A');
+        $contracts->assertSeeText('TENANT PLAZA B');
 
         $expenses = $this->actingAs($data['user'])
             ->withSession([$sessionKey => null])

@@ -107,8 +107,8 @@ class QuickRegisterModalTest extends TestCase
             ->test(QuickRegisterModal::class)
             ->call('open')
             ->set('q', 'Inquilino')
-            ->assertSeeHtml('Inquilino Mi Org')
-            ->assertDontSeeHtml('Inquilino Otra Org');
+            ->assertSeeHtml('INQUILINO MI ORG')
+            ->assertDontSeeHtml('INQUILINO OTRA ORG');
     }
 
     public function test_save_registers_payment_creates_allocations_and_folio(): void

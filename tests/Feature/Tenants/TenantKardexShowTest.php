@@ -89,7 +89,7 @@ class TenantKardexShowTest extends TestCase
             ->call('save')
             ->assertHasNoErrors();
 
-        $this->assertSame('Nombre Nuevo', $tenant->fresh()->full_name);
+        $this->assertSame('NOMBRE NUEVO', $tenant->fresh()->full_name);
     }
 
     public function test_index_view_button_links_to_kardex(): void

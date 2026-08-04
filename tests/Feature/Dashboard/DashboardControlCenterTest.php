@@ -183,7 +183,7 @@ class DashboardControlCenterTest extends TestCase
 
         $response->assertOk();
         $response->assertSeeText('2 ocupadas / 1 disponibles');
-        $response->assertSeeText('Inquilino Vencido');
+        $response->assertSeeText('INQUILINO VENCIDO');
         $response->assertSeeText('#'.$contractGrace->id);
         $response->assertSeeText('REC-DASH-0001');
         $response->assertSeeHtml('open-quick-payment');

@@ -60,7 +60,7 @@ class TenantIneClaveTest extends TestCase
 
         $this->assertDatabaseHas('tenants', [
             'organization_id' => $organization->id,
-            'full_name' => 'Sin Ine',
+            'full_name' => 'SIN INE',
             'ine_clave' => null,
         ]);
     }
@@ -81,7 +81,7 @@ class TenantIneClaveTest extends TestCase
 
         $this->assertDatabaseHas('tenants', [
             'organization_id' => $organization->id,
-            'full_name' => 'Con Ine',
+            'full_name' => 'CON INE',
             'ine_clave' => 'ABCD120101HDFRRN09',
         ]);
     }
@@ -141,7 +141,7 @@ class TenantIneClaveTest extends TestCase
 
         $this->assertDatabaseHas('tenants', [
             'organization_id' => $orgB->id,
-            'full_name' => 'Other Org',
+            'full_name' => 'OTHER ORG',
             'ine_clave' => 'ABCD120101HDFRRN09',
         ]);
     }

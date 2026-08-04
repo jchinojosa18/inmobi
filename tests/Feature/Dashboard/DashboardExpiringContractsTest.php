@@ -42,9 +42,9 @@ class DashboardExpiringContractsTest extends TestCase
         $response->assertOk();
         $response->assertSeeText(__('dashboard.expiring_soon_contracts'));
         $response->assertSeeText(__('dashboard.expiring_soon_top10'));
-        $response->assertSeeText('Dash Por Vencer');
-        $response->assertDontSeeText('Dash Ya Vencido');
-        $response->assertDontSeeText('Dash Lejos');
+        $response->assertSeeText('DASH POR VENCER');
+        $response->assertDontSeeText('DASH YA VENCIDO');
+        $response->assertDontSeeText('DASH LEJOS');
         $response->assertSee(route('contracts.index', ['status' => 'expiring'], false));
     }
 

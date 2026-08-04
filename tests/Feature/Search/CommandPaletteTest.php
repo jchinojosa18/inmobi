@@ -103,9 +103,9 @@ class CommandPaletteTest extends TestCase
         Livewire::actingAs($user)
             ->test(CommandPalette::class)
             ->call('open')
-            ->set('q', 'Carlos García')
-            ->assertSeeHtml('Carlos García Mi Org')
-            ->assertDontSeeHtml('Carlos García Otra Org');
+            ->set('q', 'CARLOS GARCÍA')
+            ->assertSeeHtml('CARLOS GARCÍA MI ORG')
+            ->assertDontSeeHtml('CARLOS GARCÍA OTRA ORG');
     }
 
     public function test_finds_tenants_by_email(): void
@@ -123,7 +123,7 @@ class CommandPaletteTest extends TestCase
             ->test(CommandPalette::class)
             ->call('open')
             ->set('q', 'ana.ruiz')
-            ->assertSeeHtml('Ana Ruiz');
+            ->assertSeeHtml('ANA RUIZ');
     }
 
     public function test_finds_properties_by_name_scoped_to_organization(): void
@@ -198,9 +198,9 @@ class CommandPaletteTest extends TestCase
         $component = Livewire::actingAs($user)
             ->test(CommandPalette::class)
             ->call('open')
-            ->set('q', 'Roberto Suárez');
+            ->set('q', 'ROBERTO SUÁREZ');
 
-        $component->assertSeeHtml('Roberto Suárez');
+        $component->assertSeeHtml('ROBERTO SUÁREZ');
 
         $results = $component->get('results');
         $contractResult = collect($results)->firstWhere('type', 'contract');

@@ -40,7 +40,7 @@ class ContractExpiringSoonTest extends TestCase
         $response = $this->actingAs($user)->get(route('contracts.index', ['status' => 'all']));
 
         $response->assertOk();
-        $response->assertSeeText('Inquilino Por Vencer');
+        $response->assertSeeText('INQUILINO POR VENCER');
         $response->assertSeeText(__('contracts.status_expiring_label'));
         $response->assertSeeText(DateDisplay::formatDate('2026-08-15'));
         $response->assertSeeText(__('contracts.ends_in_days', ['days' => 14]));
@@ -58,13 +58,13 @@ class ContractExpiringSoonTest extends TestCase
         $response = $this->actingAs($user)->get(route('contracts.index', ['status' => 'expiring']));
 
         $response->assertOk();
-        $response->assertSeeText('Solo Por Vencer');
+        $response->assertSeeText('SOLO POR VENCER');
         // Expired still appears in the unfiltered attention section above.
-        $response->assertSeeText('Ya Vencido');
-        $response->assertDontSeeText('Lejos');
+        $response->assertSeeText('YA VENCIDO');
+        $response->assertDontSeeText('LEJOS');
         $html = $response->getContent();
-        $this->assertSame(1, substr_count($html, 'Ya Vencido'));
-        $this->assertGreaterThanOrEqual(1, substr_count($html, 'Solo Por Vencer'));
+        $this->assertSame(1, substr_count($html, 'YA VENCIDO'));
+        $this->assertGreaterThanOrEqual(1, substr_count($html, 'SOLO POR VENCER'));
     }
 
     public function test_attention_filter_includes_expired_and_expiring(): void
@@ -79,9 +79,9 @@ class ContractExpiringSoonTest extends TestCase
         $response = $this->actingAs($user)->get(route('contracts.index', ['status' => 'attention']));
 
         $response->assertOk();
-        $response->assertSeeText('Atencion Vencido');
-        $response->assertSeeText('Atencion Por Vencer');
-        $response->assertDontSeeText('Fuera Ventana');
+        $response->assertSeeText('ATENCION VENCIDO');
+        $response->assertSeeText('ATENCION POR VENCER');
+        $response->assertDontSeeText('FUERA VENTANA');
     }
 
     public function test_attention_section_always_shows_and_ignores_main_filters(): void
@@ -99,8 +99,8 @@ class ContractExpiringSoonTest extends TestCase
 
         $response->assertOk();
         $response->assertSeeText(__('contracts.status_attention'));
-        $response->assertSeeText('Seccion Atencion');
-        $response->assertDontSeeText('Activo Lejos');
+        $response->assertSeeText('SECCION ATENCION');
+        $response->assertDontSeeText('ACTIVO LEJOS');
     }
 
     public function test_active_list_includes_attention_contracts(): void
@@ -115,10 +115,10 @@ class ContractExpiringSoonTest extends TestCase
 
         $response->assertOk();
         $response->assertSeeText(__('contracts.status_attention'));
-        $response->assertSeeText('Duplicado Atencion');
-        $response->assertSeeText('Activo Normal');
+        $response->assertSeeText('DUPLICADO ATENCION');
+        $response->assertSeeText('ACTIVO NORMAL');
         $html = $response->getContent();
-        $this->assertSame(2, substr_count($html, 'Duplicado Atencion'));
+        $this->assertSame(2, substr_count($html, 'DUPLICADO ATENCION'));
     }
 
     public function test_show_displays_expiring_banner(): void

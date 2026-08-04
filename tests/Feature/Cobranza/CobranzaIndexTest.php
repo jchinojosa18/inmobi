@@ -107,7 +107,7 @@ class CobranzaIndexTest extends TestCase
         $response = $this->actingAs($user)->get(route('cobranza.index', ['tab' => 'overdue']));
 
         $response->assertOk();
-        $response->assertSeeText('Carlos Vencido');
+        $response->assertSeeText('CARLOS VENCIDO');
         $response->assertSeeText('$750.00');
         $response->assertSeeHtml('open-quick-payment');
         $response->assertSeeText('Copiar mensaje WhatsApp');
@@ -159,8 +159,8 @@ class CobranzaIndexTest extends TestCase
         ]));
 
         $response->assertOk();
-        $response->assertSeeText('Ana Filtro');
-        $response->assertDontSeeText('Bruno Filtro');
+        $response->assertSeeText('ANA FILTRO');
+        $response->assertDontSeeText('BRUNO FILTRO');
     }
 
     private function createActiveContract(int $organizationId, int $unitId, int $tenantId, CarbonImmutable $today): Contract

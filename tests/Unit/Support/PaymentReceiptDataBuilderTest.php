@@ -54,7 +54,7 @@ class PaymentReceiptDataBuilderTest extends TestCase
             Payment::query()->withoutOrganizationScope()->findOrFail($payment->id)
         );
 
-        $this->assertSame('Ana Pérez López', $receipt['tenant_name']);
+        $this->assertSame('ANA PÉREZ LÓPEZ', $receipt['tenant_name']);
         $this->assertSame($property->fresh()->name, $receipt['property_name']);
         $this->assertSame('Depto 204', $receipt['unit_name']);
     }

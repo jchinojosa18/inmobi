@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Organization;
 use App\Models\Tenant;
+use App\Support\TextCase;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -20,7 +21,7 @@ class TenantFactory extends Factory
     {
         return [
             'organization_id' => Organization::factory(),
-            'full_name' => fake()->name(),
+            'full_name' => TextCase::upperRequired(fake()->name()),
             'email' => fake()->unique()->safeEmail(),
             'phone' => fake()->phoneNumber(),
             'ine_clave' => null,

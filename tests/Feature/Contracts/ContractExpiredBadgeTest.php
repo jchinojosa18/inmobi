@@ -85,9 +85,9 @@ class ContractExpiredBadgeTest extends TestCase
         ]));
 
         $response->assertOk();
-        $response->assertSeeText('Inquilino Vencido Badge');
+        $response->assertSeeText('INQUILINO VENCIDO BADGE');
         $response->assertSeeText(__('contracts.status_expired_label'));
-        $response->assertSeeText('Inquilino Activo Badge');
+        $response->assertSeeText('INQUILINO ACTIVO BADGE');
         $response->assertSeeText(__('common.active'));
     }
 
@@ -121,9 +121,9 @@ class ContractExpiredBadgeTest extends TestCase
         ]));
 
         $response->assertOk();
-        $response->assertSeeText('Solo Expirado Filtro');
-        $response->assertDontSeeText('Activo Sin Expirar');
-        $response->assertDontSeeText('Finalizado No Expirado');
+        $response->assertSeeText('SOLO EXPIRADO FILTRO');
+        $response->assertDontSeeText('ACTIVO SIN EXPIRAR');
+        $response->assertDontSeeText('FINALIZADO NO EXPIRADO');
     }
 
     public function test_ended_contract_does_not_show_expiration_days_subtitle(): void
@@ -144,7 +144,7 @@ class ContractExpiredBadgeTest extends TestCase
         ]));
 
         $response->assertOk();
-        $response->assertSeeText('Contrato Finalizado Subtitulo');
+        $response->assertSeeText('CONTRATO FINALIZADO SUBTITULO');
         $response->assertSeeText(DateDisplay::formatDate('2026-07-31'));
         $response->assertSeeText(__('common.finished'));
         $response->assertDontSeeText(__('contracts.ended_days_ago', ['days' => 1]));

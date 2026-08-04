@@ -58,8 +58,8 @@ class ContractsIndexTest extends TestCase
         ]));
 
         $response->assertOk();
-        $response->assertSeeText('Tenant Ended Only');
-        $response->assertDontSeeText('Tenant Active Visible');
+        $response->assertSeeText('TENANT ENDED ONLY');
+        $response->assertDontSeeText('TENANT ACTIVE VISIBLE');
     }
 
     public function test_search_by_tenant_name_returns_matching_contract(): void
@@ -87,8 +87,8 @@ class ContractsIndexTest extends TestCase
         ]));
 
         $response->assertOk();
-        $response->assertSeeText('Mariana Busqueda Contract');
-        $response->assertDontSeeText('Pedro Sin Match');
+        $response->assertSeeText('MARIANA BUSQUEDA CONTRACT');
+        $response->assertDontSeeText('PEDRO SIN MATCH');
     }
 
     private function createContractForOrganization(
