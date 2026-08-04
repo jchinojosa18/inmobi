@@ -163,7 +163,7 @@ class ContractCreateModalTest extends TestCase
             ->dispatch('open-contract-edit', contractId: $contract->id)
             ->assertSeeHtml('disabled="disabled"')
             ->assertSeeHtml('wire:model="unit_id"')
-            ->assertSeeHtml('wire:model="tenant_id"');
+            ->assertSeeHtml('wire:model.live="tenant_id"');
     }
 
     public function test_create_generates_contract_category_document(): void
