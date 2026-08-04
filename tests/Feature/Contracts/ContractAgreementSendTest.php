@@ -6,12 +6,14 @@ use App\Actions\Contracts\RenewContractAction;
 use App\Mail\ContractAgreementMail;
 use App\Models\Charge;
 use App\Models\Contract;
+use App\Models\Document;
 use App\Models\Organization;
 use App\Models\OrganizationSetting;
 use App\Models\Property;
 use App\Models\Tenant;
 use App\Models\Unit;
 use App\Support\ContractAgreementShareUrl;
+use App\Support\ContractDocumentCategory;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
@@ -108,6 +110,67 @@ class ContractAgreementSendTest extends TestCase
         );
 
         Mail::assertNothingSent();
+    }
+
+    public function test_renew_without_generate_pdf_skips_document_and_email(): void
+    {
+        Mail::fake();
+        Storage::fake('local');
+        config(['filesystems.documents_disk' => 'local']);
+
+        $source = $this->createRenewableSource(email: 'tenant@example.com');
+
+        $result = app(RenewContractAction::class)->execute(
+            source: $source,
+            input: [
+                'starts_at' => '2026-08-01',
+                'ends_at' => '2027-07-31',
+                'rent_amount' => 10000,
+                'deposit_amount' => 10000,
+                'register_difference' => false,
+                'send_email' => true,
+                'generate_pdf' => false,
+            ],
+            userId: null,
+        );
+
+        $this->assertNull($result->document);
+        $this->assertFalse(
+            Document::query()->withoutOrganizationScope()
+                ->where('documentable_type', Contract::class)
+                ->where('documentable_id', $result->newContract->id)
+                ->where('category', ContractDocumentCategory::Contract->value)
+                ->exists()
+        );
+        Mail::assertNothingSent();
+    }
+
+    public function test_renew_without_generate_pdf_does_not_require_landlord(): void
+    {
+        Storage::fake('local');
+        config(['filesystems.documents_disk' => 'local']);
+
+        $source = $this->createRenewableSource(email: 'tenant@example.com');
+        OrganizationSetting::query()
+            ->withoutOrganizationScope()
+            ->where('organization_id', $source->organization_id)
+            ->update(['landlord_name' => null]);
+
+        $result = app(RenewContractAction::class)->execute(
+            source: $source,
+            input: [
+                'starts_at' => '2026-08-01',
+                'ends_at' => '2027-07-31',
+                'rent_amount' => 10000,
+                'deposit_amount' => 10000,
+                'register_difference' => false,
+                'generate_pdf' => false,
+            ],
+            userId: null,
+        );
+
+        $this->assertNotNull($result->newContract);
+        $this->assertNull($result->document);
     }
 
     public function test_contract_agreement_share_url_generates_signed_route(): void

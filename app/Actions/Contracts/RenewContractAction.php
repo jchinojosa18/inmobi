@@ -36,6 +36,7 @@ class RenewContractAction
      *   difference_method?: string,
      *   notes?: string|null,
      *   send_email?: bool,
+     *   generate_pdf?: bool,
      * }  $input
      */
     public function execute(Contract $source, array $input, ?int $userId): RenewContractResult
@@ -45,8 +46,11 @@ class RenewContractAction
         $rentAmount = round((float) $input['rent_amount'], 2);
         $depositAmount = round((float) $input['deposit_amount'], 2);
         $registerDifference = (bool) ($input['register_difference'] ?? false);
+        $generatePdf = (bool) ($input['generate_pdf'] ?? true);
 
-        $this->assertLandlordNameConfigured((int) $source->organization_id);
+        if ($generatePdf) {
+            $this->assertLandlordNameConfigured((int) $source->organization_id);
+        }
 
         $transactionResult = DB::transaction(function () use (
             $source,
@@ -173,14 +177,17 @@ class RenewContractAction
         }, 3);
 
         $newContract = $transactionResult['newContract']->fresh();
+        $document = null;
 
-        $document = $this->generateLeaseAgreementPdfAction->execute(
-            $newContract,
-            $userId,
-        );
+        if ($generatePdf) {
+            $document = $this->generateLeaseAgreementPdfAction->execute(
+                $newContract,
+                $userId,
+            );
 
-        if ((bool) ($input['send_email'] ?? false)) {
-            $this->sendContractAgreementEmail($newContract);
+            if ((bool) ($input['send_email'] ?? false)) {
+                $this->sendContractAgreementEmail($newContract);
+            }
         }
 
         return new RenewContractResult(
