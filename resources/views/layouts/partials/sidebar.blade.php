@@ -74,11 +74,8 @@
                 @php
                     $attentionCount = (int) ($contractAttentionNav['count'] ?? 0);
                     $attentionHasExpired = (bool) ($contractAttentionNav['has_expired'] ?? false);
-                    $contractsHref = $attentionCount > 0
-                        ? route('contracts.index', ['status' => 'attention'])
-                        : route('contracts.index');
                 @endphp
-                <a href="{{ $contractsHref }}" class="{{ $lc('contracts.*') }}">
+                <a href="{{ route('contracts.index') }}" class="{{ $lc('contracts.*') }}">
                     <svg class="{{ $ic('contracts.*') }}" viewBox="0 0 24 24" fill="none"
                          stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round"

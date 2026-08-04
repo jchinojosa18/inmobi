@@ -59,8 +59,12 @@ class ContractExpiringSoonTest extends TestCase
 
         $response->assertOk();
         $response->assertSeeText('Solo Por Vencer');
-        $response->assertDontSeeText('Ya Vencido');
+        // Expired still appears in the unfiltered attention section above.
+        $response->assertSeeText('Ya Vencido');
         $response->assertDontSeeText('Lejos');
+        $html = $response->getContent();
+        $this->assertSame(1, substr_count($html, 'Ya Vencido'));
+        $this->assertGreaterThanOrEqual(1, substr_count($html, 'Solo Por Vencer'));
     }
 
     public function test_attention_filter_includes_expired_and_expiring(): void
@@ -78,6 +82,43 @@ class ContractExpiringSoonTest extends TestCase
         $response->assertSeeText('Atencion Vencido');
         $response->assertSeeText('Atencion Por Vencer');
         $response->assertDontSeeText('Fuera Ventana');
+    }
+
+    public function test_attention_section_always_shows_and_ignores_main_filters(): void
+    {
+        CarbonImmutable::setTestNow('2026-08-01 10:00:00', 'America/Tijuana');
+        [$user] = $this->createOrganizationWithUser();
+
+        $this->createContractForOrganization($user->organization_id, 'Seccion Atencion', '2026-08-20');
+        $this->createContractForOrganization($user->organization_id, 'Activo Lejos', '2026-12-01');
+
+        $response = $this->actingAs($user)->get(route('contracts.index', [
+            'status' => 'ended',
+            'q' => 'NoDeberiaFiltrarAtencion',
+        ]));
+
+        $response->assertOk();
+        $response->assertSeeText(__('contracts.status_attention'));
+        $response->assertSeeText('Seccion Atencion');
+        $response->assertDontSeeText('Activo Lejos');
+    }
+
+    public function test_active_list_includes_attention_contracts(): void
+    {
+        CarbonImmutable::setTestNow('2026-08-01 10:00:00', 'America/Tijuana');
+        [$user] = $this->createOrganizationWithUser();
+
+        $this->createContractForOrganization($user->organization_id, 'Duplicado Atencion', '2026-08-10');
+        $this->createContractForOrganization($user->organization_id, 'Activo Normal', '2026-12-01');
+
+        $response = $this->actingAs($user)->get(route('contracts.index'));
+
+        $response->assertOk();
+        $response->assertSeeText(__('contracts.status_attention'));
+        $response->assertSeeText('Duplicado Atencion');
+        $response->assertSeeText('Activo Normal');
+        $html = $response->getContent();
+        $this->assertSame(2, substr_count($html, 'Duplicado Atencion'));
     }
 
     public function test_show_displays_expiring_banner(): void

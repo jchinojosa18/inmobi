@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Domain\Shared\OrganizationScopedModel;
 use App\Models\Concerns\Auditable;
+use App\Support\TextCase;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -25,6 +27,16 @@ class Tenant extends OrganizationScopedModel
         'status',
         'notes',
     ];
+
+    protected function fullName(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value): ?string => $value === null || $value === ''
+                ? $value
+                : mb_strtoupper($value, 'UTF-8'),
+            set: fn (?string $value): ?string => TextCase::upper($value),
+        );
+    }
 
     /**
      * @return BelongsTo<Organization, $this>

@@ -30,8 +30,8 @@ class DashboardControlCenterTest extends TestCase
         $response->assertOk();
         $response->assertSeeText('Dashboard operativo');
         $response->assertSeeText('Centro de control operativo');
-        $response->assertSeeText('Vencidos (top 10)');
-        $response->assertSeeText('En gracia (top 10)');
+        $response->assertSeeText('Saldos por vencer (top 10)');
+        $response->assertSeeText('Saldos en gracia (top 10)');
         $response->assertSeeText('Pagos recientes (top 10)');
     }
 

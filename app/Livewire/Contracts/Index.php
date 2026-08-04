@@ -137,9 +137,11 @@ class Index extends Component
         }
 
         $contracts = $this->buildContractsQuery($overdueQuery)->paginate(12);
+        $attentionContracts = $this->buildAttentionContractsQuery($overdueQuery)->get();
 
         return view('livewire.contracts.index', [
             'contracts' => $contracts,
+            'attentionContracts' => $attentionContracts,
             'properties' => $properties,
             'units' => $units,
             'canManageContracts' => auth()->user()?->can('contracts.manage') ?? false,
@@ -152,12 +154,49 @@ class Index extends Component
     private function buildContractsQuery(ContractOverdueQuery $overdueQuery): Builder
     {
         $today = now('America/Tijuana')->toDateString();
-        $balanceSubquery = $overdueQuery->balanceByContractSubquery();
-        $oldestPendingRentSubquery = $this->oldestPendingRentSubquery();
-
         $overdueStatusSql = $overdueQuery->statusSql($today);
         $overdueDaysSql = $overdueQuery->daysSql($today);
         $urgencyRankSql = $this->urgencyRankSql($today);
+
+        $query = $this->baseContractsQuery($overdueQuery, $overdueStatusSql, $overdueDaysSql, $urgencyRankSql);
+
+        $this->applyFilters($query, $overdueStatusSql);
+        $this->applySorting($query, $urgencyRankSql, $overdueDaysSql);
+
+        return $query;
+    }
+
+    private function buildAttentionContractsQuery(ContractOverdueQuery $overdueQuery): Builder
+    {
+        $today = CarbonImmutable::now('America/Tijuana')->startOfDay();
+        $horizon = $today->addDays(Contract::EXPIRING_SOON_DAYS)->toDateString();
+        $todayDate = $today->toDateString();
+
+        $overdueStatusSql = $overdueQuery->statusSql($todayDate);
+        $overdueDaysSql = $overdueQuery->daysSql($todayDate);
+        $urgencyRankSql = $this->urgencyRankSql($todayDate);
+
+        $query = $this->baseContractsQuery($overdueQuery, $overdueStatusSql, $overdueDaysSql, $urgencyRankSql);
+
+        $query
+            ->where('contracts.status', Contract::STATUS_ACTIVE)
+            ->whereNotNull('contracts.ends_at')
+            ->whereDate('contracts.ends_at', '<=', $horizon)
+            ->orderByRaw('CASE WHEN contracts.ends_at < ? THEN 0 ELSE 1 END', [$todayDate])
+            ->orderBy('contracts.ends_at', 'asc')
+            ->orderBy('contracts.id', 'desc');
+
+        return $query;
+    }
+
+    private function baseContractsQuery(
+        ContractOverdueQuery $overdueQuery,
+        string $overdueStatusSql,
+        string $overdueDaysSql,
+        string $urgencyRankSql,
+    ): Builder {
+        $balanceSubquery = $overdueQuery->balanceByContractSubquery();
+        $oldestPendingRentSubquery = $this->oldestPendingRentSubquery();
 
         $query = Contract::query()
             ->select('contracts.*')
@@ -192,9 +231,6 @@ class Index extends Component
             ]);
 
         TenantContext::applyCurrentPlazaFilter($query, 'properties.plaza_id');
-
-        $this->applyFilters($query, $overdueStatusSql);
-        $this->applySorting($query, $urgencyRankSql, $overdueDaysSql);
 
         return $query;
     }

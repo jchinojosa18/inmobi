@@ -67,7 +67,8 @@ class ContractAttentionNavTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('contract-attention-badge', false);
-        $response->assertSee(route('contracts.index', ['status' => 'attention'], false));
+        $response->assertSee(route('contracts.index'), false);
+        $response->assertDontSee(route('contracts.index', ['status' => 'attention'], false));
         $response->assertSee('bg-rose-600', false);
     }
 
@@ -85,7 +86,8 @@ class ContractAttentionNavTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('contract-attention-badge', false);
-        $response->assertSee(route('contracts.index', ['status' => 'attention'], false));
+        $response->assertSee(route('contracts.index'), false);
+        $response->assertDontSee(route('contracts.index', ['status' => 'attention'], false));
         $response->assertSee('bg-amber-500', false);
         $response->assertDontSee('bg-rose-600', false);
     }
@@ -104,7 +106,7 @@ class ContractAttentionNavTest extends TestCase
 
         $response->assertOk();
         $response->assertDontSee('contract-attention-badge', false);
-        $response->assertSee(route('contracts.index', false), false);
+        $response->assertSee(route('contracts.index'), false);
         $response->assertDontSee(route('contracts.index', ['status' => 'attention'], false));
     }
 

@@ -3,6 +3,7 @@
 namespace App\Livewire\Tenants;
 
 use App\Models\Tenant;
+use App\Support\TextCase;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
@@ -96,6 +97,7 @@ class Index extends Component
             abort(403);
         }
 
+        $this->full_name = TextCase::upperRequired($this->full_name);
         $this->ine_clave = $this->normalizeIneClave($this->ine_clave);
 
         $validated = $this->validate($this->rules(), $this->messages());
