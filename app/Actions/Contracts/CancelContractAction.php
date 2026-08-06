@@ -114,9 +114,7 @@ class CancelContractAction
             ->get();
 
         foreach ($charges as $charge) {
-            $month = is_string($charge->period) && $charge->period !== ''
-                ? $charge->period
-                : null;
+            $month = MonthCloseGuard::chargeMonth($charge);
             if ($month !== null && MonthCloseGuard::isMonthClosed((int) $contract->organization_id, $month)) {
                 $blockers[] = [
                     'code' => 'month_closed',

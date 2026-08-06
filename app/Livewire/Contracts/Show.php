@@ -178,8 +178,10 @@ class Show extends Component
                 userId: auth()->id(),
             );
         } catch (ValidationException $exception) {
-            $message = $exception->errors()['cancel'][0]
-                ?? $exception->errors()['reason'][0]
+            $errors = $exception->errors();
+            $message = $errors['cancel'][0]
+                ?? $errors['reason'][0]
+                ?? $errors['month_close'][0]
                 ?? __('contracts.validation.cancel_blocked');
             $this->addError('cancellation_reason', $message);
             $this->contract->refresh();

@@ -142,27 +142,7 @@ class CancelContractActionTest extends TestCase
             ->where('type', Charge::TYPE_RENT)
             ->firstOrFail();
 
-        $user = User::factory()->create([
-            'organization_id' => $contract->organization_id,
-        ]);
-
-        MonthClose::query()->withoutOrganizationScope()->create([
-            'organization_id' => $contract->organization_id,
-            'month' => $rent->period,
-            'closed_at' => now(),
-            'closed_by_user_id' => $user->id,
-            'snapshot' => [
-                'ingresos_operativos' => 0,
-                'egresos' => 0,
-                'neto' => 0,
-                'cartera' => 0,
-                'conteos' => [
-                    'contratos_activos' => 0,
-                    'pagos' => 0,
-                    'egresos' => 0,
-                ],
-            ],
-        ]);
+        $this->closeMonth($contract->organization_id, (string) $rent->period);
 
         $eligibility = app(CancelContractAction::class)->evaluate($contract);
         $this->assertFalse($eligibility->allowed);
@@ -170,6 +150,30 @@ class CancelContractActionTest extends TestCase
 
         $this->expectException(ValidationException::class);
         app(CancelContractAction::class)->execute($contract, 'motivo', null);
+    }
+
+    public function test_blocks_when_penalty_charge_date_month_is_closed(): void
+    {
+        $contract = $this->makeActiveContract();
+        TenantContext::setOrganizationId($contract->organization_id);
+
+        $penaltyMonth = '2026-07';
+
+        Charge::factory()->create([
+            'organization_id' => $contract->organization_id,
+            'contract_id' => $contract->id,
+            'unit_id' => $contract->unit_id,
+            'type' => Charge::TYPE_PENALTY,
+            'period' => null,
+            'charge_date' => '2026-07-15',
+            'amount' => 100,
+        ]);
+
+        $this->closeMonth($contract->organization_id, $penaltyMonth);
+
+        $eligibility = app(CancelContractAction::class)->evaluate($contract);
+        $this->assertFalse($eligibility->allowed);
+        $this->assertTrue(collect($eligibility->blockers)->contains(fn ($b) => $b['code'] === 'month_closed'));
     }
 
     public function test_blocks_when_renewed_to_another_contract(): void
@@ -230,6 +234,31 @@ class CancelContractActionTest extends TestCase
         $this->assertFalse($eligibility->allowed);
         $codes = collect($eligibility->blockers)->pluck('code');
         $this->assertTrue($codes->contains('has_payments') || $codes->contains('has_allocations'));
+    }
+
+    private function closeMonth(int $organizationId, string $month): void
+    {
+        $user = User::factory()->create([
+            'organization_id' => $organizationId,
+        ]);
+
+        MonthClose::query()->withoutOrganizationScope()->create([
+            'organization_id' => $organizationId,
+            'month' => $month,
+            'closed_at' => now(),
+            'closed_by_user_id' => $user->id,
+            'snapshot' => [
+                'ingresos_operativos' => 0,
+                'egresos' => 0,
+                'neto' => 0,
+                'cartera' => 0,
+                'conteos' => [
+                    'contratos_activos' => 0,
+                    'pagos' => 0,
+                    'egresos' => 0,
+                ],
+            ],
+        ]);
     }
 
     private function makeActiveContract(

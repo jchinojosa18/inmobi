@@ -122,6 +122,11 @@ class MonthCloseGuard
             ->exists();
     }
 
+    public static function chargeMonth(Charge $charge): ?string
+    {
+        return self::monthFromChargeValues($charge->period, $charge->charge_date);
+    }
+
     private static function assertMonthsOpen(int $organizationId, array $months, string $message): void
     {
         if ($organizationId <= 0) {
