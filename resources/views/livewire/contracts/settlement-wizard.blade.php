@@ -38,6 +38,26 @@
                 <p>{{ __('contracts.deposit_refunded') }}: <strong>${{ number_format($refundedDeposit, 2) }}</strong></p>
                 <p>{{ __('contracts.available') }}: <strong>${{ number_format($availableDeposit, 2) }}</strong></p>
                 <p>{{ __('contracts.current_outstanding') }}: <strong>${{ number_format($currentOutstanding, 2) }}</strong></p>
+                @if (! $isEnded)
+                    <p class="{{ $estimatedRefund > 0 ? 'text-emerald-800' : '' }}">
+                        {{ __('contracts.deposit_surplus_to_refund') }}:
+                        <strong>${{ number_format($estimatedRefund, 2) }}</strong>
+                    </p>
+                @else
+                    @if ($refundedDeposit > 0)
+                        <p class="text-emerald-800">
+                            {{ __('contracts.deposit_surplus_refunded') }}:
+                            <strong>${{ number_format($refundedDeposit, 2) }}</strong>
+                        </p>
+                        @if ($refundExpenseUrl)
+                            <p class="mt-1">
+                                <a href="{{ $refundExpenseUrl }}" class="font-medium text-sky-700 underline">
+                                    {{ __('contracts.view_deposit_refund_expense') }}
+                                </a>
+                            </p>
+                        @endif
+                    @endif
+                @endif
             </div>
 
             <p class="mt-4 text-sm text-slate-600">

@@ -74,7 +74,25 @@
             @forelse ($expenses as $expense)
                 <tr wire:key="expense-row-{{ $expense->id }}" class="transition hover:bg-slate-50/80">
                     <td class="px-4 py-3"><x-ui.display-date :value="$expense->spent_at" /></td>
-                    <td class="px-4 py-3 font-medium text-slate-900">{{ $expense->expenseCategory?->name ?? '—' }}</td>
+                    <td class="px-4 py-3 font-medium text-slate-900">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span>{{ $expense->expenseCategory?->name ?? '—' }}</span>
+                            @php
+                                $isDepositRefund = ($expense->expenseCategory?->name === 'REEMBOLSO DEPÓSITO')
+                                    || data_get($expense->meta, 'reason') === 'contract_settlement';
+                            @endphp
+                            @if ($isDepositRefund)
+                                <span class="rounded bg-emerald-50 px-1.5 py-0.5 text-xs font-medium text-emerald-800">
+                                    {{ __('finance.expenses.deposit_refund_badge') }}
+                                </span>
+                            @endif
+                        </div>
+                        @if ($isDepositRefund && $expense->contract_id)
+                            <a href="{{ route('contracts.show', $expense->contract_id) }}" class="mt-1 inline-block text-xs font-medium text-sky-700 underline">
+                                {{ __('finance.expenses.contract_link', ['id' => $expense->contract_id]) }}
+                            </a>
+                        @endif
+                    </td>
                     <td class="px-4 py-3 text-slate-700">
                         @if ($expense->unit)
                             {{ $expense->unit->property?->name }} / {{ $expense->unit->name }}{{ $expense->unit->code ? ' ('.$expense->unit->code.')' : '' }}

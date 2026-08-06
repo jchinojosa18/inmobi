@@ -38,6 +38,8 @@ class Index extends Component
 
     public string $assignmentFilter = self::ASSIGNMENT_ALL;
 
+    public string $contractFilter = '';
+
     /**
      * @var array<string, array<string, string>>
      */
@@ -47,6 +49,7 @@ class Index extends Component
         'unitFilter' => ['except' => ''],
         'categoryFilter' => ['except' => ''],
         'assignmentFilter' => ['except' => self::ASSIGNMENT_ALL],
+        'contractFilter' => ['except' => ''],
     ];
 
     public function mount(): void
@@ -81,6 +84,11 @@ class Index extends Component
         $this->resetPage();
     }
 
+    public function updatingContractFilter(): void
+    {
+        $this->resetPage();
+    }
+
     public function clearFilters(): void
     {
         $this->dateFromFilter = null;
@@ -88,6 +96,7 @@ class Index extends Component
         $this->unitFilter = '';
         $this->categoryFilter = '';
         $this->assignmentFilter = self::ASSIGNMENT_ALL;
+        $this->contractFilter = '';
         $this->resetPage();
     }
 
@@ -97,7 +106,8 @@ class Index extends Component
             || filled($this->dateToFilter)
             || $this->unitFilter !== ''
             || $this->categoryFilter !== ''
-            || $this->assignmentFilter !== self::ASSIGNMENT_ALL;
+            || $this->assignmentFilter !== self::ASSIGNMENT_ALL
+            || $this->contractFilter !== '';
     }
 
     public function render(): View
@@ -119,7 +129,8 @@ class Index extends Component
             ->when($currentPlazaId === null, fn (Builder $query) => $this->applyAssignmentScope($query))
             ->when($this->dateFromFilter, fn ($query) => $query->whereDate('spent_at', '>=', $this->dateFromFilter))
             ->when($this->dateToFilter, fn ($query) => $query->whereDate('spent_at', '<=', $this->dateToFilter))
-            ->when($this->unitFilter !== '', fn ($query) => $query->where('unit_id', (int) $this->unitFilter));
+            ->when($this->unitFilter !== '', fn ($query) => $query->where('unit_id', (int) $this->unitFilter))
+            ->when($this->contractFilter !== '', fn ($query) => $query->where('contract_id', (int) $this->contractFilter));
 
         $categoryIdsInScope = (clone $scopedExpensesQuery)
             ->select('expense_category_id')

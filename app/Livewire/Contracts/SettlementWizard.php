@@ -4,7 +4,9 @@ namespace App\Livewire\Contracts;
 
 use App\Actions\Contracts\ProcessContractSettlementAction;
 use App\Models\Contract;
+use App\Models\CreditBalance;
 use App\Support\DepositBalanceService;
+use App\Support\LedgerOutstandingCalculator;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\ValidationException;
@@ -162,8 +164,10 @@ class SettlementWizard extends Component
         $this->dispatch('settlement-processed');
     }
 
-    public function render(DepositBalanceService $depositBalanceService): View
-    {
+    public function render(
+        DepositBalanceService $depositBalanceService,
+        LedgerOutstandingCalculator $ledgerOutstandingCalculator,
+    ): View {
         $contract = Contract::query()
             ->with(['tenant:id,full_name', 'unit:id,name'])
             ->findOrFail($this->contract->id);
@@ -173,14 +177,49 @@ class SettlementWizard extends Component
             Contract::STATUS_CANCELLED,
         ], true);
 
+        $conceptsTotal = round(collect($this->concepts)
+            ->sum(function (array $row): float {
+                $description = trim((string) ($row['description'] ?? ''));
+                $amount = (float) ($row['amount'] ?? 0);
+
+                return ($description !== '' && $amount > 0) ? $amount : 0.0;
+            }), 2);
+
+        $availableDeposit = $depositBalanceService->availableDepositAmount($contract);
+        $currentOutstanding = $depositBalanceService->outstandingBalanceExcludingDepositHold($contract);
+
+        // outstandingBalance already nets live credit. Use gross pending so leftover
+        // credit (credit > pending) is included once, matching settlement order:
+        // apply credit → MOVEOUT → deposit apply → refund leftover credit + deposit surplus.
+        $pendingBeforeCredit = $ledgerOutstandingCalculator->clampedPendingForContract(
+            organizationId: (int) $contract->organization_id,
+            contractId: (int) $contract->id,
+        );
+        $creditBalance = CreditBalance::query()
+            ->where('organization_id', $contract->organization_id)
+            ->where('contract_id', $contract->id)
+            ->first();
+        $creditBalanceAmount = round(max((float) ($creditBalance?->balance ?? 0), 0), 2);
+        $remainingCredit = round(max(0, $creditBalanceAmount - $pendingBeforeCredit), 2);
+        $projectedOutstanding = round($currentOutstanding + $conceptsTotal, 2);
+        $depositSurplus = round(max(0, $availableDeposit - $projectedOutstanding), 2);
+        $estimatedRefund = round($depositSurplus + $remainingCredit, 2);
+
+        $refundedDeposit = $depositBalanceService->refundedDepositAmount($contract);
+        $refundExpenseUrl = $refundedDeposit > 0
+            ? route('expenses.index', ['contractFilter' => $contract->id])
+            : null;
+
         return view('livewire.contracts.settlement-wizard', [
             'contract' => $contract,
             'isEnded' => $this->isEnded,
-            'availableDeposit' => $depositBalanceService->availableDepositAmount($contract),
+            'availableDeposit' => $availableDeposit,
             'paidDeposit' => $depositBalanceService->paidDepositAmount($contract),
             'appliedDeposit' => $depositBalanceService->appliedDepositAmount($contract),
-            'refundedDeposit' => $depositBalanceService->refundedDepositAmount($contract),
-            'currentOutstanding' => $depositBalanceService->outstandingBalanceExcludingDepositHold($contract),
+            'refundedDeposit' => $refundedDeposit,
+            'currentOutstanding' => $currentOutstanding,
+            'estimatedRefund' => $estimatedRefund,
+            'refundExpenseUrl' => $refundExpenseUrl,
         ]);
     }
 }

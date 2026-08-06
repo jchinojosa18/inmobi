@@ -22,6 +22,8 @@ return [
         'clear_filters' => 'Limpiar filtros',
         'empty' => 'No hay egresos en los filtros seleccionados.',
         'audit_summary' => 'Egreso registrado $:amount - :category',
+        'deposit_refund_badge' => 'Devolución depósito',
+        'contract_link' => 'Contrato #:id',
     ],
     'cash_flow' => [
         'title' => 'Flujo por rango',

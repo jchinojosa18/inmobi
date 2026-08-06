@@ -22,6 +22,8 @@ return [
         'clear_filters' => 'Clear filters',
         'empty' => 'No expenses match the selected filters.',
         'audit_summary' => 'Expense recorded $:amount - :category',
+        'deposit_refund_badge' => 'Deposit refund',
+        'contract_link' => 'Contract #:id',
     ],
     'cash_flow' => [
         'title' => 'Cash flow by range',
