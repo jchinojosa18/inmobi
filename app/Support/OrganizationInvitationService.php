@@ -16,6 +16,11 @@ use Spatie\Permission\Models\Role;
 class OrganizationInvitationService
 {
     /**
+     * @var list<string>
+     */
+    public const ALLOWED_ROLES = ['Admin', 'Capturista', 'Lectura'];
+
+    /**
      * @return array{invitation: OrganizationInvitation, token: string}
      */
     public function createInvitation(
@@ -26,7 +31,7 @@ class OrganizationInvitationService
         ?int $invitedByUserId
     ): array {
         $normalizedEmail = strtolower(trim($email));
-        $role = trim($role);
+        $role = $this->assertAllowedRole($role);
 
         Role::findOrCreate($role, 'web');
 
@@ -112,6 +117,7 @@ class OrganizationInvitationService
         $tokenHash = hash('sha256', $plainToken);
 
         return OrganizationInvitation::query()
+            ->withoutOrganizationScope()
             ->where('token_hash', $tokenHash)
             ->whereNull('accepted_at')
             ->whereNull('revoked_at')
@@ -137,7 +143,7 @@ class OrganizationInvitationService
 
         $targetOrganizationId = (int) $invitation->organization_id;
         $currentOrganizationId = is_numeric($user->organization_id) ? (int) $user->organization_id : null;
-        $targetRole = trim((string) $invitation->role);
+        $targetRole = $this->assertAllowedRole((string) $invitation->role);
         $previousRole = '';
 
         Role::findOrCreate($targetRole, 'web');
@@ -220,5 +226,18 @@ class OrganizationInvitationService
                 actorUserId: $user->id,
             );
         }
+    }
+
+    private function assertAllowedRole(string $role): string
+    {
+        $normalized = trim($role);
+
+        if (! in_array($normalized, self::ALLOWED_ROLES, true)) {
+            throw ValidationException::withMessages([
+                'role' => __('settings.validation.role_invalid'),
+            ]);
+        }
+
+        return $normalized;
     }
 }

@@ -20,14 +20,16 @@
                 >
                     {{ __('finance.payments.view_pdf') }}
                 </x-ui.file-viewer-trigger>
-                <x-ui.button
-                    :href="$whatsAppUrl"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="!border-0 !bg-emerald-600 !text-white hover:!bg-emerald-500"
-                >
-                    {{ __('finance.payments.open_whatsapp') }}
-                </x-ui.button>
+                @if ($canSendReceipts && $whatsAppUrl)
+                    <x-ui.button
+                        :href="$whatsAppUrl"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="!border-0 !bg-emerald-600 !text-white hover:!bg-emerald-500"
+                    >
+                        {{ __('finance.payments.open_whatsapp') }}
+                    </x-ui.button>
+                @endif
             @endif
         </x-slot:actions>
     </x-ui.page-header>
@@ -75,13 +77,12 @@
         </x-slot:body>
     </x-ui.table>
 
-    @if ($payment->receipt_folio !== null)
+    @if ($payment->receipt_folio !== null && $canSendReceipts)
     <x-ui.card>
         <h2 class="text-lg font-semibold text-slate-900">{{ __('finance.payments.share_receipt') }}</h2>
         <p class="mt-1 text-sm text-slate-600">{{ __('finance.payments.share_mvp') }}</p>
 
         <div class="mt-4 grid gap-3 md:grid-cols-2">
-            @can('receipts.send')
             <div>
                 <x-ui.input
                     id="payment-email-recipient"
@@ -103,7 +104,7 @@
                 </x-ui.button>
                 <p class="mt-2 text-xs text-slate-500">{{ __('finance.payments.mailpit_hint') }}</p>
             </div>
-            @endcan
+            @if ($shareUrl)
             <div>
                 <p class="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">{{ __('finance.payments.shareable_link') }}</p>
                 <textarea
@@ -115,6 +116,7 @@
                     x-init="$refs.share.value = @js($shareUrl)"
                 ></textarea>
             </div>
+            @endif
         </div>
     </x-ui.card>
     @endif

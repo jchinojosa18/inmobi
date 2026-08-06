@@ -11,7 +11,7 @@ final class ContractAgreementShareUrl
     {
         $relative = URL::temporarySignedRoute(
             'contracts.agreement.share',
-            $expiresAt ?? now()->addDays(7),
+            $expiresAt ?? now()->addHours(SignedShareUrl::TTL_HOURS),
             ['contractId' => $contractId],
             absolute: false,
         );

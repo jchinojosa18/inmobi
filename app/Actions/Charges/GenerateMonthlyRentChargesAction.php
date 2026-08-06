@@ -48,8 +48,14 @@ class GenerateMonthlyRentChargesAction
         }
 
         $contractsQuery->orderBy('id')
-            ->chunkById(200, function ($contracts) use (&$created, &$skipped, $periodStart): void {
+            ->chunkById(200, function ($contracts) use (&$created, &$skipped, $periodStart, $month): void {
                 foreach ($contracts as $contract) {
+                    if (MonthCloseGuard::isMonthClosed((int) $contract->organization_id, $month)) {
+                        $skipped++;
+
+                        continue;
+                    }
+
                     $charge = $this->createRentChargeForContractPeriod($contract, $periodStart);
 
                     if ($charge->wasRecentlyCreated) {
@@ -210,26 +216,53 @@ class GenerateMonthlyRentChargesAction
         $charge = Charge::query()->withoutOrganizationScope()->where($attributes)->first();
 
         if ($charge === null) {
-            try {
-                $charge = Charge::query()->withoutOrganizationScope()->create($attributes + [
-                    'unit_id' => $contract->unit_id,
-                    'charge_date' => $periodStart->toDateString(),
-                    'due_date' => $dueDate->toDateString(),
-                    'grace_until' => $graceUntil->toDateString(),
-                    'amount' => $contract->rent_amount,
-                    'meta' => [],
-                ]);
-            } catch (QueryException $exception) {
-                if (! $this->isDuplicateRentViolation($exception)) {
-                    throw $exception;
-                }
+            $trashed = Charge::query()
+                ->withoutOrganizationScope()
+                ->onlyTrashed()
+                ->where($attributes)
+                ->lockForUpdate()
+                ->first();
 
-                // Another process won the race and inserted the same RENT
-                // charge between our lookup and our insert; re-fetch it.
-                $charge = Charge::query()->withoutOrganizationScope()->where($attributes)->first();
+            if ($trashed !== null) {
+                // Soft-delete + unique (contract_id, rent_period_key) would block recreate.
+                $trashed->restore();
+                $trashed->unit_id = $contract->unit_id;
+                $trashed->charge_date = $periodStart->toDateString();
+                $trashed->due_date = $dueDate->toDateString();
+                $trashed->grace_until = $graceUntil->toDateString();
+                $trashed->amount = $contract->rent_amount;
+                $trashed->meta = [];
+                $trashed->save();
+                $charge = $trashed;
+            } else {
+                try {
+                    $charge = Charge::query()->withoutOrganizationScope()->create($attributes + [
+                        'unit_id' => $contract->unit_id,
+                        'charge_date' => $periodStart->toDateString(),
+                        'due_date' => $dueDate->toDateString(),
+                        'grace_until' => $graceUntil->toDateString(),
+                        'amount' => $contract->rent_amount,
+                        'meta' => [],
+                    ]);
+                } catch (QueryException $exception) {
+                    if (! $this->isDuplicateRentViolation($exception)) {
+                        throw $exception;
+                    }
 
-                if ($charge === null) {
-                    throw $exception;
+                    // Another process won the race (live or restore) between lookup and insert.
+                    $charge = Charge::query()
+                        ->withoutOrganizationScope()
+                        ->withTrashed()
+                        ->where($attributes)
+                        ->first();
+
+                    if ($charge === null) {
+                        throw $exception;
+                    }
+
+                    if ($charge->trashed()) {
+                        $charge->restore();
+                    }
                 }
             }
         }
@@ -248,8 +281,7 @@ class GenerateMonthlyRentChargesAction
         $message = strtolower($exception->getMessage());
 
         return str_contains($message, 'charges_contract_rent_period_key_unique')
-            || str_contains($message, 'rent_period_key')
-            || str_contains($message, 'unique');
+            || (str_contains($message, 'rent_period_key') && str_contains($message, 'unique'));
     }
 
     private function applyCreditBalance(Contract $contract): void

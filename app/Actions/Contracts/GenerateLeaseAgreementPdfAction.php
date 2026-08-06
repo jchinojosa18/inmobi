@@ -83,26 +83,24 @@ class GenerateLeaseAgreementPdfAction
 
         Storage::disk($disk)->put($path, $pdf->output());
 
-        return Document::query()
-            ->withoutOrganizationScope()
-            ->create([
-                'organization_id' => (int) $contract->organization_id,
-                'documentable_type' => Contract::class,
-                'documentable_id' => $contract->id,
-                'path' => $path,
-                'mime' => 'application/pdf',
-                'size' => Storage::disk($disk)->size($path),
-                'type' => 'CONTRACT_DOCUMENT',
-                'category' => ContractDocumentCategory::Contract,
-                'tags' => ['contract', 'generated', 'lease_agreement'],
-                'meta' => [
-                    'disk' => $disk,
-                    'generated' => true,
-                    'kind' => 'lease_agreement',
-                    'generated_at' => now('America/Tijuana')->toIso8601String(),
-                    'generated_by_user_id' => $userId,
-                ],
-            ]);
+        return Document::storeNew([
+            'organization_id' => (int) $contract->organization_id,
+            'documentable_type' => Contract::class,
+            'documentable_id' => $contract->id,
+            'path' => $path,
+            'mime' => 'application/pdf',
+            'size' => Storage::disk($disk)->size($path),
+            'type' => 'CONTRACT_DOCUMENT',
+            'category' => ContractDocumentCategory::Contract,
+            'tags' => ['contract', 'generated', 'lease_agreement'],
+            'meta' => [
+                'disk' => $disk,
+                'generated' => true,
+                'kind' => 'lease_agreement',
+                'generated_at' => now('America/Tijuana')->toIso8601String(),
+                'generated_by_user_id' => $userId,
+            ],
+        ]);
     }
 
     private function termDescription(CarbonImmutable $startsAt, CarbonImmutable $endsAt): string

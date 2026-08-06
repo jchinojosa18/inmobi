@@ -2,10 +2,11 @@
 
 namespace Database\Seeders;
 
+use App\Actions\Expenses\SeedDefaultExpenseCategoriesAction;
 use App\Models\Organization;
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Role;
 
 class DatabaseSeeder extends Seeder
 {
@@ -14,11 +15,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
         $defaultOrganization = Organization::firstOrCreate([
             'name' => 'Default',
         ]);
+
+        // Organization::created already ensures plaza "Principal".
+        $defaultOrganization->ensureDefaultPlaza();
 
         $firstUser = User::firstOrCreate([
             'email' => 'test@example.com',
@@ -33,8 +35,21 @@ class DatabaseSeeder extends Seeder
             $firstUser->save();
         }
 
+        if ($defaultOrganization->owner_user_id === null) {
+            $defaultOrganization->forceFill([
+                'owner_user_id' => $firstUser->id,
+            ])->save();
+        }
+
         $this->call([
             SyncRolesAndPermissionsSeeder::class,
         ]);
+
+        Role::findOrCreate('Admin', 'web');
+        if (! $firstUser->hasRole('Admin')) {
+            $firstUser->assignRole('Admin');
+        }
+
+        app(SeedDefaultExpenseCategoriesAction::class)->execute((int) $defaultOrganization->id);
     }
 }

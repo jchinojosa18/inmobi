@@ -8,4 +8,11 @@ export default defineConfig({
             refresh: true,
         }),
     ],
+    server: {
+        watch: {
+            // Nested git worktrees (and their .env symlinks) can EINVAL the
+            // Docker-mounted FS watcher when the worktree is removed mid-run.
+            ignored: ['**/.worktrees/**'],
+        },
+    },
 });

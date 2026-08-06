@@ -50,6 +50,11 @@ class Contract extends OrganizationScopedModel
             $contract->active_lock = $contract->status === self::STATUS_ACTIVE ? 1 : null;
         });
 
+        // Intentional model side effects (see docs/AI_ONBOARDING.md §4 / scheduler notes):
+        // active contracts must have current-month RENT immediately on create/activate, and
+        // open-month RENT due/grace dates stay aligned when due_day/grace_days change.
+        // Callers that need to skip this (imports/tests) should create with status != active
+        // or forceDelete/adjust charges explicitly afterward.
         static::created(function (self $contract): void {
             if ($contract->status !== self::STATUS_ACTIVE) {
                 return;

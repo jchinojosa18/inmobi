@@ -191,4 +191,35 @@ class PaymentShowEmailTest extends TestCase
 
         Mail::assertNothingSent();
     }
+
+    public function test_lectura_does_not_see_share_link_or_whatsapp(): void
+    {
+        $organization = Organization::factory()->create();
+        $viewer = User::factory()->create(['organization_id' => $organization->id]);
+        $viewer->syncRoles(['Lectura']);
+
+        $tenant = Tenant::factory()->create([
+            'organization_id' => $organization->id,
+            'email' => 'tenant@example.com',
+            'phone' => '526641112233',
+        ]);
+
+        $contract = Contract::factory()->create([
+            'organization_id' => $organization->id,
+            'tenant_id' => $tenant->id,
+        ]);
+
+        $payment = Payment::factory()->create([
+            'organization_id' => $organization->id,
+            'contract_id' => $contract->id,
+            'receipt_folio' => 'R-LECTURA-2',
+        ]);
+
+        $this->actingAs($viewer)
+            ->get(route('payments.show', $payment))
+            ->assertOk()
+            ->assertDontSee(__('finance.payments.shareable_link'))
+            ->assertDontSee(__('finance.payments.open_whatsapp'))
+            ->assertDontSee(__('finance.payments.share_receipt'));
+    }
 }

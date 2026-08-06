@@ -254,6 +254,110 @@ class ProcessContractSettlementActionTest extends TestCase
         );
     }
 
+    public function test_leftover_credit_is_refunded_with_deposit_at_settlement(): void
+    {
+        [$contract] = $this->createContractWithDepositHold(1000);
+
+        CreditBalance::query()->create([
+            'organization_id' => $contract->organization_id,
+            'contract_id' => $contract->id,
+            'balance' => 250,
+        ]);
+
+        $result = app(ProcessContractSettlementAction::class)->execute(
+            contract: $contract,
+            moveOutDate: '2026-03-20',
+            concepts: [],
+            userId: null,
+        );
+
+        $this->assertSame(0.0, $result->outstandingBeforeDeposit);
+        $this->assertSame(0.0, $result->depositApplied);
+        $this->assertSame(1250.0, $result->depositRefund);
+        $this->assertSame(0.0, $result->balanceToCollect);
+
+        $this->assertSame(
+            0.0,
+            (float) CreditBalance::query()->withoutOrganizationScope()->where('contract_id', $contract->id)->value('balance')
+        );
+
+        $refundCategoryId = ExpenseCategory::query()
+            ->withoutOrganizationScope()
+            ->where('organization_id', $contract->organization_id)
+            ->where('name', 'REEMBOLSO DEPÓSITO')
+            ->value('id');
+
+        $this->assertDatabaseHas('expenses', [
+            'organization_id' => $contract->organization_id,
+            'expense_category_id' => $refundCategoryId,
+            'contract_id' => $contract->id,
+            'amount' => 1250,
+        ]);
+    }
+
+    public function test_settled_negative_adjustment_does_not_double_count_in_settlement_outstanding(): void
+    {
+        [$contract, $depositHold] = $this->createContractWithDepositHold(1000);
+        TenantContext::setOrganizationId((int) $contract->organization_id);
+
+        $payment = Payment::factory()->create([
+            'organization_id' => $contract->organization_id,
+            'contract_id' => $contract->id,
+            'paid_at' => '2026-03-01 10:00:00',
+            'amount' => 1000,
+        ]);
+
+        PaymentAllocation::factory()->create([
+            'organization_id' => $contract->organization_id,
+            'payment_id' => $payment->id,
+            'charge_id' => $depositHold->id,
+            'amount' => 1000,
+        ]);
+
+        Charge::factory()->create([
+            'organization_id' => $contract->organization_id,
+            'contract_id' => $contract->id,
+            'unit_id' => $contract->unit_id,
+            'type' => Charge::TYPE_RENT,
+            'period' => '2026-03',
+            'charge_date' => '2026-03-01',
+            'amount' => 1000,
+        ]);
+
+        $user = \App\Models\User::factory()->create([
+            'organization_id' => $contract->organization_id,
+        ]);
+
+        CreditBalance::query()->updateOrCreate(
+            [
+                'organization_id' => $contract->organization_id,
+                'contract_id' => $contract->id,
+            ],
+            ['balance' => 0]
+        );
+
+        app(\App\Actions\Charges\RegisterContractAdjustmentAction::class)->execute(
+            contract: $contract,
+            amount: -200.0,
+            chargeDate: \Carbon\CarbonImmutable::parse('2026-03-10'),
+            reason: 'Condonación parcial',
+            createdByUserId: (int) $user->id,
+        );
+
+        $result = app(ProcessContractSettlementAction::class)->execute(
+            contract: $contract->fresh(),
+            moveOutDate: '2026-03-20',
+            concepts: [],
+            userId: (int) $user->id,
+        );
+
+        // RENT 1000 − crédito 200 = 800. No debe ser 600 (doble descuento).
+        $this->assertSame(800.0, $result->outstandingBeforeDeposit);
+        $this->assertSame(800.0, $result->depositApplied);
+        $this->assertSame(200.0, $result->depositRefund);
+        $this->assertSame(0.0, $result->balanceToCollect);
+    }
+
     /**
      * @return array{0: Contract, 1: Charge}
      */
