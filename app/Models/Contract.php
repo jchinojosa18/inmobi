@@ -21,6 +21,8 @@ class Contract extends OrganizationScopedModel
 
     public const STATUS_ENDED = 'ended';
 
+    public const STATUS_CANCELLED = 'cancelled';
+
     public const EXPIRING_SOON_DAYS = 30;
 
     /**
