@@ -1,50 +1,63 @@
 <section class="space-y-6">
-    <x-ui.page-header
-        :title="__('contracts.show_title', ['id' => $contract->id])"
-        :description="$contract->tenant->full_name.' · '.$contract->unit->property->name.' / '.$contract->unit->name"
-    >
-        <x-slot:actions>
-            <x-ui.button href="{{ $backUrl }}" variant="secondary">
-                {{ $backLabel }}
-            </x-ui.button>
-            @if ($secondaryBackUrl && $secondaryBackLabel)
-                <x-ui.button href="{{ $secondaryBackUrl }}" variant="secondary">
-                    {{ $secondaryBackLabel }}
-                </x-ui.button>
-            @endif
-            @if ($canCreatePayments)
-                <x-ui.button
-                    type="button"
-                    variant="accent"
-                    onclick="Livewire.dispatch('open-quick-payment', { contractId: {{ $contract->id }} })"
-                >
-                    {{ __('common.register_payment') }}
-                </x-ui.button>
-            @endif
-            @if ($canManageContracts && $canRenew)
-                <x-ui.button
-                    type="button"
-                    variant="accent"
-                    onclick="Livewire.dispatch('open-contract-renew', { contractId: {{ $contract->id }} })"
-                >
-                    {{ __('contracts.renew_contract') }}
-                </x-ui.button>
-            @endif
-            @if ($canManageContracts && $contract->status === 'active')
-                <x-ui.button
-                    type="button"
-                    onclick="Livewire.dispatch('open-contract-edit', { contractId: {{ $contract->id }} })"
-                >
-                    {{ __('contracts.edit_contract') }}
-                </x-ui.button>
-            @endif
-            @if ($canManageContracts && $contract->status === 'active')
-                <x-ui.button type="button" variant="danger" wire:click="confirmCancelContract">
-                    {{ __('contracts.cancel_contract') }}
-                </x-ui.button>
-            @endif
-        </x-slot:actions>
-    </x-ui.page-header>
+    <div class="space-y-2">
+        @if ($secondaryBackUrl && $secondaryBackLabel)
+            <a
+                href="{{ $backUrl }}"
+                class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 transition hover:text-slate-900"
+            >
+                <span aria-hidden="true">←</span>
+                <span>{{ $backLabel }}</span>
+            </a>
+        @endif
+
+        <x-ui.page-header
+            :title="__('contracts.show_title', ['id' => $contract->id])"
+            :description="$contract->tenant->full_name.' · '.$contract->unit->property->name.' / '.$contract->unit->name"
+        >
+            <x-slot:actions>
+                @if ($secondaryBackUrl && $secondaryBackLabel)
+                    <x-ui.button href="{{ $secondaryBackUrl }}" variant="secondary">
+                        {{ $secondaryBackLabel }}
+                    </x-ui.button>
+                @else
+                    <x-ui.button href="{{ $backUrl }}" variant="secondary">
+                        {{ $backLabel }}
+                    </x-ui.button>
+                @endif
+                @if ($canCreatePayments)
+                    <x-ui.button
+                        type="button"
+                        variant="accent"
+                        onclick="Livewire.dispatch('open-quick-payment', { contractId: {{ $contract->id }} })"
+                    >
+                        {{ __('common.register_payment') }}
+                    </x-ui.button>
+                @endif
+                @if ($canManageContracts && $canRenew)
+                    <x-ui.button
+                        type="button"
+                        variant="accent"
+                        onclick="Livewire.dispatch('open-contract-renew', { contractId: {{ $contract->id }} })"
+                    >
+                        {{ __('contracts.renew_contract') }}
+                    </x-ui.button>
+                @endif
+                @if ($canManageContracts && $contract->status === 'active')
+                    <x-ui.button
+                        type="button"
+                        onclick="Livewire.dispatch('open-contract-edit', { contractId: {{ $contract->id }} })"
+                    >
+                        {{ __('contracts.edit_contract') }}
+                    </x-ui.button>
+                @endif
+                @if ($canManageContracts && $contract->status === 'active')
+                    <x-ui.button type="button" variant="danger" wire:click="confirmCancelContract">
+                        {{ __('contracts.cancel_contract') }}
+                    </x-ui.button>
+                @endif
+            </x-slot:actions>
+        </x-ui.page-header>
+    </div>
 
     @if ($contract->status === 'cancelled')
         <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700" role="status">
