@@ -146,9 +146,25 @@ class Contract extends OrganizationScopedModel
         return $this->morphMany(Document::class, 'documentable');
     }
 
-    public function allowsLedgerMutations(): bool
+    public function isCancelled(): bool
+    {
+        return $this->status === self::STATUS_CANCELLED;
+    }
+
+    /**
+     * Payments, deposits and settlement — only while the contract is active.
+     */
+    public function isOperable(): bool
     {
         return $this->status === self::STATUS_ACTIVE;
+    }
+
+    /**
+     * Adjustments and document uploads — allowed on active/ended, blocked when cancelled.
+     */
+    public function allowsLedgerMutations(): bool
+    {
+        return ! $this->isCancelled();
     }
 
     public function isExpired(?CarbonImmutable $today = null): bool

@@ -180,7 +180,7 @@ Corrección manual mínima por contrato (tasa mal capturada):
 - Motivo obligatorio + auditoría `contract.cancelled`.
 - Si hay movimientos o mes cerrado: bloquear con atajos; no auto-revertir ledger.
 - UI: botón en `Contracts\Show`; filtro Anulados en index.
-- Tras anular: `allowsLedgerMutations()` es false — sin pagos, depósitos, ajustes, finiquito ni upload/borrado de documentos (UI + actions). Ver/descargar docs existentes sí.
+- Tras anular: `isOperable()` false (pagos/depósitos/finiquito); `allowsLedgerMutations()` false (ajustes + upload/borrado de docs). Contratos `ended` sí pueden recibir ajustes (corrección). Ver/descargar docs existentes sí.
 
 ### 4.5 Reportes por allocations (fuente de verdad)
 - Servicio: [`OperatingIncomeService`](../app/Support/OperatingIncomeService.php)

@@ -60,7 +60,7 @@ class DepositHoldForm extends Component
         }
 
         $this->contract->refresh();
-        if (! $this->contract->allowsLedgerMutations()) {
+        if (! $this->contract->isOperable()) {
             abort(403);
         }
 
@@ -117,7 +117,7 @@ class DepositHoldForm extends Component
         }
 
         $this->contract->refresh();
-        if (! $this->contract->allowsLedgerMutations()) {
+        if (! $this->contract->isOperable()) {
             abort(403);
         }
 
@@ -138,7 +138,7 @@ class DepositHoldForm extends Component
         }
 
         $this->contract->refresh();
-        if (! $this->contract->allowsLedgerMutations()) {
+        if (! $this->contract->isOperable()) {
             abort(403);
         }
 

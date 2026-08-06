@@ -23,7 +23,7 @@ class VoidDepositHoldAction
                 ->lockForUpdate()
                 ->findOrFail($contract->id);
 
-            if (! $lockedContract->allowsLedgerMutations()
+            if (! $lockedContract->isOperable()
                 || data_get($lockedContract->meta, 'settlement_batch_id') !== null) {
                 throw ValidationException::withMessages([
                     'deposit_void' => __('contracts.validation.deposit_void_settled'),

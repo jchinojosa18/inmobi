@@ -50,7 +50,7 @@ class RegisterDepositHoldAction
                 ->lockForUpdate()
                 ->findOrFail($contract->id);
 
-            if (! $lockedContract->allowsLedgerMutations()) {
+            if (! $lockedContract->isOperable()) {
                 throw ValidationException::withMessages([
                     'deposit_amount' => __('contracts.validation.deposit_contract_closed'),
                 ]);

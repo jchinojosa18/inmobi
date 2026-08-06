@@ -302,12 +302,12 @@ class Show extends Component
             'ledgerGroups' => $groupedLedger,
             'payments' => $payments,
             'canManageContracts' => auth()->user()?->can('contracts.manage') ?? false,
-            'canCreatePayments' => $contract->allowsLedgerMutations()
+            'canCreatePayments' => $contract->isOperable()
                 && (auth()->user()?->can('payments.create') ?? false),
-            'canManageCharges' => $contract->allowsLedgerMutations()
+            'canManageCharges' => $contract->isOperable()
                 && (auth()->user()?->can('charges.manage') ?? false),
             'canViewPayments' => auth()->user()?->can('payments.view') ?? false,
-            'canSettleContracts' => $contract->allowsLedgerMutations()
+            'canSettleContracts' => $contract->isOperable()
                 && (auth()->user()?->can('contracts.settle') ?? false),
             'canRenew' => $canRenew,
             'contractDepositAmount' => $contractDepositAmount,
