@@ -117,10 +117,10 @@ class QuickRegisterModal extends Component
         }
 
         if ($this->evidenceFile !== null) {
-            $disk = (string) config('filesystems.documents_disk', 'local');
+            $disk = (string) config('filesystems.documents_disk', 'public');
             $path = $this->evidenceFile->store('documents/expenses/'.$organizationId, $disk);
 
-            Document::storeNew([
+            Document::query()->create([
                 'organization_id' => $organizationId,
                 'documentable_id' => $expense->id,
                 'documentable_type' => Expense::class,

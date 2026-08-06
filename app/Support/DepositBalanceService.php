@@ -5,13 +5,10 @@ namespace App\Support;
 use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\Expense;
+use App\Models\PaymentAllocation;
 
 class DepositBalanceService
 {
-    public function __construct(
-        private readonly LedgerOutstandingCalculator $ledgerOutstandingCalculator,
-    ) {}
-
     public function registeredDepositHoldAmount(Contract $contract): float
     {
         return round((float) Charge::query()
@@ -82,6 +79,26 @@ class DepositBalanceService
 
     public function outstandingBalanceExcludingDepositHold(Contract $contract): float
     {
-        return $this->ledgerOutstandingCalculator->outstandingForContract($contract);
+        $chargesTotal = (float) Charge::query()
+            ->withoutOrganizationScope()
+            ->where('organization_id', $contract->organization_id)
+            ->where('contract_id', $contract->id)
+            ->whereNotIn('type', [Charge::TYPE_DEPOSIT_HOLD, Charge::TYPE_DEPOSIT_TRANSFER_OUT])
+            ->sum('amount');
+
+        $allocatedTotal = (float) PaymentAllocation::query()
+            ->withoutOrganizationScope()
+            ->join('charges', 'charges.id', '=', 'payment_allocations.charge_id')
+            ->join('payments', 'payments.id', '=', 'payment_allocations.payment_id')
+            ->where('payment_allocations.organization_id', $contract->organization_id)
+            ->where('charges.organization_id', $contract->organization_id)
+            ->where('payments.organization_id', $contract->organization_id)
+            ->whereNull('charges.deleted_at')
+            ->whereNull('payments.deleted_at')
+            ->where('charges.contract_id', $contract->id)
+            ->whereNotIn('charges.type', [Charge::TYPE_DEPOSIT_HOLD, Charge::TYPE_DEPOSIT_TRANSFER_OUT])
+            ->sum('payment_allocations.amount');
+
+        return round(max($chargesTotal - $allocatedTotal, 0), 2);
     }
 }

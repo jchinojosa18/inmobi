@@ -81,7 +81,9 @@ class Panel extends Component
         ?string $title = null,
         string $variant = 'default',
     ): void {
-        $this->authorize('viewAny', Document::class);
+        if (! (auth()->user()?->can('documents.view') ?? false)) {
+            abort(403);
+        }
 
         $this->documentableType = $documentableType;
         $this->documentableId = $documentableId;
@@ -113,7 +115,7 @@ class Panel extends Component
         $path = $this->document->store($folder, $disk);
 
         try {
-            Document::storeNew([
+            Document::query()->create([
                 'organization_id' => (int) $documentable->getAttribute('organization_id'),
                 'documentable_type' => $this->documentableType,
                 'documentable_id' => $this->documentableId,
@@ -185,7 +187,7 @@ class Panel extends Component
 
     public function confirmDeleteDocument(int $documentId): void
     {
-        if (! (auth()->user()?->can('documents.delete') ?? false)) {
+        if (! (auth()->user()?->can('documents.upload') ?? false)) {
             abort(403);
         }
 
@@ -213,14 +215,16 @@ class Panel extends Component
 
     public function deleteDocument(int $documentId): void
     {
+        if (! (auth()->user()?->can('documents.upload') ?? false)) {
+            abort(403);
+        }
+
         $this->assertDocumentableAllowsMutations();
 
         $document = Document::query()
             ->where('documentable_type', $this->documentableType)
             ->where('documentable_id', $this->documentableId)
             ->findOrFail($documentId);
-
-        $this->authorize('delete', $document);
 
         $disk = (string) data_get($document->meta, 'disk', config('filesystems.documents_disk', 'local'));
 
@@ -381,7 +385,6 @@ class Panel extends Component
                 ->values()
                 ->all(),
             'canUploadDocuments' => $this->canMutateDocuments(),
-            'canDeleteDocuments' => $this->canDeleteDocuments(),
             'canSendReceipts' => auth()->user()?->can('receipts.send') ?? false,
             'variant' => $this->variant,
             'availableCategories' => $this->isContractVariant()
@@ -394,15 +397,6 @@ class Panel extends Component
     private function canMutateDocuments(): bool
     {
         if (! (auth()->user()?->can('documents.upload') ?? false)) {
-            return false;
-        }
-
-        return $this->documentableAllowsMutations();
-    }
-
-    private function canDeleteDocuments(): bool
-    {
-        if (! (auth()->user()?->can('documents.delete') ?? false)) {
             return false;
         }
 

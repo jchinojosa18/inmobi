@@ -103,7 +103,7 @@ class SystemStatus extends Component
      */
     private function checkStorage(): array
     {
-        $disk = (string) config('filesystems.documents_disk', 'local');
+        $disk = (string) config('filesystems.documents_disk', 'public');
         $writable = false;
         $publicLinkOk = false;
         $message = __('admin.status_ok');

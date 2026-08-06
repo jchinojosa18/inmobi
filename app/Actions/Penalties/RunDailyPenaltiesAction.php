@@ -5,8 +5,9 @@ namespace App\Actions\Penalties;
 use App\Actions\Payments\ApplyCreditBalanceAction;
 use App\Models\Charge;
 use App\Models\Contract;
+use App\Models\CreditBalance;
+use App\Models\Payment;
 use App\Models\PaymentAllocation;
-use App\Support\LedgerOutstandingCalculator;
 use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
@@ -18,9 +19,16 @@ class RunDailyPenaltiesAction
 
     private const ALGORITHM_VERSION = 'v1_compound_daily';
 
-    public function __construct(
-        private readonly LedgerOutstandingCalculator $ledgerOutstandingCalculator,
-    ) {}
+    /**
+     * @var list<string>
+     */
+    private const EXCLUDED_TYPES = [
+        Charge::TYPE_DEPOSIT_HOLD,
+        Charge::TYPE_DEPOSIT_APPLY,
+        Charge::TYPE_DEPOSIT_TRANSFER_OUT,
+        'DEPOSIT',
+        'SECURITY_DEPOSIT',
+    ];
 
     /**
      * @return array{target_date:string, from_date:?string, contract_id:?int, contracts_processed:int, days_evaluated:int, created:int, skipped_existing:int, skipped_not_applicable:int}
@@ -297,25 +305,17 @@ class RunDailyPenaltiesAction
             ->orderBy('period')
             ->get(['id', 'period', 'amount']);
 
-        if ($overdueRents->isEmpty()) {
-            return null;
-        }
-
-        $allocatedByChargeId = PaymentAllocation::query()
-            ->withoutOrganizationScope()
-            ->join('payments', 'payments.id', '=', 'payment_allocations.payment_id')
-            ->where('payment_allocations.organization_id', $contract->organization_id)
-            ->where('payments.organization_id', $contract->organization_id)
-            ->whereNull('payment_allocations.deleted_at')
-            ->whereNull('payments.deleted_at')
-            ->whereIn('payment_allocations.charge_id', $overdueRents->pluck('id'))
-            ->where('payments.paid_at', '<=', $cutoffTimestampString)
-            ->groupBy('payment_allocations.charge_id')
-            ->selectRaw('payment_allocations.charge_id, SUM(payment_allocations.amount) as allocated_total')
-            ->pluck('allocated_total', 'charge_id');
-
         foreach ($overdueRents as $rent) {
-            $allocated = (float) ($allocatedByChargeId[$rent->id] ?? 0);
+            $allocated = (float) PaymentAllocation::query()
+                ->withoutOrganizationScope()
+                ->join('payments', 'payments.id', '=', 'payment_allocations.payment_id')
+                ->where('payment_allocations.organization_id', $contract->organization_id)
+                ->where('payments.organization_id', $contract->organization_id)
+                ->whereNull('payment_allocations.deleted_at')
+                ->whereNull('payments.deleted_at')
+                ->where('payment_allocations.charge_id', $rent->id)
+                ->where('payments.paid_at', '<=', $cutoffTimestampString)
+                ->sum('payment_allocations.amount');
 
             if (round((float) $rent->amount - $allocated, 2) <= 0) {
                 continue;
@@ -377,12 +377,76 @@ class RunDailyPenaltiesAction
         CarbonImmutable $cutoffDate,
         CarbonImmutable $cutoffTimestampStorage,
     ): float {
-        return $this->ledgerOutstandingCalculator->outstandingForContractAsOf(
-            organizationId: (int) $contract->organization_id,
-            contractId: (int) $contract->id,
-            chargeDateTo: $cutoffDate->toDateString(),
-            paymentPaidAtTo: $cutoffTimestampStorage->format('Y-m-d H:i:s'),
-        );
+        $cutoffDateString = $cutoffDate->toDateString();
+        $cutoffTimestampString = $cutoffTimestampStorage->format('Y-m-d H:i:s');
+
+        $totalCharges = (float) Charge::query()
+            ->withoutOrganizationScope()
+            ->where('organization_id', $contract->organization_id)
+            ->where('contract_id', $contract->id)
+            ->whereDate('charge_date', '<=', $cutoffDateString)
+            ->whereNotIn('type', self::EXCLUDED_TYPES)
+            ->sum('amount');
+
+        $allocatedAmount = (float) PaymentAllocation::query()
+            ->withoutOrganizationScope()
+            ->join('charges', 'charges.id', '=', 'payment_allocations.charge_id')
+            ->join('payments', 'payments.id', '=', 'payment_allocations.payment_id')
+            ->where('payment_allocations.organization_id', $contract->organization_id)
+            ->where('charges.organization_id', $contract->organization_id)
+            ->where('payments.organization_id', $contract->organization_id)
+            ->whereNull('charges.deleted_at')
+            ->whereNull('payment_allocations.deleted_at')
+            ->whereNull('payments.deleted_at')
+            ->where('charges.contract_id', $contract->id)
+            ->whereDate('charges.charge_date', '<=', $cutoffDateString)
+            ->whereNotIn('charges.type', self::EXCLUDED_TYPES)
+            ->where('payments.paid_at', '<=', $cutoffTimestampString)
+            ->sum('payment_allocations.amount');
+
+        $creditAsOfCutoff = $this->resolveCreditAsOfCutoff($contract, $cutoffTimestampStorage);
+
+        return round(max($totalCharges - $allocatedAmount - $creditAsOfCutoff, 0), 2);
+    }
+
+    private function resolveCreditAsOfCutoff(Contract $contract, CarbonImmutable $cutoffTimestampStorage): float
+    {
+        $creditedFromPayments = Payment::query()
+            ->withoutOrganizationScope()
+            ->where('organization_id', $contract->organization_id)
+            ->where('contract_id', $contract->id)
+            ->where('paid_at', '<=', $cutoffTimestampStorage->format('Y-m-d H:i:s'))
+            ->get(['meta'])
+            ->reduce(function (float $carry, Payment $payment): float {
+                return $carry + (float) data_get($payment->meta, 'credited_amount', 0);
+            }, 0.0);
+
+        $creditBalance = CreditBalance::query()
+            ->withoutOrganizationScope()
+            ->where('organization_id', $contract->organization_id)
+            ->where('contract_id', $contract->id)
+            ->first();
+
+        if ($creditBalance === null || $creditBalance->last_payment_id === null) {
+            return round(max($creditedFromPayments, 0), 2);
+        }
+
+        $lastPaymentAt = Payment::query()
+            ->withoutOrganizationScope()
+            ->where('organization_id', $contract->organization_id)
+            ->where('id', $creditBalance->last_payment_id)
+            ->value('paid_at');
+
+        if (! is_string($lastPaymentAt) || $lastPaymentAt === '') {
+            return round(max($creditedFromPayments, 0), 2);
+        }
+
+        $lastPaymentTimestamp = CarbonImmutable::parse($lastPaymentAt, $this->storageTimezone());
+        if ($lastPaymentTimestamp->gt($cutoffTimestampStorage)) {
+            return round(max($creditedFromPayments, 0), 2);
+        }
+
+        return round(max($creditedFromPayments, (float) $creditBalance->balance, 0), 2);
     }
 
     private function toStorageTimezone(CarbonImmutable $timestamp): CarbonImmutable
@@ -404,6 +468,7 @@ class RunDailyPenaltiesAction
         $message = strtolower($exception->getMessage());
 
         return str_contains($message, 'charges_contract_penalty_type_unique')
-            || (str_contains($message, 'penalty_date') && str_contains($message, 'unique'));
+            || str_contains($message, 'contract_id')
+            || str_contains($message, 'unique');
     }
 }

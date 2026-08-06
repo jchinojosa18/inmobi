@@ -25,7 +25,7 @@ class InmoDailyCommand extends Command
      *
      * @var string
      */
-    protected $description = 'Records daily ops heartbeat (rent/penalties run on their own schedules)';
+    protected $description = 'Runs daily inmo maintenance placeholders (no business logic yet)';
 
     /**
      * Execute the console command.
@@ -58,7 +58,7 @@ class InmoDailyCommand extends Command
                 'queued_job' => DailyOperationsJob::class,
             ]);
 
-            $this->info('inmo:daily executed. DailyOperationsJob (heartbeat) dispatched.');
+            $this->info('inmo:daily executed. DailyOperationsJob dispatched.');
 
             return self::SUCCESS;
         } finally {

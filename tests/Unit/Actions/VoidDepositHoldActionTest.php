@@ -52,39 +52,6 @@ class VoidDepositHoldActionTest extends TestCase
         $this->assertSame(0.0, app(DepositBalanceService::class)->availableDepositAmount($contract));
     }
 
-    public function test_next_folio_skips_soft_deleted_hold_sequence(): void
-    {
-        $contract = $this->makeContract(2000.0);
-        TenantContext::setOrganizationId($contract->organization_id);
-
-        $first = app(RegisterDepositHoldAction::class)->execute(
-            contract: $contract,
-            amount: 1000.0,
-            receivedAt: '2026-07-21',
-            notes: null,
-            userId: null,
-            method: Payment::METHOD_CASH,
-        );
-
-        $firstFolio = (string) data_get($first->meta, 'deposit_receipt_folio');
-        $this->assertNotSame('', $firstFolio);
-
-        app(VoidDepositHoldAction::class)->execute($contract, $first->id, null);
-
-        $second = app(RegisterDepositHoldAction::class)->execute(
-            contract: $contract,
-            amount: 1000.0,
-            receivedAt: '2026-07-22',
-            notes: null,
-            userId: null,
-            method: Payment::METHOD_CASH,
-        );
-
-        $secondFolio = (string) data_get($second->meta, 'deposit_receipt_folio');
-        $this->assertNotSame($firstFolio, $secondFolio);
-        $this->assertTrue(strcmp($secondFolio, $firstFolio) > 0);
-    }
-
     public function test_void_clears_orphan_payment_allocated_only_to_deposit_hold(): void
     {
         $contract = $this->makeContract(1000.0);

@@ -15,7 +15,7 @@ class RecordAuthEvent
         try {
             $user = $event->user;
 
-            AuthEvent::query()->withoutOrganizationScope()->forceCreate([
+            AuthEvent::create([
                 'organization_id' => $user->organization_id ?? null,
                 'user_id' => $user->id,
                 'email' => $user->email,
@@ -38,7 +38,7 @@ class RecordAuthEvent
                 ? ($event->credentials['email'] ?? null)
                 : null;
 
-            AuthEvent::query()->withoutOrganizationScope()->forceCreate([
+            AuthEvent::create([
                 'organization_id' => null,
                 'user_id' => $event->user?->id,
                 'email' => $email,
@@ -62,7 +62,7 @@ class RecordAuthEvent
                 return;
             }
 
-            AuthEvent::query()->withoutOrganizationScope()->forceCreate([
+            AuthEvent::create([
                 'organization_id' => $user->organization_id ?? null,
                 'user_id' => $user->id,
                 'email' => $user->email,

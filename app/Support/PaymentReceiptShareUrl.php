@@ -11,7 +11,7 @@ final class PaymentReceiptShareUrl
     {
         $relative = URL::temporarySignedRoute(
             'payments.receipt.share',
-            $expiresAt ?? now()->addHours(SignedShareUrl::TTL_HOURS),
+            $expiresAt ?? now()->addDays(7),
             ['paymentId' => $paymentId],
             absolute: false,
         );

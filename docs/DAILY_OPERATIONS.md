@@ -1,21 +1,24 @@
-# Daily Operations
+# Daily Operations Base
 
 ## Objetivo
-Pulse de salud del pipeline diario + comandos de negocio dedicados (multas, rentas, backup).
+Dejar lista la infraestructura para tareas diarias (multas, recordatorios, cierres) sin implementar todavia la logica de negocio.
 
-## Componentes
+## Componentes implementados
 - Comando Artisan: `inmo:daily`
   - Clase: `App\Console\Commands\InmoDailyCommand`
-  - Encola `App\Jobs\DailyOperationsJob`, que escribe heartbeat `daily_operations` (no lógica financiera).
+  - Estado actual: placeholder, escribe logs y encola un job demo.
 
-- Negocio (schedules propios en `routes/console.php`):
-  - `inmo:penalties:run` — 00:05 America/Tijuana
-  - `inmo:generate-rent` — 00:10 America/Tijuana
-  - `inmo:backup` — 03:10 America/Tijuana
+- Job en cola: `App\Jobs\DailyOperationsJob`
+  - Driver esperado: Redis (`QUEUE_CONNECTION=redis`).
+  - Estado actual: placeholder, escribe logs al ejecutarse.
 
-- Scheduler heartbeat: cada minuto (`system:heartbeat:scheduler`).
+- Scheduler:
+  - Definicion en `routes/console.php`.
+  - Frecuencia actual: diario a las `00:05`.
+  - Proteccion de solapamiento: `withoutOverlapping()`.
 
 ## Desarrollo con Sail
+Ejecutar en terminales separadas:
 
 ```bash
 ./vendor/bin/sail artisan schedule:work
@@ -25,11 +28,13 @@ Pulse de salud del pipeline diario + comandos de negocio dedicados (multas, rent
 ./vendor/bin/sail artisan queue:work redis --queue=default --tries=3
 ```
 
+Comando manual para pruebas:
+
 ```bash
 ./vendor/bin/sail artisan inmo:daily
 ```
 
-## Producción
+## Produccion
 Cron del sistema (cada minuto):
 
 ```cron
@@ -42,6 +47,8 @@ Worker de cola recomendado bajo Supervisor/Systemd:
 php artisan queue:work redis --queue=default --sleep=1 --tries=3 --max-time=3600
 ```
 
-## Scope
-- `inmo:daily` = heartbeat operativo.
-- Multas / rentas / backups = comandos dedicados (no viven dentro del job daily).
+## Scope actual
+- No hay calculo de multas.
+- No hay logica de recordatorios.
+- No hay proceso real de cierres.
+- Solo infraestructura operativa base.

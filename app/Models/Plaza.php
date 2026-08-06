@@ -6,7 +6,6 @@ use App\Domain\Shared\OrganizationScopedModel;
 use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Plaza extends OrganizationScopedModel
@@ -43,14 +42,6 @@ class Plaza extends OrganizationScopedModel
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
-    }
-
-    /**
-     * @return HasMany<Property, $this>
-     */
-    public function properties(): HasMany
-    {
-        return $this->hasMany(Property::class);
     }
 
     /**

@@ -237,7 +237,7 @@ class InmoBackupCommand extends Command
             ];
         }
 
-        $disk = (string) config('filesystems.documents_disk', 'local');
+        $disk = (string) config('filesystems.documents_disk', 'public');
         $diskConfig = (array) config("filesystems.disks.{$disk}", []);
         $driver = (string) ($diskConfig['driver'] ?? '');
 

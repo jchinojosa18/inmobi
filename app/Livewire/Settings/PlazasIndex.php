@@ -4,7 +4,6 @@ namespace App\Livewire\Settings;
 
 use App\Models\Organization;
 use App\Models\Plaza;
-use App\Models\Property;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
@@ -150,18 +149,6 @@ class PlazasIndex extends Component
 
         if ($plaza->is_default && $plazaCount <= 1) {
             $this->addError('delete', __('settings.validation.cannot_delete_only_default'));
-
-            return;
-        }
-
-        $propertiesCount = Property::query()
-            ->where('plaza_id', $plaza->id)
-            ->count();
-
-        if ($propertiesCount > 0) {
-            $this->addError('delete', __('settings.validation.cannot_delete_plaza_with_properties', [
-                'count' => $propertiesCount,
-            ]));
 
             return;
         }

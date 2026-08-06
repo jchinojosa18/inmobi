@@ -510,7 +510,7 @@ class RestoreBackupCommand extends Command
             throw new RuntimeException('Archivo documents.zip no encontrado para restore.');
         }
 
-        $disk = (string) config('filesystems.documents_disk', 'local');
+        $disk = (string) config('filesystems.documents_disk', 'public');
         $diskConfig = (array) config("filesystems.disks.{$disk}", []);
         $driver = (string) ($diskConfig['driver'] ?? '');
 

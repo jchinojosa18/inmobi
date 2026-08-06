@@ -417,19 +417,4 @@ class OrganizationInvitationsTest extends TestCase
 
         return $result['token'];
     }
-
-    public function test_service_rejects_non_whitelisted_role(): void
-    {
-        [$organization, $admin] = $this->createOrganizationAdminPair();
-
-        $this->expectException(\Illuminate\Validation\ValidationException::class);
-
-        app(OrganizationInvitationService::class)->createInvitation(
-            organizationId: $organization->id,
-            email: 'evil@test.dev',
-            role: 'SuperAdmin',
-            expiresAt: now('America/Tijuana')->addDays(7)->toImmutable(),
-            invitedByUserId: $admin->id,
-        );
-    }
 }

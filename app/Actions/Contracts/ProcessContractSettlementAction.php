@@ -6,7 +6,6 @@ use App\Actions\Expenses\SeedDefaultExpenseCategoriesAction;
 use App\Actions\Payments\ApplyCreditBalanceAction;
 use App\Models\Charge;
 use App\Models\Contract;
-use App\Models\CreditBalance;
 use App\Models\Document;
 use App\Models\Expense;
 use App\Support\AuditLogger;
@@ -126,26 +125,6 @@ class ProcessContractSettlementAction
             }
 
             $depositRefund = round(max($depositAvailable - $depositApplied, 0), 2);
-
-            $creditBalance = CreditBalance::query()
-                ->withoutOrganizationScope()
-                ->where('organization_id', $lockedContract->organization_id)
-                ->where('contract_id', $lockedContract->id)
-                ->lockForUpdate()
-                ->first();
-
-            $creditRefunded = round(max((float) ($creditBalance?->balance ?? 0), 0), 2);
-            if ($creditRefunded > 0 && $creditBalance !== null) {
-                $depositRefund = round($depositRefund + $creditRefunded, 2);
-                $creditMeta = is_array($creditBalance->meta) ? $creditBalance->meta : [];
-                $creditMeta['settled_at_finiquito'] = now('America/Tijuana')->toIso8601String();
-                $creditMeta['settlement_batch_id'] = $batchId;
-                $creditMeta['credit_refunded'] = $creditRefunded;
-                $creditBalance->balance = 0;
-                $creditBalance->meta = $creditMeta;
-                $creditBalance->save();
-            }
-
             $refundExpenseId = null;
             if ($depositRefund > 0) {
                 $refundCategoryId = app(SeedDefaultExpenseCategoriesAction::class)
@@ -161,16 +140,12 @@ class ProcessContractSettlementAction
                         'amount' => $depositRefund,
                         'spent_at' => $exitDate->toDateString(),
                         'vendor' => $lockedContract->tenant?->full_name,
-                        'notes' => $creditRefunded > 0
-                            ? 'Devolución de depósito y saldo a favor por finiquito'
-                            : 'Devolución de depósito por finiquito',
+                        'notes' => 'Devolución de depósito por finiquito',
                         'meta' => [
                             'contract_id' => $lockedContract->id,
                             'settlement_batch_id' => $batchId,
                             'reason' => 'contract_settlement',
                             'created_by_user_id' => $userId,
-                            'credit_refunded' => $creditRefunded,
-                            'deposit_portion' => round(max($depositAvailable - $depositApplied, 0), 2),
                         ],
                     ]);
 
@@ -193,7 +168,6 @@ class ProcessContractSettlementAction
                 'deposit_available' => $depositAvailable,
                 'deposit_applied' => $depositApplied,
                 'deposit_refund' => $depositRefund,
-                'credit_refunded' => $creditRefunded,
                 'balance_to_collect' => $balanceToCollect,
                 'moveout_charge_ids' => $moveoutChargeIds,
                 'deposit_apply_charge_id' => $depositApplyChargeId,
@@ -249,7 +223,6 @@ class ProcessContractSettlementAction
                 'deposit_applied' => $result->depositApplied,
                 'deposit_refund' => $result->depositRefund,
                 'balance_to_collect' => $result->balanceToCollect,
-                'credit_refunded' => data_get($contract->fresh()->meta, "settlements.{$batchId}.credit_refunded", 0),
             ],
             actorUserId: $userId,
         );
@@ -271,23 +244,25 @@ class ProcessContractSettlementAction
 
     private function storeMoveoutEvidence(Contract $contract, int $chargeId, string $batchId, UploadedFile $evidence): void
     {
-        $disk = (string) config('filesystems.documents_disk', 'local');
+        $disk = (string) config('filesystems.documents_disk', 'public');
         $path = $evidence->store('documents/settlements/'.$contract->organization_id, $disk);
 
-        Document::storeNew([
-            'organization_id' => $contract->organization_id,
-            'documentable_type' => Charge::class,
-            'documentable_id' => $chargeId,
-            'path' => $path,
-            'mime' => $evidence->getMimeType() ?: 'application/octet-stream',
-            'size' => $evidence->getSize() ?: 0,
-            'type' => 'MOVEOUT_EVIDENCE',
-            'tags' => ['settlement', 'moveout', 'evidence'],
-            'meta' => [
-                'disk' => $disk,
-                'settlement_batch_id' => $batchId,
-                'uploaded_at' => now('America/Tijuana')->toIso8601String(),
-            ],
-        ]);
+        Document::query()
+            ->withoutOrganizationScope()
+            ->create([
+                'organization_id' => $contract->organization_id,
+                'documentable_type' => Charge::class,
+                'documentable_id' => $chargeId,
+                'path' => $path,
+                'mime' => $evidence->getMimeType() ?: 'application/octet-stream',
+                'size' => $evidence->getSize() ?: 0,
+                'type' => 'MOVEOUT_EVIDENCE',
+                'tags' => ['settlement', 'moveout', 'evidence'],
+                'meta' => [
+                    'disk' => $disk,
+                    'settlement_batch_id' => $batchId,
+                    'uploaded_at' => now('America/Tijuana')->toIso8601String(),
+                ],
+            ]);
     }
 }

@@ -61,6 +61,13 @@ class Charge extends OrganizationScopedModel
         'meta',
     ];
 
+    /**
+     * @var list<string>
+     */
+    protected $appends = [
+        'status',
+    ];
+
     protected static function booted(): void
     {
         static::saving(function (self $charge): void {
@@ -156,37 +163,10 @@ class Charge extends OrganizationScopedModel
         return $this->morphMany(Document::class, 'documentable');
     }
 
-    /**
-     * Payment status derived from allocations. Not appended — use explicitly or
-     * prefer withSum('paymentAllocations as allocated_amount') / ledger joins in lists.
-     */
     public function getStatusAttribute(): string
     {
-        $total = round((float) $this->amount, 2);
-
-        if (
-            in_array($this->type, [
-                self::TYPE_DEPOSIT_HOLD,
-                self::TYPE_DEPOSIT_APPLY,
-                self::TYPE_DEPOSIT_TRANSFER_OUT,
-            ], true)
-        ) {
-            return self::STATUS_PAID;
-        }
-
-        if (
-            $this->type === self::TYPE_ADJUSTMENT
-            && $total < 0
-            && (bool) data_get($this->meta, 'settled_as_credit')
-        ) {
-            return self::STATUS_PAID;
-        }
-
-        $allocated = $this->resolveAllocatedAmount();
-
-        if ($total <= 0) {
-            return $allocated > 0 ? self::STATUS_PAID : self::STATUS_PENDING;
-        }
+        $total = (float) $this->amount;
+        $allocated = (float) $this->paymentAllocations()->sum('amount');
 
         if ($allocated <= 0) {
             return self::STATUS_PENDING;
@@ -197,21 +177,6 @@ class Charge extends OrganizationScopedModel
         }
 
         return self::STATUS_PARTIAL;
-    }
-
-    private function resolveAllocatedAmount(): float
-    {
-        if (array_key_exists('allocated_amount', $this->attributes)) {
-            return round((float) $this->attributes['allocated_amount'], 2);
-        }
-
-        if ($this->relationLoaded('paymentAllocations')) {
-            return round((float) $this->paymentAllocations->sum('amount'), 2);
-        }
-
-        return round((float) $this->paymentAllocations()
-            ->withoutOrganizationScope()
-            ->sum('amount'), 2);
     }
 
     /**

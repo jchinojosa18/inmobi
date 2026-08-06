@@ -58,7 +58,7 @@
                                             {{ __('documents.share') }}
                                         </x-ui.button>
                                     @endif
-                                    @if ($canDeleteDocuments)
+                                    @if ($canUploadDocuments)
                                         <x-ui.button
                                             type="button"
                                             variant="danger"

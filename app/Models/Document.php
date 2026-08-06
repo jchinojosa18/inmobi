@@ -23,24 +23,14 @@ class Document extends OrganizationScopedModel
         'organization_id',
         'documentable_id',
         'documentable_type',
+        'path',
+        'mime',
+        'size',
         'type',
         'category',
         'tags',
         'meta',
     ];
-
-    /**
-     * Persist a document including guarded storage attributes (path/mime/size).
-     *
-     * @param  array<string, mixed>  $attributes
-     */
-    public static function storeNew(array $attributes): self
-    {
-        /** @var self $document */
-        $document = static::query()->withoutOrganizationScope()->forceCreate($attributes);
-
-        return $document;
-    }
 
     protected static function booted(): void
     {

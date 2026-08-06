@@ -147,11 +147,9 @@ REDIS_HOST=redis
 - Correcciones en mes cerrado:
   - usar `Charge` tipo `ADJUSTMENT` con `meta.reason` obligatorio.
 
-## Base operativa diaria
-- Comando diario: `inmo:daily` (heartbeat `daily_operations` vía `DailyOperationsJob`)
-- Negocio diario: `inmo:penalties:run` (00:05) y `inmo:generate-rent` (00:10)
-- Cola: Redis `QUEUE_CONNECTION=redis`, worker `queue:work redis --queue=default --tries=3`
-- Ver [`docs/DAILY_OPERATIONS.md`](docs/DAILY_OPERATIONS.md)
+## Base operativa diaria (placeholder)
+- Comando diario: `inmo:daily` (solo logs + dispatch de job de ejemplo)
+- Job ejemplo: `App\\Jobs\\DailyOperationsJob` en cola `default`
 - Programación: scheduler diario a las `00:05` (ver `routes/console.php`)
 - Multas diarias:
   - `php artisan inmo:penalties:run --date=YYYY-MM-DD`

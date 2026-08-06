@@ -102,23 +102,6 @@ Relaciones clave en modelos:
 - [`CreditBalance`](../app/Models/CreditBalance.php)
 - [`Plaza`](../app/Models/Plaza.php)
 
-### Soft-delete + unique indexes (ledger)
-Tablas financieras usan SoftDeletes **y** uniques absolutos (incluyen filas soft-deleted):
-
-| Unique | Tabla |
-|---|---|
-| `(payment_id, charge_id)` | `payment_allocations` |
-| `(organization_id, contract_id)` | `credit_balances` |
-| `(contract_id, rent_period_key)` | `charges` (RENT) |
-| `(contract_id, penalty_date, type)` | `charges` (PENALTY) |
-| `(organization_id, receipt_folio)` | `payments` |
-
-**Política:**
-- Voids operativos (`VoidDepositHoldAction`, cancel contract) usan **soft-delete** (auditoría / folios).
-- Generadores que reinsertan la misma llave (rentas, multas, crédito) **restauran** la fila trashed antes de crear otra (`RunDailyPenaltiesAction`, `GenerateMonthlyRentChargesAction`, writers de `CreditBalance`).
-- `forceDelete` en ledger solo para reescrituras administrativas / seeds / tests que deban liberar el unique a propósito — no en voids de negocio.
-- Folios de recibo/depósito ya consideran `withTrashed` al calcular el siguiente número.
-
 ## 4) Reglas de negocio INNEGOCIABLES
 ### 4.1 Multa diaria compuesta
 - Acción: [`RunDailyPenaltiesAction`](../app/Actions/Penalties/RunDailyPenaltiesAction.php)
@@ -231,7 +214,7 @@ Permisos definidos (strings exactos):
 - `rents.generate`, `penalties.run`
 - `payments.view`, `payments.create`
 - `receipts.send`
-- `expenses.view`, `expenses.create`
+- `expenses.view`, `expenses.create`, `expenses.manage`
 - `expense_categories.manage`
 - `reports.view`, `reports.export`
 - `month_close.view`, `month_close.close`, `month_close.reopen`
@@ -332,7 +315,6 @@ Retención por defecto de prune:
 Regla de operación de plazas:
 - Toda organización debe tener una plaza default (`Principal`) creada automáticamente.
 - Toda `Property` pertenece obligatoriamente a una `Plaza` (`properties.plaza_id` NOT NULL).
-- FK `properties.plaza_id` → `plazas.id` usa **restrictOnDelete** (no cascade): hay que reasignar propiedades antes de borrar/forceDelete una plaza. Soft-delete de plaza no dispara cascade SQL.
 - `Unit` y `Contract` no tienen `plaza_id`; la plaza se deriva por relación desde `Property`.
 - Con 1 sola plaza la UX se mantiene igual que hoy (plaza implícita/invisible).
 - Con 2+ plazas, los nuevos filtros/selectores por ciudad/plaza deben activarse en UI.
@@ -471,13 +453,11 @@ System status/heartbeats:
 - Eventos capturados: `login_success`, `login_failed`, `logout`
 - Campos: `user_id`, `organization_id`, `email`, `event`, `occurred_at`, `ip`, `user_agent`, `plaza_id`, `meta`
 - Registro en: `AppServiceProvider::boot()` via `Event::listen(Login|Failed|Logout)`
-- **Sin FKs a `users`/`organizations` (intencional):** log append-only; fallos de login pueden no tener usuario; borrar org/user no debe borrar historial de seguridad. Relación Eloquent existe solo para lectura en UI.
 
 ### Business audit events (`audit_events`)
 - Tabla: `audit_events`
 - Modelo: [`app/Models/AuditEvent.php`](../app/Models/AuditEvent.php)
 - Servicio central: [`app/Support/AuditLogger.php`](../app/Support/AuditLogger.php)
-- **Sin FKs a actor/org (intencional):** mismos motivos que `auth_events` — auditoría de negocio no se cascade-borra con la entidad. `organization_id`/`actor_user_id` pueden quedar huérfanos tras hard-delete.
 - Acciones auditadas:
   - `payment.created` → [`RegisterContractPaymentAction`](../app/Actions/Payments/RegisterContractPaymentAction.php)
   - `expense.created` → [`Expenses\QuickRegisterModal`](../app/Livewire/Expenses/QuickRegisterModal.php)

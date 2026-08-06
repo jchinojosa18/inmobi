@@ -5,7 +5,6 @@ namespace App\Actions\MonthCloses;
 use App\Models\MonthClose;
 use App\Support\AuditLogger;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -38,34 +37,16 @@ class CloseMonthAction
 
             $snapshot = $this->snapshotAction->execute($organizationId, $month);
 
-            try {
-                $monthClose = MonthClose::query()
-                    ->withoutOrganizationScope()
-                    ->create([
-                        'organization_id' => $organizationId,
-                        'month' => $month,
-                        'closed_at' => CarbonImmutable::now('America/Tijuana')->toDateTimeString(),
-                        'closed_by_user_id' => $userId,
-                        'snapshot' => $snapshot,
-                        'notes' => $notes,
-                    ]);
-            } catch (QueryException $exception) {
-                if (! $this->isDuplicateMonthCloseViolation($exception)) {
-                    throw $exception;
-                }
-
-                $monthClose = MonthClose::query()
-                    ->withoutOrganizationScope()
-                    ->where('organization_id', $organizationId)
-                    ->where('month', $month)
-                    ->first();
-
-                if ($monthClose === null) {
-                    throw $exception;
-                }
-
-                return $monthClose;
-            }
+            $monthClose = MonthClose::query()
+                ->withoutOrganizationScope()
+                ->create([
+                    'organization_id' => $organizationId,
+                    'month' => $month,
+                    'closed_at' => CarbonImmutable::now('America/Tijuana')->toDateTimeString(),
+                    'closed_by_user_id' => $userId,
+                    'snapshot' => $snapshot,
+                    'notes' => $notes,
+                ]);
 
             $this->auditLogger->log(
                 action: 'month.closed',
@@ -82,17 +63,5 @@ class CloseMonthAction
 
             return $monthClose;
         }, 3);
-    }
-
-    private function isDuplicateMonthCloseViolation(QueryException $exception): bool
-    {
-        if ($exception->getCode() !== '23000') {
-            return false;
-        }
-
-        $message = strtolower($exception->getMessage());
-
-        return str_contains($message, 'month_closes_organization_id_month_unique')
-            || (str_contains($message, 'organization_id') && str_contains($message, 'month') && str_contains($message, 'unique'));
     }
 }

@@ -18,16 +18,9 @@ class ApplyCreditBalanceAction
             $contract = Contract::query()->lockForUpdate()->findOrFail($contract->id);
 
             $credit = CreditBalance::query()
-                ->withTrashed()
                 ->where('contract_id', $contract->id)
                 ->lockForUpdate()
                 ->first();
-
-            if ($credit?->trashed()) {
-                // Soft-deleted credit rows keep unique (organization_id, contract_id);
-                // restore before mutating so writers never invent a duplicate row.
-                $credit->restore();
-            }
 
             $available = round((float) ($credit?->balance ?? 0), 2);
             if ($available <= 0) {

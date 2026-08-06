@@ -2,10 +2,11 @@
 
 namespace App\Actions\MonthCloses;
 
+use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\Expense;
 use App\Models\Payment;
-use App\Support\LedgerOutstandingCalculator;
+use App\Models\PaymentAllocation;
 use App\Support\OperatingIncomeService;
 use Carbon\CarbonImmutable;
 
@@ -13,7 +14,6 @@ class BuildMonthCloseSnapshotAction
 {
     public function __construct(
         private readonly OperatingIncomeService $operatingIncomeService,
-        private readonly LedgerOutstandingCalculator $ledgerOutstandingCalculator,
     ) {}
 
     /**
@@ -45,11 +45,49 @@ class BuildMonthCloseSnapshotAction
             ])
             ->sum('amount');
 
-        $cartera = $this->ledgerOutstandingCalculator->outstandingForOrganizationAsOf(
-            organizationId: $organizationId,
-            chargeDateTo: $periodEnd->toDateString(),
-            paymentPaidAtTo: $cutoffTimestamp->toDateTimeString(),
-        );
+        $totalCharges = (float) Charge::query()
+            ->withoutOrganizationScope()
+            ->where('organization_id', $organizationId)
+            ->whereDate('charge_date', '<=', $periodEnd->toDateString())
+            ->whereNotIn('type', [
+                Charge::TYPE_DEPOSIT_HOLD,
+                Charge::TYPE_DEPOSIT_APPLY,
+                Charge::TYPE_DEPOSIT_TRANSFER_OUT,
+                'DEPOSIT',
+                'SECURITY_DEPOSIT',
+            ])
+            ->sum('amount');
+
+        $totalAllocated = (float) PaymentAllocation::query()
+            ->withoutOrganizationScope()
+            ->join('charges', 'charges.id', '=', 'payment_allocations.charge_id')
+            ->join('payments', 'payments.id', '=', 'payment_allocations.payment_id')
+            ->where('payment_allocations.organization_id', $organizationId)
+            ->where('charges.organization_id', $organizationId)
+            ->where('payments.organization_id', $organizationId)
+            ->whereNull('charges.deleted_at')
+            ->whereNull('payments.deleted_at')
+            ->whereDate('charges.charge_date', '<=', $periodEnd->toDateString())
+            ->whereNotIn('charges.type', [
+                Charge::TYPE_DEPOSIT_HOLD,
+                Charge::TYPE_DEPOSIT_APPLY,
+                Charge::TYPE_DEPOSIT_TRANSFER_OUT,
+                'DEPOSIT',
+                'SECURITY_DEPOSIT',
+            ])
+            ->where('payments.paid_at', '<=', $cutoffTimestamp->toDateTimeString())
+            ->sum('payment_allocations.amount');
+
+        $creditedFromPayments = (float) Payment::query()
+            ->withoutOrganizationScope()
+            ->where('organization_id', $organizationId)
+            ->where('paid_at', '<=', $cutoffTimestamp->toDateTimeString())
+            ->get(['meta'])
+            ->reduce(function (float $carry, Payment $payment): float {
+                return $carry + (float) data_get($payment->meta, 'credited_amount', 0);
+            }, 0.0);
+
+        $cartera = round(max($totalCharges - $totalAllocated - $creditedFromPayments, 0), 2);
 
         $contractsActive = Contract::query()
             ->withoutOrganizationScope()

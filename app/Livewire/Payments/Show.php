@@ -26,8 +26,6 @@ class Show extends Component
 
     public function mount(Payment $payment): void
     {
-        $this->authorize('view', $payment);
-
         $this->payment = $payment;
         $this->returnUrl = NavigationReturn::sanitizeUrl($this->returnUrl) ?? '';
         $this->returnLabel = NavigationReturn::sanitizeLabel($this->returnLabel) ?? '';
@@ -62,29 +60,24 @@ class Show extends Component
 
         $receipt = $builder->build($payment);
         $receiptUrl = route('payments.receipt.pdf', ['paymentId' => $payment->id]);
-        $canSendReceipts = auth()->user()?->can('receipts.send') ?? false;
-        $shareUrl = $canSendReceipts ? PaymentReceiptShareUrl::make($payment->id) : null;
+        $shareUrl = PaymentReceiptShareUrl::make($payment->id);
 
         $settings = $settingsService->forOrganization((int) $payment->organization_id);
         $unitName = trim((string) ($payment->contract?->unit?->property?->name.' / '.$payment->contract?->unit?->name));
-        $whatsAppUrl = null;
+        $whatsAppMessage = $settingsService->renderTemplate(
+            (string) $settings['whatsapp_template'],
+            [
+                'tenant_name' => (string) ($payment->contract?->tenant?->full_name ?? 'cliente'),
+                'unit_name' => $unitName !== '' ? $unitName : 'unidad',
+                'amount_due' => (float) $payment->amount,
+                'shared_receipt_url' => $shareUrl,
+            ]
+        );
 
-        if ($canSendReceipts && is_string($shareUrl)) {
-            $whatsAppMessage = $settingsService->renderTemplate(
-                (string) $settings['whatsapp_template'],
-                [
-                    'tenant_name' => (string) ($payment->contract?->tenant?->full_name ?? 'cliente'),
-                    'unit_name' => $unitName !== '' ? $unitName : 'unidad',
-                    'amount_due' => (float) $payment->amount,
-                    'shared_receipt_url' => $shareUrl,
-                ]
-            );
-
-            $whatsAppUrl = $this->buildWhatsAppUrl(
-                phone: $payment->contract?->tenant?->phone,
-                message: $whatsAppMessage
-            );
-        }
+        $whatsAppUrl = $this->buildWhatsAppUrl(
+            phone: $payment->contract?->tenant?->phone,
+            message: $whatsAppMessage
+        );
 
         $documents = $payment->documents->map(function ($document) {
             return [
@@ -126,7 +119,6 @@ class Show extends Component
             'receiptUrl' => $receiptUrl,
             'receiptViewerItem' => $receiptViewerItem,
             'documentViewerItems' => $documentViewerItems,
-            'canSendReceipts' => $canSendReceipts,
             'whatsAppUrl' => $whatsAppUrl,
             'shareUrl' => $shareUrl,
             'documents' => $documents,

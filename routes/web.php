@@ -225,20 +225,18 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->name('documents.download');
 });
 
-Route::get('/invite/{token}', AcceptOrganizationInvitationController::class)
-    ->middleware('throttle:invite-accept')
-    ->name('invitations.accept');
+Route::get('/invite/{token}', AcceptOrganizationInvitationController::class)->name('invitations.accept');
 
 Route::get('/receipts/{paymentId}/shared.pdf', PaymentReceiptPdfController::class)
-    ->middleware(['signed:relative', 'throttle:signed-share'])
+    ->middleware('signed:relative')
     ->name('payments.receipt.share');
 
 Route::get('/contracts/{contractId}/agreement/shared.pdf', ContractAgreementPdfController::class)
-    ->middleware(['signed:relative', 'throttle:signed-share'])
+    ->middleware('signed:relative')
     ->name('contracts.agreement.share');
 
 Route::get('/documents/{documentId}/shared', SharedDownloadController::class)
-    ->middleware(['signed:relative', 'throttle:signed-share'])
+    ->middleware('signed:relative')
     ->name('documents.shared');
 
 Route::get('/admin/health', function () {

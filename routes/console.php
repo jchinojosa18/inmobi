@@ -20,7 +20,7 @@ Schedule::call(function (): void {
     ->everyMinute()
     ->withoutOverlapping();
 
-// Daily ops heartbeat only — rent/penalties have dedicated schedules below.
+// Daily baseline command placeholder for future fines/reminders/closures workflows.
 Schedule::command(InmoDailyCommand::class)
     ->dailyAt('00:15')
     ->timezone('America/Tijuana')

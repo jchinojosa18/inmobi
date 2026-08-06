@@ -39,7 +39,6 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->registerAuthRateLimiters();
-        $this->registerShareRateLimiters();
 
         Event::listen(Login::class, [RecordAuthEvent::class, 'handleLogin']);
         Event::listen(Failed::class, [RecordAuthEvent::class, 'handleFailed']);
@@ -178,17 +177,6 @@ class AppServiceProvider extends ServiceProvider
         });
     }
 
-    private function registerShareRateLimiters(): void
-    {
-        RateLimiter::for('signed-share', function (Request $request) {
-            return Limit::perMinute(30)->by($request->ip());
-        });
-
-        RateLimiter::for('invite-accept', function (Request $request) {
-            return Limit::perMinute(10)->by($request->ip());
-        });
-    }
-
     private function loginEmailThrottleKey(Request $request): string
     {
         $email = mb_strtolower(trim((string) $request->input('email', '')));
@@ -204,7 +192,7 @@ class AppServiceProvider extends ServiceProvider
     private function logLoginThrottle(Request $request, string $limiter, int $retryAfter): void
     {
         try {
-            AuthEvent::query()->withoutOrganizationScope()->forceCreate([
+            AuthEvent::query()->create([
                 'organization_id' => null,
                 'user_id' => null,
                 'email' => mb_strtolower(trim((string) $request->input('email', ''))),

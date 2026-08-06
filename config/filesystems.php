@@ -20,9 +20,8 @@ return [
     | Documents Disk
     |--------------------------------------------------------------------------
     |
-    | Dedicated disk for evidence/documents uploads. Default is "local"
-    | (private). Do not use "public" in production — files would be
-    | reachable under /storage. Use "s3" (or compatible) when needed.
+    | Dedicated disk for evidence/documents uploads. Use "public" in local
+    | development and switch to "s3" (or compatible) in production.
     |
     */
 

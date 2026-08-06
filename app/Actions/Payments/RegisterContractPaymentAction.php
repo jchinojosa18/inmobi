@@ -108,10 +108,10 @@ class RegisterContractPaymentAction
 
     private function storeEvidence(Payment $payment, UploadedFile $evidence): void
     {
-        $disk = (string) config('filesystems.documents_disk', 'local');
+        $disk = (string) config('filesystems.documents_disk', 'public');
         $path = $evidence->store('documents/payments/'.$payment->organization_id, $disk);
 
-        Document::storeNew([
+        Document::query()->create([
             'organization_id' => $payment->organization_id,
             'documentable_id' => $payment->id,
             'documentable_type' => Payment::class,
