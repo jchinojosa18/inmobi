@@ -58,6 +58,7 @@ Credenciales de prueba comunes:
 - Seed base (`DatabaseSeeder`): `test@example.com` / `password`
 - Seed demo smoke (`DemoDataSeeder`): `admin-smoke@inmo.test` / `password`
 - Seed renovación (`ContractRenewalDemoSeeder`, también llamado desde DemoDataSeeder): `renew-admin@inmo.test` / `password` — contrato vencido renovable + uno bloqueado por saldo
+- Seed anulación (`CancelContractDemoSeeder`): `cancel-admin@inmo.test` / `password` — contrato limpio anulable + bloqueados (pago/depósito/crédito) + uno ya anulado
 
 Self-signup (sin seed):
 - `GET /register`

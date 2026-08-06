@@ -277,6 +277,7 @@ class DemoDataSeeder extends Seeder
             );
 
         $this->call(ContractRenewalDemoSeeder::class);
+        $this->call(CancelContractDemoSeeder::class);
     }
 
     private function resetDemoFinancialData(int $organizationId): void
