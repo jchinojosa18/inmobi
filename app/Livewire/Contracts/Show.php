@@ -35,6 +35,9 @@ class Show extends Component
     #[On('deposit-hold-voided')]
     public function onDepositHoldChanged(): void {}
 
+    #[On('settlement-processed')]
+    public function onSettlementProcessed(): void {}
+
     public Contract $contract;
 
     #[Url(as: 'return', except: '')]

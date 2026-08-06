@@ -300,8 +300,7 @@
         :documentable-id="$contract->id"
         :title="__('contracts.contract_documents')"
         variant="contract"
-        :key="'contract-documents-'.$contract->id"
+        :key="'contract-documents-'.$contract->id.'-'.(string) data_get($contract->meta, 'settlement_batch_id', 'open')"
     />
-
     @include('livewire.contracts.partials.cancel-contract-modal')
 </section>

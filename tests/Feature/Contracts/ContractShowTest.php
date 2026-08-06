@@ -191,6 +191,45 @@ class ContractShowTest extends TestCase
             ->assertSeeHtml('shared.pdf');
     }
 
+    public function test_settlement_processed_event_refreshes_contract_show(): void
+    {
+        $organization = Organization::factory()->create();
+        $property = Property::factory()->create(['organization_id' => $organization->id]);
+        $unit = Unit::factory()->create([
+            'organization_id' => $organization->id,
+            'property_id' => $property->id,
+        ]);
+        $tenant = Tenant::factory()->create(['organization_id' => $organization->id]);
+        $contract = Contract::factory()->create([
+            'organization_id' => $organization->id,
+            'unit_id' => $unit->id,
+            'tenant_id' => $tenant->id,
+            'status' => Contract::STATUS_ACTIVE,
+            'rent_amount' => 0,
+            'deposit_amount' => 1000,
+        ]);
+        $user = $this->createUserForOrganization($organization);
+
+        $component = Livewire::actingAs($user)
+            ->test(Show::class, ['contract' => $contract])
+            ->assertSee(__('common.active'))
+            ->assertViewHas('canCreatePayments', true);
+
+        $contract->update([
+            'status' => Contract::STATUS_ENDED,
+            'ends_at' => '2026-08-06',
+            'meta' => array_merge($contract->meta ?? [], [
+                'settlement_batch_id' => 'batch-refresh-1',
+            ]),
+        ]);
+
+        $component
+            ->dispatch('settlement-processed')
+            ->assertSee(__('common.finished'))
+            ->assertViewHas('canCreatePayments', false)
+            ->assertViewHas('canManageCharges', false);
+    }
+
     /**
      * @return array{Organization, Contract}
      */

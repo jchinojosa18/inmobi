@@ -158,8 +158,6 @@ class ProcessContractSettlementAction
             }
 
             $refundExpenseId = null;
-            $refundReceiptFolio = null;
-            $refundReceiptDocumentId = null;
             if ($depositRefund > 0) {
                 $refundCategoryId = app(SeedDefaultExpenseCategoriesAction::class)
                     ->depositRefundCategoryId($lockedContract->organization_id);
@@ -188,38 +186,6 @@ class ProcessContractSettlementAction
                     ]);
 
                 $refundExpenseId = $refundExpense->id;
-
-                $previousOrganizationId = TenantContext::currentOrganizationId();
-                TenantContext::setOrganizationId($lockedContract->organization_id);
-
-                try {
-                    $folio = $this->refundReceiptFolioAction->execute(
-                        $lockedContract->organization_id,
-                        $exitDate,
-                    );
-                    $contractForReceipt = Contract::query()
-                        ->withoutOrganizationScope()
-                        ->with(['tenant', 'unit.property'])
-                        ->findOrFail($lockedContract->id);
-                    $receiptDocument = $this->refundReceiptPdfAction->execute(
-                        contract: $contractForReceipt,
-                        summary: [
-                            'folio' => $folio,
-                            'move_out_date' => $exitDate->toDateString(),
-                            'deposit_available' => $depositAvailable,
-                            'deposit_applied' => $depositApplied,
-                            'deposit_refund' => $depositRefund,
-                            'credit_refunded' => $creditRefunded,
-                            'settlement_batch_id' => $batchId,
-                        ],
-                        refundExpenseId: (int) $refundExpenseId,
-                        userId: $userId,
-                    );
-                    $refundReceiptFolio = $folio;
-                    $refundReceiptDocumentId = $receiptDocument->id;
-                } finally {
-                    TenantContext::setOrganizationId($previousOrganizationId);
-                }
             }
 
             $balanceToCollect = round(max($outstandingBeforeDeposit - $depositApplied, 0), 2);
@@ -243,8 +209,8 @@ class ProcessContractSettlementAction
                 'moveout_charge_ids' => $moveoutChargeIds,
                 'deposit_apply_charge_id' => $depositApplyChargeId,
                 'refund_expense_id' => $refundExpenseId,
-                'refund_receipt_folio' => $refundReceiptFolio ?? null,
-                'refund_receipt_document_id' => $refundReceiptDocumentId ?? null,
+                'refund_receipt_folio' => null,
+                'refund_receipt_document_id' => null,
                 'closed_by_user_id' => $userId,
                 'closed_at' => now('America/Tijuana')->toIso8601String(),
             ];
@@ -266,6 +232,8 @@ class ProcessContractSettlementAction
                     moveoutChargeIds: $moveoutChargeIds,
                 ),
                 'evidences' => $evidences,
+                'exit_date' => $exitDate,
+                'credit_refunded' => $creditRefunded,
             ];
         }, 3);
 
@@ -279,6 +247,17 @@ class ProcessContractSettlementAction
         }
 
         $result = $transactionData['result'];
+
+        if ($result->depositRefund > 0 && $result->refundExpenseId !== null) {
+            $this->storeDepositRefundReceipt(
+                contract: $contract,
+                batchId: $batchId,
+                exitDate: $transactionData['exit_date'],
+                result: $result,
+                creditRefunded: (float) $transactionData['credit_refunded'],
+                userId: $userId,
+            );
+        }
 
         $this->auditLogger->log(
             action: 'settlement.completed',
@@ -302,6 +281,66 @@ class ProcessContractSettlementAction
         );
 
         return $result;
+    }
+
+    private function storeDepositRefundReceipt(
+        Contract $contract,
+        string $batchId,
+        CarbonImmutable $exitDate,
+        ContractSettlementResult $result,
+        float $creditRefunded,
+        ?int $userId,
+    ): void {
+        $previousOrganizationId = TenantContext::currentOrganizationId();
+        TenantContext::setOrganizationId($contract->organization_id);
+
+        try {
+            DB::transaction(function () use ($contract, $batchId, $exitDate, $result, $creditRefunded, $userId): void {
+                $lockedContract = Contract::query()
+                    ->withoutOrganizationScope()
+                    ->lockForUpdate()
+                    ->findOrFail($contract->id);
+
+                $folio = $this->refundReceiptFolioAction->execute(
+                    $lockedContract->organization_id,
+                    $exitDate,
+                );
+
+                $contractForReceipt = Contract::query()
+                    ->withoutOrganizationScope()
+                    ->with(['tenant', 'unit.property'])
+                    ->findOrFail($lockedContract->id);
+
+                $receiptDocument = $this->refundReceiptPdfAction->execute(
+                    contract: $contractForReceipt,
+                    summary: [
+                        'folio' => $folio,
+                        'move_out_date' => $exitDate->toDateString(),
+                        'deposit_available' => $result->depositAvailable,
+                        'deposit_applied' => $result->depositApplied,
+                        'deposit_refund' => $result->depositRefund,
+                        'credit_refunded' => $creditRefunded,
+                        'balance_to_collect' => $result->balanceToCollect,
+                        'settlement_batch_id' => $batchId,
+                    ],
+                    refundExpenseId: (int) $result->refundExpenseId,
+                    userId: $userId,
+                );
+
+                $meta = is_array($lockedContract->meta) ? $lockedContract->meta : [];
+                $settlements = is_array(data_get($meta, 'settlements')) ? $meta['settlements'] : [];
+                if (! isset($settlements[$batchId]) || ! is_array($settlements[$batchId])) {
+                    $settlements[$batchId] = [];
+                }
+                $settlements[$batchId]['refund_receipt_folio'] = $folio;
+                $settlements[$batchId]['refund_receipt_document_id'] = $receiptDocument->id;
+                $meta['settlements'] = $settlements;
+                $lockedContract->meta = $meta;
+                $lockedContract->save();
+            });
+        } finally {
+            TenantContext::setOrganizationId($previousOrganizationId);
+        }
     }
 
     private function applyCreditBalance(Contract $contract): void

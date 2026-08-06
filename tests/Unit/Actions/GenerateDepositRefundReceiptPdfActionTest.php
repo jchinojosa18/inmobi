@@ -3,7 +3,9 @@
 namespace Tests\Unit\Actions;
 
 use App\Actions\Contracts\GenerateDepositRefundReceiptPdfAction;
+use App\Models\Charge;
 use App\Models\Contract;
+use App\Models\Document;
 use App\Models\Organization;
 use App\Models\Property;
 use App\Models\Tenant;
@@ -36,6 +38,33 @@ class GenerateDepositRefundReceiptPdfActionTest extends TestCase
         config(['filesystems.documents_disk' => 'local']);
 
         $contract = $this->createContractGraph();
+
+        $moveout = Charge::factory()->create([
+            'organization_id' => $contract->organization_id,
+            'contract_id' => $contract->id,
+            'unit_id' => $contract->unit_id,
+            'type' => Charge::TYPE_MOVEOUT,
+            'period' => '2026-08',
+            'charge_date' => '2026-08-06',
+            'amount' => 5000,
+            'meta' => [
+                'subtype' => 'salida',
+                'settlement_batch_id' => 'batch-1',
+            ],
+        ]);
+
+        Document::storeNew([
+            'organization_id' => $contract->organization_id,
+            'documentable_type' => Charge::class,
+            'documentable_id' => $moveout->id,
+            'path' => 'documents/settlements/'.$contract->organization_id.'/evidence-salida.jpg',
+            'mime' => 'image/jpeg',
+            'size' => 1200,
+            'type' => 'MOVEOUT_EVIDENCE',
+            'tags' => ['settlement', 'moveout', 'evidence'],
+            'meta' => ['settlement_batch_id' => 'batch-1'],
+        ]);
+
         $document = app(GenerateDepositRefundReceiptPdfAction::class)->execute(
             contract: $contract,
             summary: [
@@ -45,6 +74,7 @@ class GenerateDepositRefundReceiptPdfActionTest extends TestCase
                 'deposit_applied' => 5000.0,
                 'deposit_refund' => 2500.0,
                 'credit_refunded' => 0.0,
+                'balance_to_collect' => 0.0,
                 'settlement_batch_id' => 'batch-1',
             ],
             refundExpenseId: 99,
@@ -62,6 +92,9 @@ class GenerateDepositRefundReceiptPdfActionTest extends TestCase
         $this->assertContains('deposit_refund', $document->tags);
         $this->assertContains('generated', $document->tags);
         Storage::disk(config('filesystems.documents_disk', 'local'))->assertExists($document->path);
+
+        $pdfBinary = Storage::disk(config('filesystems.documents_disk', 'local'))->get($document->path);
+        $this->assertNotEmpty($pdfBinary);
     }
 
     private function createContractGraph(): Contract

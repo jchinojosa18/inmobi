@@ -162,6 +162,9 @@ class SettlementWizard extends Component
             'balance' => number_format($result->balanceToCollect, 2),
         ]);
 
+        $this->contract->refresh();
+        $this->isEnded = true;
+
         session()->flash('success', __('contracts.flash.settlement_processed'));
         $this->dispatch('settlement-processed');
     }

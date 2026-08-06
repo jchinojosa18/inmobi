@@ -2,8 +2,10 @@
 
 namespace App\Actions\Contracts;
 
+use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\Document;
+use App\Models\Expense;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 
@@ -16,9 +18,40 @@ class GenerateDepositRefundReceiptPdfAction
     {
         $contract->loadMissing(['tenant', 'unit.property']);
 
+        $batchId = (string) ($summary['settlement_batch_id'] ?? '');
+
+        $moveoutCharges = Charge::query()
+            ->withoutOrganizationScope()
+            ->where('organization_id', $contract->organization_id)
+            ->where('contract_id', $contract->id)
+            ->where('type', Charge::TYPE_MOVEOUT)
+            ->when($batchId !== '', fn ($query) => $query->where('meta->settlement_batch_id', $batchId))
+            ->with('documents')
+            ->orderBy('id')
+            ->get();
+
+        $depositApply = Charge::query()
+            ->withoutOrganizationScope()
+            ->where('organization_id', $contract->organization_id)
+            ->where('contract_id', $contract->id)
+            ->where('type', Charge::TYPE_DEPOSIT_APPLY)
+            ->when($batchId !== '', fn ($query) => $query->where('meta->settlement_batch_id', $batchId))
+            ->first();
+
+        $refundExpense = Expense::query()
+            ->withoutOrganizationScope()
+            ->with('expenseCategory')
+            ->where('organization_id', $contract->organization_id)
+            ->where('contract_id', $contract->id)
+            ->whereKey($refundExpenseId)
+            ->first();
+
         $pdf = Pdf::loadView('pdf.deposit-refund-receipt', [
             'contract' => $contract,
             'summary' => $summary,
+            'moveoutCharges' => $moveoutCharges,
+            'depositApply' => $depositApply,
+            'refundExpense' => $refundExpense,
         ])->setPaper('letter', 'portrait');
 
         $disk = (string) config('filesystems.documents_disk', 'local');
