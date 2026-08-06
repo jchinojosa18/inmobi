@@ -24,6 +24,8 @@ class CashFlow extends Component
 
     public function mount(): void
     {
+        abort_unless(auth()->user()?->can('reports.view') ?? false, 403);
+
         $this->date_from = now()->startOfMonth()->toDateString();
         $this->date_to = now()->toDateString();
     }

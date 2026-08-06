@@ -29,7 +29,7 @@ class AuditLogger
                 ?? $user?->organization_id
                 ?? TenantContext::currentOrganizationId();
 
-            AuditEvent::create([
+            AuditEvent::query()->withoutOrganizationScope()->forceCreate([
                 'organization_id' => $resolvedOrgId,
                 'plaza_id' => TenantContext::currentPlazaId(),
                 'actor_user_id' => $actorUserId ?? $user?->id,

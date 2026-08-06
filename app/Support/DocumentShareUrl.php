@@ -11,7 +11,7 @@ final class DocumentShareUrl
     {
         $relative = URL::temporarySignedRoute(
             'documents.shared',
-            $expiresAt ?? now()->addDays(7),
+            $expiresAt ?? now()->addHours(SignedShareUrl::TTL_HOURS),
             ['documentId' => $documentId],
             absolute: false,
         );

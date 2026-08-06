@@ -370,6 +370,53 @@ class GenerateMonthlyRentChargesActionTest extends TestCase
         CarbonImmutable::setTestNow();
     }
 
+    public function test_backfill_skips_closed_month(): void
+    {
+        [$organization, $contract] = $this->makeContractGraph([
+            'due_day' => 15,
+            'starts_at' => '2026-01-01',
+        ]);
+
+        $user = User::factory()->create([
+            'organization_id' => $organization->id,
+        ]);
+
+        Charge::query()->withoutOrganizationScope()
+            ->where('contract_id', $contract->id)
+            ->where('type', Charge::TYPE_RENT)
+            ->where('period', '2026-03')
+            ->forceDelete();
+
+        MonthClose::query()->withoutOrganizationScope()->create([
+            'organization_id' => $organization->id,
+            'month' => '2026-03',
+            'closed_at' => now(),
+            'closed_by_user_id' => $user->id,
+            'snapshot' => [
+                'ingresos_operativos' => 0,
+                'egresos' => 0,
+                'neto' => 0,
+                'cartera' => 0,
+                'conteos' => [
+                    'contratos_activos' => 0,
+                    'pagos' => 0,
+                    'egresos' => 0,
+                ],
+            ],
+        ]);
+
+        $result = app(GenerateMonthlyRentChargesAction::class)
+            ->executeForOrganization('2026-03', $organization->id);
+
+        $this->assertSame(0, $result['created']);
+        $this->assertGreaterThanOrEqual(1, $result['skipped']);
+        $this->assertSame(0, Charge::query()->withoutOrganizationScope()
+            ->where('contract_id', $contract->id)
+            ->where('period', '2026-03')
+            ->where('type', Charge::TYPE_RENT)
+            ->count());
+    }
+
     public function test_due_soon_skips_period_when_contract_not_yet_started(): void
     {
         CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-07-27 00:10:00', 'America/Tijuana'));
@@ -393,6 +440,46 @@ class GenerateMonthlyRentChargesActionTest extends TestCase
             ->count());
 
         CarbonImmutable::setTestNow();
+    }
+
+    public function test_it_restores_soft_deleted_rent_instead_of_duplicate_unique_failure(): void
+    {
+        [$organization, $contract] = $this->makeContractGraph([
+            'starts_at' => '2026-03-01',
+            'rent_amount' => 1500,
+        ]);
+        TenantContext::setOrganizationId($organization->id);
+
+        app(GenerateMonthlyRentChargesAction::class)
+            ->executeForOrganization('2026-03', $organization->id);
+
+        $existing = Charge::query()->withoutOrganizationScope()
+            ->where('contract_id', $contract->id)
+            ->where('type', Charge::TYPE_RENT)
+            ->where('period', '2026-03')
+            ->firstOrFail();
+
+        $existingId = (int) $existing->id;
+        $existing->update(['amount' => 900]);
+        $existing->delete();
+
+        $this->assertSoftDeleted('charges', ['id' => $existingId]);
+
+        $result = app(GenerateMonthlyRentChargesAction::class)
+            ->executeForOrganization('2026-03', $organization->id);
+
+        $this->assertSame(0, $result['created']);
+        $this->assertSame(1, $result['skipped']);
+
+        $restored = Charge::query()->withoutOrganizationScope()->find($existingId);
+        $this->assertNotNull($restored);
+        $this->assertNull($restored->deleted_at);
+        $this->assertSame('1500.00', (string) $restored->amount);
+        $this->assertSame(1, Charge::query()->withoutOrganizationScope()
+            ->where('contract_id', $contract->id)
+            ->where('type', Charge::TYPE_RENT)
+            ->where('period', '2026-03')
+            ->count());
     }
 
     /**

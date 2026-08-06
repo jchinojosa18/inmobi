@@ -66,7 +66,8 @@ Definir la arquitectura base del SaaS de administración inmobiliaria y alinear 
 
 ## Operacion diaria
 - La base tecnica de scheduler + queue para tareas diarias esta en `docs/DAILY_OPERATIONS.md`.
-- Existe un comando placeholder `inmo:daily` y un job de ejemplo para validar el pipeline operativo.
+- `inmo:daily` escribe heartbeat `daily_operations` (rentas/multas tienen schedules propios).
+- Ver [`docs/DAILY_OPERATIONS.md`](DAILY_OPERATIONS.md).
 
 ## Control de acceso (RBAC)
 - Se utiliza `spatie/laravel-permission` como mecanismo central de roles y permisos.

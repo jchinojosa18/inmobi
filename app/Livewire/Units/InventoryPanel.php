@@ -175,7 +175,7 @@ class InventoryPanel extends Component
 
         DB::transaction(function () use ($item): void {
             foreach ($item->documents as $document) {
-                $disk = (string) data_get($document->meta, 'disk', config('filesystems.documents_disk', 'public'));
+                $disk = (string) data_get($document->meta, 'disk', config('filesystems.documents_disk', 'local'));
 
                 if (Storage::disk($disk)->exists($document->path)) {
                     Storage::disk($disk)->delete($document->path);
@@ -244,13 +244,13 @@ class InventoryPanel extends Component
             throw $exception;
         }
 
-        $disk = (string) config('filesystems.documents_disk', 'public');
+        $disk = (string) config('filesystems.documents_disk', 'local');
 
         DB::transaction(function () use ($item, $uploads, $disk): void {
             foreach ($uploads as $upload) {
                 $path = $upload->store('documents/unitinventoryitem/'.$item->organization_id, $disk);
 
-                Document::query()->create([
+                Document::storeNew([
                     'organization_id' => (int) $item->organization_id,
                     'documentable_type' => UnitInventoryItem::class,
                     'documentable_id' => $item->id,
@@ -351,7 +351,7 @@ class InventoryPanel extends Component
             ->whereIn('documentable_id', $inventoryItemIds)
             ->findOrFail($documentId);
 
-        $disk = (string) data_get($document->meta, 'disk', config('filesystems.documents_disk', 'public'));
+        $disk = (string) data_get($document->meta, 'disk', config('filesystems.documents_disk', 'local'));
 
         if (Storage::disk($disk)->exists($document->path)) {
             Storage::disk($disk)->delete($document->path);

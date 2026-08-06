@@ -101,12 +101,18 @@ class ApplyPaymentAction
         // encoding financial credit as negative charges, which complicates charge status derivation.
         $creditBalance = CreditBalance::query()
             ->withTrashed()
-            ->firstOrNew([
+            ->where('organization_id', $contract->organization_id)
+            ->where('contract_id', $contract->id)
+            ->lockForUpdate()
+            ->first();
+
+        if ($creditBalance === null) {
+            $creditBalance = new CreditBalance([
                 'organization_id' => $contract->organization_id,
                 'contract_id' => $contract->id,
+                'balance' => 0,
             ]);
-
-        if ($creditBalance->trashed()) {
+        } elseif ($creditBalance->trashed()) {
             $creditBalance->restore();
         }
 

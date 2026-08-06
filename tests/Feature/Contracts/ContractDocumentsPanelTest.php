@@ -140,16 +140,16 @@ class ContractDocumentsPanelTest extends TestCase
             ->assertHasNoErrors();
     }
 
-    public function test_delete_requires_upload_permission(): void
+    public function test_delete_requires_delete_permission(): void
     {
         Storage::fake('local');
         [$organization, $contract] = $this->createContractGraph();
 
-        $role = Role::findOrCreate('ViewOnlyDocs', 'web');
-        $role->syncPermissions(['dashboard.view', 'documents.view']);
+        $role = Role::findOrCreate('CapturistaDocs', 'web');
+        $role->syncPermissions(['dashboard.view', 'documents.view', 'documents.upload']);
 
         $user = User::factory()->create(['organization_id' => $organization->id]);
-        $user->syncRoles(['ViewOnlyDocs']);
+        $user->syncRoles(['CapturistaDocs']);
 
         $document = Document::factory()->create([
             'organization_id' => $organization->id,
@@ -157,6 +157,34 @@ class ContractDocumentsPanelTest extends TestCase
             'documentable_id' => $contract->id,
             'category' => ContractDocumentCategory::Contract->value,
             'path' => 'documents/contract/'.$organization->id.'/x.pdf',
+            'meta' => ['disk' => 'local'],
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(Panel::class, [
+                'documentableType' => Contract::class,
+                'documentableId' => $contract->id,
+                'variant' => 'contract',
+            ])
+            ->call('confirmDeleteDocument', $document->id)
+            ->assertStatus(403);
+    }
+
+    public function test_stock_capturista_cannot_delete_documents(): void
+    {
+        Storage::fake('local');
+        [$organization, $contract] = $this->createContractGraph();
+
+        Role::findOrCreate('Capturista', 'web');
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+        $user->syncRoles(['Capturista']);
+
+        $document = Document::factory()->create([
+            'organization_id' => $organization->id,
+            'documentable_type' => Contract::class,
+            'documentable_id' => $contract->id,
+            'category' => ContractDocumentCategory::Contract->value,
+            'path' => 'documents/contract/'.$organization->id.'/capturista.pdf',
             'meta' => ['disk' => 'local'],
         ]);
 

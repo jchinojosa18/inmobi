@@ -74,7 +74,6 @@ return [
             'permissions' => [
                 'expenses.view' => 'Ver egresos',
                 'expenses.create' => 'Registrar egresos',
-                'expenses.manage' => 'Gestionar egresos',
                 'expense_categories.manage' => 'Gestionar categorías de egreso',
             ],
         ],

@@ -36,7 +36,6 @@ class SyncRolesAndPermissionsSeeder extends Seeder
         'receipts.send',
         'expenses.view',
         'expenses.create',
-        'expenses.manage',
         'expense_categories.manage',
         'reports.view',
         'reports.export',
@@ -101,6 +100,12 @@ class SyncRolesAndPermissionsSeeder extends Seeder
         foreach (self::PERMISSIONS as $permission) {
             Permission::findOrCreate($permission, 'web');
         }
+
+        // Retired permissions (no longer checked in app).
+        Permission::query()
+            ->where('guard_name', 'web')
+            ->whereIn('name', ['expenses.manage'])
+            ->delete();
 
         $adminRole = Role::findOrCreate('Admin', 'web');
         $capturistaRole = Role::findOrCreate('Capturista', 'web');

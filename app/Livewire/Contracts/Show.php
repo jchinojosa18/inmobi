@@ -62,9 +62,7 @@ class Show extends Component
 
     public function mount(Contract $contract): void
     {
-        if (! (auth()->user()?->can('contracts.view') ?? false)) {
-            abort(403);
-        }
+        $this->authorize('view', $contract);
 
         $this->contract = $contract;
         $this->adjustment_charge_date = now('America/Tijuana')->toDateString();

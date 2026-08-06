@@ -39,6 +39,7 @@ class AuthRateLimitTest extends TestCase
         }
 
         $event = AuthEvent::query()
+            ->withoutOrganizationScope()
             ->where('event', 'login_failed')
             ->where('email', 'throttle-log@test.dev')
             ->latest('id')

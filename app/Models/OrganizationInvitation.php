@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OrganizationInvitation extends Model
 {
+    use BelongsToOrganization;
+
     /**
      * @var list<string>
      */
