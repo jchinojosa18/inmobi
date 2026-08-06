@@ -366,7 +366,10 @@ class Panel extends Component
                     'size' => (int) $document->size,
                     'created_at' => $document->created_at,
                     'category' => $document->category?->value,
-                    'category_label' => $document->category?->label(),
+                    'category_label' => data_get($document->meta, 'kind') === 'deposit_refund_receipt'
+                        ? __('contracts.deposit_refund_receipt_document')
+                            .(data_get($document->meta, 'folio') ? ' · '.data_get($document->meta, 'folio') : '')
+                        : $document->category?->label(),
                 ];
             });
 

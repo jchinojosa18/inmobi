@@ -49,11 +49,22 @@
                             {{ __('contracts.deposit_surplus_refunded') }}:
                             <strong>${{ number_format($refundedDeposit, 2) }}</strong>
                         </p>
-                        @if ($refundExpenseUrl)
-                            <p class="mt-1">
-                                <a href="{{ $refundExpenseUrl }}" class="font-medium text-sky-700 underline">
-                                    {{ __('contracts.view_deposit_refund_expense') }}
-                                </a>
+                        @if ($refundExpenseUrl || $refundReceiptViewerItem)
+                            <p class="mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                                @if ($refundExpenseUrl)
+                                    <a href="{{ $refundExpenseUrl }}" class="font-medium text-sky-700 underline">
+                                        {{ __('contracts.view_deposit_refund_expense') }}
+                                    </a>
+                                @endif
+                                @if ($refundReceiptViewerItem)
+                                    <x-ui.file-viewer-trigger
+                                        :items="[$refundReceiptViewerItem]"
+                                        :index="0"
+                                        class="!font-medium !text-sky-700"
+                                    >
+                                        {{ __('contracts.view_deposit_refund_receipt') }}
+                                    </x-ui.file-viewer-trigger>
+                                @endif
                             </p>
                         @endif
                     @endif

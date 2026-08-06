@@ -5,7 +5,9 @@ namespace App\Livewire\Contracts;
 use App\Actions\Contracts\ProcessContractSettlementAction;
 use App\Models\Contract;
 use App\Models\CreditBalance;
+use App\Models\Document;
 use App\Support\DepositBalanceService;
+use App\Support\FileViewerItem;
 use App\Support\LedgerOutstandingCalculator;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\UploadedFile;
@@ -210,6 +212,28 @@ class SettlementWizard extends Component
             ? route('expenses.index', ['contractFilter' => $contract->id])
             : null;
 
+        $refundReceiptViewerItem = null;
+        $batchId = data_get($contract->meta, 'settlement_batch_id');
+        $documentId = (int) data_get($contract->meta, "settlements.{$batchId}.refund_receipt_document_id", 0);
+        if (
+            $documentId > 0
+            && $refundedDeposit > 0
+            && (auth()->user()?->can('documents.view') ?? false)
+        ) {
+            $receiptDocument = Document::query()
+                ->where('id', $documentId)
+                ->where('organization_id', $contract->organization_id)
+                ->first();
+
+            if ($receiptDocument !== null) {
+                $refundReceiptViewerItem = FileViewerItem::fromDocumentRoute(
+                    $receiptDocument->id,
+                    __('contracts.view_deposit_refund_receipt'),
+                    $receiptDocument->mime ?? 'application/pdf',
+                );
+            }
+        }
+
         return view('livewire.contracts.settlement-wizard', [
             'contract' => $contract,
             'isEnded' => $this->isEnded,
@@ -220,6 +244,7 @@ class SettlementWizard extends Component
             'currentOutstanding' => $currentOutstanding,
             'estimatedRefund' => $estimatedRefund,
             'refundExpenseUrl' => $refundExpenseUrl,
+            'refundReceiptViewerItem' => $refundReceiptViewerItem,
         ]);
     }
 }

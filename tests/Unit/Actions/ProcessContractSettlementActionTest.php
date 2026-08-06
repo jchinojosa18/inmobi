@@ -7,6 +7,7 @@ use App\Actions\Expenses\SeedDefaultExpenseCategoriesAction;
 use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\CreditBalance;
+use App\Models\Document;
 use App\Models\ExpenseCategory;
 use App\Models\Organization;
 use App\Models\Payment;
@@ -14,8 +15,10 @@ use App\Models\PaymentAllocation;
 use App\Models\Property;
 use App\Models\Tenant;
 use App\Models\Unit;
+use App\Support\ContractDocumentCategory;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -115,6 +118,81 @@ class ProcessContractSettlementActionTest extends TestCase
             'status' => Contract::STATUS_ENDED,
             'ends_at' => '2026-03-20 00:00:00',
         ]);
+
+        $contract->refresh();
+        $batchId = data_get($contract->meta, 'settlement_batch_id');
+        $this->assertNotEmpty(data_get($contract->meta, "settlements.{$batchId}.refund_receipt_folio"));
+        $this->assertNotEmpty(data_get($contract->meta, "settlements.{$batchId}.refund_receipt_document_id"));
+        $this->assertTrue(str_starts_with(
+            (string) data_get($contract->meta, "settlements.{$batchId}.refund_receipt_folio"),
+            'DEV-'
+        ));
+        $this->assertDatabaseHas('documents', [
+            'documentable_type' => Contract::class,
+            'documentable_id' => $contract->id,
+        ]);
+    }
+
+    public function test_refund_receipt_created_when_contract_already_has_lease_document(): void
+    {
+        Storage::fake('local');
+        config(['filesystems.documents_disk' => 'local']);
+
+        [$contract, $depositHold] = $this->createContractWithDepositHold(1000);
+
+        Document::factory()->create([
+            'organization_id' => $contract->organization_id,
+            'documentable_type' => Contract::class,
+            'documentable_id' => $contract->id,
+            'path' => 'documents/contract/'.$contract->organization_id.'/lease.pdf',
+            'mime' => 'application/pdf',
+            'size' => 1024,
+            'type' => 'CONTRACT_DOCUMENT',
+            'category' => ContractDocumentCategory::Contract,
+            'tags' => ['generated'],
+            'meta' => ['kind' => 'lease_agreement', 'disk' => 'local'],
+        ]);
+
+        $payment = Payment::factory()->create([
+            'organization_id' => $contract->organization_id,
+            'contract_id' => $contract->id,
+            'paid_at' => '2026-03-01 10:00:00',
+            'amount' => 1000,
+        ]);
+
+        PaymentAllocation::factory()->create([
+            'organization_id' => $contract->organization_id,
+            'payment_id' => $payment->id,
+            'charge_id' => $depositHold->id,
+            'amount' => 1000,
+        ]);
+
+        app(ProcessContractSettlementAction::class)->execute(
+            contract: $contract,
+            moveOutDate: '2026-03-20',
+            concepts: [
+                ['description' => 'Limpieza final', 'amount' => 200],
+            ],
+            userId: null,
+        );
+
+        $contract->refresh();
+        $batchId = data_get($contract->meta, 'settlement_batch_id');
+        $receiptDocumentId = (int) data_get($contract->meta, "settlements.{$batchId}.refund_receipt_document_id");
+
+        $this->assertGreaterThan(0, $receiptDocumentId);
+
+        $receiptDocument = Document::query()
+            ->withoutOrganizationScope()
+            ->findOrFail($receiptDocumentId);
+
+        $this->assertNull($receiptDocument->category);
+        $this->assertSame('deposit_refund_receipt', data_get($receiptDocument->meta, 'kind'));
+        $this->assertSame(2, Document::query()
+            ->withoutOrganizationScope()
+            ->where('documentable_type', Contract::class)
+            ->where('documentable_id', $contract->id)
+            ->count());
     }
 
     public function test_deposit_payment_clears_moveout_balance_when_rent_already_paid(): void
@@ -259,6 +337,20 @@ class ProcessContractSettlementActionTest extends TestCase
             'expense_category_id' => $refundCategoryId,
             'contract_id' => $contract->id,
         ]);
+
+        $contract->refresh();
+        $batchId = data_get($contract->meta, 'settlement_batch_id');
+        $this->assertNull(data_get($contract->meta, "settlements.{$batchId}.refund_receipt_folio"));
+        $this->assertNull(data_get($contract->meta, "settlements.{$batchId}.refund_receipt_document_id"));
+
+        $refundReceiptCount = Document::query()
+            ->withoutOrganizationScope()
+            ->where('documentable_type', Contract::class)
+            ->where('documentable_id', $contract->id)
+            ->whereRaw("json_extract(meta, '$.kind') = ?", ['deposit_refund_receipt'])
+            ->count();
+
+        $this->assertSame(0, $refundReceiptCount);
     }
 
     public function test_second_execution_on_ended_contract_throws_exception(): void
@@ -398,6 +490,18 @@ class ProcessContractSettlementActionTest extends TestCase
             'contract_id' => $contract->id,
             'amount' => 1250,
         ]);
+
+        $contract->refresh();
+        $batchId = data_get($contract->meta, 'settlement_batch_id');
+        $this->assertSame(250.0, (float) data_get($contract->meta, "settlements.{$batchId}.credit_refunded"));
+
+        $receiptDocumentId = (int) data_get($contract->meta, "settlements.{$batchId}.refund_receipt_document_id");
+        $receiptDocument = Document::query()
+            ->withoutOrganizationScope()
+            ->findOrFail($receiptDocumentId);
+
+        $this->assertNull($receiptDocument->category);
+        $this->assertSame('deposit_refund_receipt', data_get($receiptDocument->meta, 'kind'));
     }
 
     public function test_settled_negative_adjustment_does_not_double_count_in_settlement_outstanding(): void

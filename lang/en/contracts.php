@@ -147,6 +147,8 @@ return [
     'deposit_surplus_to_refund' => 'Deposit surplus to refund',
     'deposit_surplus_refunded' => 'Surplus / refund',
     'view_deposit_refund_expense' => 'View refund expense',
+    'view_deposit_refund_receipt' => 'View refund receipt',
+    'deposit_refund_receipt_document' => 'Deposit refund receipt',
     'available' => 'Available',
     'current_outstanding' => 'Current outstanding',
     'move_out_date' => 'Move-out date',

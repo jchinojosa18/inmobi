@@ -305,7 +305,8 @@ class Show extends Component
             'canManageCharges' => $contract->isOperable()
                 && (auth()->user()?->can('charges.manage') ?? false),
             'canViewPayments' => auth()->user()?->can('payments.view') ?? false,
-            'canSettleContracts' => $contract->isOperable()
+            // Keep Finiquito visible on ended contracts (read-only summary / surplus refund).
+            'canSettleContracts' => ! $contract->isCancelled()
                 && (auth()->user()?->can('contracts.settle') ?? false),
             'canRenew' => $canRenew,
             'contractDepositAmount' => $contractDepositAmount,

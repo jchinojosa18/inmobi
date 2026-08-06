@@ -158,6 +158,8 @@ return [
     'deposit_surplus_to_refund' => 'Sobrante a devolver',
     'deposit_surplus_refunded' => 'Sobrante / devolución',
     'view_deposit_refund_expense' => 'Ver gasto de devolución',
+    'view_deposit_refund_receipt' => 'Ver recibo de devolución',
+    'deposit_refund_receipt_document' => 'Recibo devolución depósito',
     'available' => 'Disponible',
     'current_outstanding' => 'Adeudo actual',
     'move_out_date' => 'Fecha salida',

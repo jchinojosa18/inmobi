@@ -171,7 +171,7 @@ Corrección manual mínima por contrato (tasa mal capturada):
   - crea `MOVEOUT`
   - aplica depósito con `DEPOSIT_APPLY` (negativo)
   - crea `Payment` interno `method=DEPOSIT` (sin folio) + `PaymentAllocation` a cargos pendientes (p.ej. `MOVEOUT`/`RENT`) vía [`ApplyDepositToOutstandingAction`](../app/Actions/Payments/ApplyDepositToOutstandingAction.php), para que el estado de cuenta muestre Salida pagada
-  - si sobra depósito crea `Expense` categoría `Refund deposit`
+  - si sobra depósito crea `Expense` categoría `Refund deposit` y recibo PDF con folio `DEV-YYYY-#####` como `Document` del contrato (`meta.kind=deposit_refund_receipt`; refs en `meta.settlements[batch].refund_receipt_folio` / `refund_receipt_document_id`)
   - UI: el panel Finiquito muestra **Sobrante a devolver** (preview) y, tras finiquito, **Sobrante / devolución** con link a Gastos (`?contractFilter=`). En `/expenses`, los reembolsos llevan badge “Devolución depósito” y link al contrato.
   - termina contrato (`status=ended`)
   - Backfill de finiquitos viejos sin allocations: `php artisan inmo:settlements:backfill-deposit-allocations --contract=ID` (`--dry-run` disponible)

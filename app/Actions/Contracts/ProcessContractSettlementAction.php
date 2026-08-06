@@ -26,6 +26,8 @@ class ProcessContractSettlementAction
         private readonly AuditLogger $auditLogger,
         private readonly ApplyCreditBalanceAction $applyCreditBalanceAction,
         private readonly ApplyDepositToOutstandingAction $applyDepositToOutstandingAction,
+        private readonly GenerateDepositRefundReceiptFolioAction $refundReceiptFolioAction,
+        private readonly GenerateDepositRefundReceiptPdfAction $refundReceiptPdfAction,
     ) {}
 
     /**
@@ -156,6 +158,8 @@ class ProcessContractSettlementAction
             }
 
             $refundExpenseId = null;
+            $refundReceiptFolio = null;
+            $refundReceiptDocumentId = null;
             if ($depositRefund > 0) {
                 $refundCategoryId = app(SeedDefaultExpenseCategoriesAction::class)
                     ->depositRefundCategoryId($lockedContract->organization_id);
@@ -184,6 +188,38 @@ class ProcessContractSettlementAction
                     ]);
 
                 $refundExpenseId = $refundExpense->id;
+
+                $previousOrganizationId = TenantContext::currentOrganizationId();
+                TenantContext::setOrganizationId($lockedContract->organization_id);
+
+                try {
+                    $folio = $this->refundReceiptFolioAction->execute(
+                        $lockedContract->organization_id,
+                        $exitDate,
+                    );
+                    $contractForReceipt = Contract::query()
+                        ->withoutOrganizationScope()
+                        ->with(['tenant', 'unit.property'])
+                        ->findOrFail($lockedContract->id);
+                    $receiptDocument = $this->refundReceiptPdfAction->execute(
+                        contract: $contractForReceipt,
+                        summary: [
+                            'folio' => $folio,
+                            'move_out_date' => $exitDate->toDateString(),
+                            'deposit_available' => $depositAvailable,
+                            'deposit_applied' => $depositApplied,
+                            'deposit_refund' => $depositRefund,
+                            'credit_refunded' => $creditRefunded,
+                            'settlement_batch_id' => $batchId,
+                        ],
+                        refundExpenseId: (int) $refundExpenseId,
+                        userId: $userId,
+                    );
+                    $refundReceiptFolio = $folio;
+                    $refundReceiptDocumentId = $receiptDocument->id;
+                } finally {
+                    TenantContext::setOrganizationId($previousOrganizationId);
+                }
             }
 
             $balanceToCollect = round(max($outstandingBeforeDeposit - $depositApplied, 0), 2);
@@ -207,6 +243,8 @@ class ProcessContractSettlementAction
                 'moveout_charge_ids' => $moveoutChargeIds,
                 'deposit_apply_charge_id' => $depositApplyChargeId,
                 'refund_expense_id' => $refundExpenseId,
+                'refund_receipt_folio' => $refundReceiptFolio ?? null,
+                'refund_receipt_document_id' => $refundReceiptDocumentId ?? null,
                 'closed_by_user_id' => $userId,
                 'closed_at' => now('America/Tijuana')->toIso8601String(),
             ];

@@ -7,6 +7,7 @@ use App\Livewire\Contracts\SettlementWizard;
 use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\CreditBalance;
+use App\Models\Document;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use App\Models\Organization;
@@ -136,6 +137,17 @@ class SettlementWizardSurplusTest extends TestCase
             ->assertViewHas('estimatedRefund', 3500.0);
     }
 
+    public function test_ended_contract_show_page_includes_settlement_panel(): void
+    {
+        [$user, $contract] = $this->makeContractWithUser(depositAmount: 7500.0);
+        $contract->update(['status' => Contract::STATUS_ENDED, 'ends_at' => '2026-08-06']);
+
+        Livewire::actingAs($user)
+            ->test(\App\Livewire\Contracts\Show::class, ['contract' => $contract->fresh()])
+            ->assertViewHas('canSettleContracts', true)
+            ->assertSee(__('contracts.settlement_title'));
+    }
+
     public function test_ended_contract_shows_refunded_surplus_and_expense_link(): void
     {
         [$user, $contract] = $this->makeContractWithUser(depositAmount: 7500.0);
@@ -187,6 +199,75 @@ class SettlementWizardSurplusTest extends TestCase
             ->assertSee('$2,500.00')
             ->assertSee(__('contracts.view_deposit_refund_expense'))
             ->assertSeeHtml(e($expectedUrl));
+    }
+
+    public function test_ended_contract_shows_refund_receipt_link_when_document_present(): void
+    {
+        [$user, $contract] = $this->makeContractWithUser(depositAmount: 7500.0);
+        app(SeedDefaultExpenseCategoriesAction::class)->execute((int) $contract->organization_id);
+
+        $categoryId = ExpenseCategory::query()
+            ->withoutOrganizationScope()
+            ->where('organization_id', $contract->organization_id)
+            ->where('name', 'REEMBOLSO DEPÓSITO')
+            ->value('id');
+
+        $expense = Expense::query()->create([
+            'organization_id' => $contract->organization_id,
+            'unit_id' => $contract->unit_id,
+            'contract_id' => $contract->id,
+            'expense_category_id' => $categoryId,
+            'spent_at' => '2026-08-06',
+            'amount' => 2500,
+            'notes' => 'Devolución de depósito por finiquito',
+            'meta' => [
+                'reason' => 'contract_settlement',
+                'contract_id' => $contract->id,
+                'settlement_batch_id' => 'batch-test-2',
+            ],
+        ]);
+
+        $receiptDocument = Document::factory()->create([
+            'organization_id' => $contract->organization_id,
+            'documentable_type' => Contract::class,
+            'documentable_id' => $contract->id,
+            'type' => 'CONTRACT_DOCUMENT',
+            'category' => null,
+            'mime' => 'application/pdf',
+            'path' => 'documents/contract/'.$contract->organization_id.'/devolucion.pdf',
+            'tags' => ['deposit_refund', 'generated'],
+            'meta' => [
+                'disk' => 'local',
+                'generated' => true,
+                'kind' => 'deposit_refund_receipt',
+                'folio' => 'DEV-2026-00042',
+                'settlement_batch_id' => 'batch-test-2',
+            ],
+        ]);
+
+        $contract->update([
+            'status' => Contract::STATUS_ENDED,
+            'ends_at' => '2026-08-06',
+            'meta' => array_merge($contract->meta ?? [], [
+                'settlement_batch_id' => 'batch-test-2',
+                'settlements' => [
+                    'batch-test-2' => [
+                        'batch_id' => 'batch-test-2',
+                        'deposit_refund' => 2500,
+                        'refund_expense_id' => $expense->id,
+                        'refund_receipt_document_id' => $receiptDocument->id,
+                        'refund_receipt_folio' => 'DEV-2026-00042',
+                        'deposit_applied' => 5000,
+                        'deposit_available' => 7500,
+                    ],
+                ],
+            ]),
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(SettlementWizard::class, ['contract' => $contract->fresh()])
+            ->assertSee(__('contracts.view_deposit_refund_receipt'))
+            ->assertSeeHtml('open-file-viewer');
     }
 
     /**
