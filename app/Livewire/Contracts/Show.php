@@ -3,6 +3,7 @@
 namespace App\Livewire\Contracts;
 
 use App\Actions\Charges\RegisterContractAdjustmentAction;
+use App\Actions\Contracts\CancelContractAction;
 use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\Payment;
@@ -51,6 +52,13 @@ class Show extends Component
     public ?string $adjustment_comment = null;
 
     public ?string $adjustment_linked_to = null;
+
+    public bool $showCancelConfirm = false;
+
+    public string $cancellation_reason = '';
+
+    /** @var list<array{code: string, message: string, action_url: ?string, action_label: ?string}> */
+    public array $cancelBlockers = [];
 
     public function mount(Contract $contract): void
     {
@@ -123,6 +131,65 @@ class Show extends Component
         ]);
         $this->adjustment_charge_date = now('America/Tijuana')->toDateString();
         session()->flash('success', __('contracts.flash.adjustment_created'));
+    }
+
+    public function confirmCancelContract(): void
+    {
+        if (! (auth()->user()?->can('contracts.manage') ?? false)) {
+            abort(403);
+        }
+
+        $this->contract->refresh();
+        $eligibility = app(CancelContractAction::class)->evaluate($this->contract);
+        $this->cancelBlockers = $eligibility->blockers;
+        $this->cancellation_reason = '';
+        $this->showCancelConfirm = true;
+        $this->resetErrorBag();
+    }
+
+    public function cancelCancelConfirm(): void
+    {
+        $this->showCancelConfirm = false;
+        $this->cancellation_reason = '';
+        $this->cancelBlockers = [];
+        $this->resetErrorBag();
+    }
+
+    public function executeCancelContract(CancelContractAction $action): void
+    {
+        if (! (auth()->user()?->can('contracts.manage') ?? false)) {
+            abort(403);
+        }
+
+        if ($this->cancelBlockers !== []) {
+            return;
+        }
+
+        $this->validate([
+            'cancellation_reason' => ['required', 'string', 'max:500'],
+        ], [
+            'cancellation_reason.required' => __('contracts.validation.cancel_reason_required'),
+        ]);
+
+        try {
+            $action->execute(
+                contract: $this->contract,
+                reason: $this->cancellation_reason,
+                userId: auth()->id(),
+            );
+        } catch (ValidationException $exception) {
+            $message = $exception->errors()['cancel'][0]
+                ?? $exception->errors()['reason'][0]
+                ?? __('contracts.validation.cancel_blocked');
+            $this->addError('cancellation_reason', $message);
+            $this->contract->refresh();
+            $this->cancelBlockers = $action->evaluate($this->contract)->blockers;
+
+            return;
+        }
+
+        session()->flash('success', __('contracts.flash.contract_cancelled'));
+        $this->redirect(route('contracts.index'), navigate: true);
     }
 
     public function render(DepositBalanceService $depositBalanceService): View

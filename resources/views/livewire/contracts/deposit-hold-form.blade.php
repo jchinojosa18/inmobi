@@ -1,4 +1,4 @@
-<x-ui.card>
+<x-ui.card id="deposit-hold">
     <div
         x-data="{ open: {{ $remainingDeposit > 0 ? 'true' : 'false' }} }"
         class="space-y-0"

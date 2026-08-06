@@ -38,6 +38,11 @@
                     {{ __('contracts.edit_contract') }}
                 </x-ui.button>
             @endif
+            @if ($canManageContracts && $contract->status === 'active')
+                <x-ui.button type="button" variant="danger" wire:click="confirmCancelContract">
+                    {{ __('contracts.cancel_contract') }}
+                </x-ui.button>
+            @endif
         </x-slot:actions>
     </x-ui.page-header>
 
@@ -54,11 +59,13 @@
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <x-ui.stat-card
             :label="__('contracts.status')"
-            :value="$contract->isExpired()
-                ? __('contracts.status_expired_label')
-                : ($contract->isExpiringSoon()
-                    ? __('contracts.status_expiring_label')
-                    : ($contract->status === 'active' ? __('common.active') : __('common.finished')))"
+            :value="$contract->status === 'cancelled'
+                ? __('contracts.status_cancelled_label')
+                : ($contract->isExpired()
+                    ? __('contracts.status_expired_label')
+                    : ($contract->isExpiringSoon()
+                        ? __('contracts.status_expiring_label')
+                        : ($contract->status === 'active' ? __('common.active') : __('common.finished'))))"
         />
         <x-ui.stat-card
             :label="__('contracts.deposit_paid')"
@@ -291,4 +298,6 @@
         variant="contract"
         :key="'contract-documents-'.$contract->id"
     />
+
+    @include('livewire.contracts.partials.cancel-contract-modal')
 </section>
