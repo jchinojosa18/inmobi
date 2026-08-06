@@ -50,7 +50,7 @@ return [
     'renew_contract' => 'Renovar contrato',
     'cancel_contract' => 'Anular contrato',
     'cancel_contract_title' => 'Anular contrato',
-    'cancel_contract_help' => 'Esto libera la unidad para crear un contrato nuevo. No es un finiquito: solo úsalo si el contrato se capturó por error y aún no hay pagos ni depósito.',
+    'cancel_contract_help' => 'Libera la unidad para crear un contrato nuevo. No es un finiquito: úsalo solo si se capturó por error y aún no hay pagos ni depósito.',
     'cancel_reason' => 'Motivo',
     'cancel_reason_placeholder' => 'Ej. Inquilino incorrecto',
     'cancel_confirm' => 'Anular contrato',

@@ -11,7 +11,7 @@
 @endphp
 
 {{-- ─── Branding ──────────────────────────────────────────────────────── --}}
-<div class="flex h-14 shrink-0 items-center gap-2 border-b border-white/10 px-4">
+<div class="flex h-14 shrink-0 items-center gap-2 px-4">
     <x-ui.brand
         variant="sidebar"
         :show-org="true"
@@ -336,7 +336,7 @@
 
 {{-- ─── CTA Nuevo contrato ──────────────────────────────────────────────── --}}
 @can('contracts.manage')
-    <div class="shrink-0 border-t border-white/10 p-3">
+    <div class="shrink-0 p-3">
         <a href="{{ route('contracts.create') }}"
            class="flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"

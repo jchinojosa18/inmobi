@@ -49,7 +49,7 @@ return [
     'edit_contract' => 'Edit contract',
     'cancel_contract' => 'Cancel contract',
     'cancel_contract_title' => 'Cancel contract',
-    'cancel_contract_help' => 'This releases the unit so you can create a new contract. This is not a settlement: only use it if the contract was entered in error and there are no payments or deposit yet.',
+    'cancel_contract_help' => 'Releases the unit so you can create a new contract. Not a settlement: use only if it was entered in error and there are no payments or deposit yet.',
     'cancel_reason' => 'Reason',
     'cancel_reason_placeholder' => 'E.g. Wrong tenant',
     'cancel_confirm' => 'Cancel contract',

@@ -38,7 +38,7 @@
             <div
                 data-modal-panel
                 tabindex="-1"
-                class="relative z-10 flex w-full {{ $maxWidthClass }} max-h-[calc(100vh-2rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl outline-none"
+                class="relative z-10 flex max-h-[min(36rem,calc(100vh-2rem))] w-full {{ $maxWidthClass }} min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl outline-none"
             >
                 <div class="flex shrink-0 items-start gap-3 border-b border-slate-200 px-5 py-4">
                     <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600 ring-1 ring-red-100">
@@ -65,7 +65,7 @@
                     </button>
                 </div>
 
-                <div class="overflow-y-auto px-5 py-4 text-sm leading-6 text-slate-600">
+                <div class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-5 py-4 text-sm leading-6 text-slate-600 break-words">
                     {{ $slot }}
                 </div>
 
