@@ -173,6 +173,13 @@ Corrección manual mínima por contrato (tasa mal capturada):
   - WhatsApp: deep link `wa.me` con plantilla org + link firmado (sin API); botón en wizard y en detalle del contrato.
 - Badge “Vencido”: contrato activo con `ends_at` pasada (solo UI; `status` en DB no auto-cambia).
 
+### Anulación de contrato (error de captura)
+- Acción: `CancelContractAction` — `status=cancelled` (no es finiquito/`ended`).
+- Solo contrato limpio (sin pagos, depósito, allocations, crédito; cargos en mes abierto).
+- Motivo obligatorio + auditoría `contract.cancelled`.
+- Si hay movimientos o mes cerrado: bloquear con atajos; no auto-revertir ledger.
+- UI: botón en `Contracts\Show`; filtro Anulados en index.
+
 ### 4.5 Reportes por allocations (fuente de verdad)
 - Servicio: [`OperatingIncomeService`](../app/Support/OperatingIncomeService.php)
 - Ingreso operativo = sum de `payment_allocations.amount` en tipos operativos, **excluyendo** pagos `method=CREDIT` (aplicación de saldo a favor / descuentos; no es caja).
