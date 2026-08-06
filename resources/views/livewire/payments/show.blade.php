@@ -1,38 +1,51 @@
 <section class="space-y-6">
-    <x-ui.page-header
-        :title="__('finance.payments.show_title', ['folio' => $payment->receipt_folio ?? __('common.n_a')])"
-        :description="'#'. $payment->contract_id .' · '. $payment->contract->tenant->full_name"
-    >
-        <x-slot:actions>
-            <x-ui.button href="{{ $backUrl }}" variant="secondary">
-                {{ $backLabel }}
-            </x-ui.button>
-            @if ($secondaryBackUrl && $secondaryBackLabel)
-                <x-ui.button href="{{ $secondaryBackUrl }}" variant="secondary">
-                    {{ $secondaryBackLabel }}
-                </x-ui.button>
-            @endif
-            @if ($payment->receipt_folio !== null && $receiptViewerItem)
-                <x-ui.file-viewer-trigger
-                    :items="[$receiptViewerItem]"
-                    :index="0"
-                    variant="secondary"
-                >
-                    {{ __('finance.payments.view_pdf') }}
-                </x-ui.file-viewer-trigger>
-                @if ($canSendReceipts && $whatsAppUrl)
-                    <x-ui.button
-                        :href="$whatsAppUrl"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="!border-0 !bg-emerald-600 !text-white hover:!bg-emerald-500"
-                    >
-                        {{ __('finance.payments.open_whatsapp') }}
+    <div class="space-y-2">
+        @if ($secondaryBackUrl && $secondaryBackLabel)
+            <a
+                href="{{ $backUrl }}"
+                class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 transition hover:text-slate-900"
+            >
+                <span aria-hidden="true">←</span>
+                <span>{{ $backLabel }}</span>
+            </a>
+        @endif
+
+        <x-ui.page-header
+            :title="__('finance.payments.show_title', ['folio' => $payment->receipt_folio ?? __('common.n_a')])"
+            :description="'#'. $payment->contract_id .' · '. $payment->contract->tenant->full_name"
+        >
+            <x-slot:actions>
+                @if ($secondaryBackUrl && $secondaryBackLabel)
+                    <x-ui.button href="{{ $secondaryBackUrl }}" variant="secondary">
+                        {{ $secondaryBackLabel }}
+                    </x-ui.button>
+                @else
+                    <x-ui.button href="{{ $backUrl }}" variant="secondary">
+                        {{ $backLabel }}
                     </x-ui.button>
                 @endif
-            @endif
-        </x-slot:actions>
-    </x-ui.page-header>
+                @if ($payment->receipt_folio !== null && $receiptViewerItem)
+                    <x-ui.file-viewer-trigger
+                        :items="[$receiptViewerItem]"
+                        :index="0"
+                        variant="secondary"
+                    >
+                        {{ __('finance.payments.view_pdf') }}
+                    </x-ui.file-viewer-trigger>
+                    @if ($canSendReceipts && $whatsAppUrl)
+                        <x-ui.button
+                            :href="$whatsAppUrl"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="!border-0 !bg-emerald-600 !text-white hover:!bg-emerald-500"
+                        >
+                            {{ __('finance.payments.open_whatsapp') }}
+                        </x-ui.button>
+                    @endif
+                @endif
+            </x-slot:actions>
+        </x-ui.page-header>
+    </div>
 
     <div class="grid gap-4 md:grid-cols-4">
         <x-ui.stat-card
