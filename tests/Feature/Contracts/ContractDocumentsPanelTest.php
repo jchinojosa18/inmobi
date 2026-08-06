@@ -217,6 +217,25 @@ class ContractDocumentsPanelTest extends TestCase
             ->assertSeeHtml('open-file-viewer');
     }
 
+    public function test_cancelled_contract_blocks_document_upload(): void
+    {
+        Storage::fake('local');
+        [$organization, $contract] = $this->createContractGraph();
+        $contract->forceFill(['status' => Contract::STATUS_CANCELLED])->save();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+
+        Livewire::actingAs($user)
+            ->test(Panel::class, [
+                'documentableType' => Contract::class,
+                'documentableId' => $contract->id,
+                'variant' => 'contract',
+            ])
+            ->assertViewHas('canUploadDocuments', false)
+            ->assertDontSee(__('documents.upload_button'))
+            ->call('openUploadModal')
+            ->assertForbidden();
+    }
+
     /**
      * @return array{Organization, Contract}
      */

@@ -44,7 +44,10 @@ class SettlementWizard extends Component
     public function mount(Contract $contract): void
     {
         $this->contract = $contract;
-        $this->isEnded = $contract->status === Contract::STATUS_ENDED;
+        $this->isEnded = in_array($contract->status, [
+            Contract::STATUS_ENDED,
+            Contract::STATUS_CANCELLED,
+        ], true);
         $this->move_out_date = now('America/Tijuana')->toDateString();
         $this->concepts = [
             ['description' => '', 'amount' => ''],
@@ -74,8 +77,14 @@ class SettlementWizard extends Component
             abort(403);
         }
 
-        if ($this->isEnded || $this->contract->status === Contract::STATUS_ENDED) {
-            $this->addError('settlement_general', __('contracts.settlement_ended_blocked'));
+        if ($this->isEnded || in_array($this->contract->status, [
+            Contract::STATUS_ENDED,
+            Contract::STATUS_CANCELLED,
+        ], true)) {
+            $message = $this->contract->status === Contract::STATUS_CANCELLED
+                ? __('contracts.settlement_cancelled_blocked')
+                : __('contracts.settlement_ended_blocked');
+            $this->addError('settlement_general', $message);
 
             return;
         }
@@ -159,7 +168,10 @@ class SettlementWizard extends Component
             ->with(['tenant:id,full_name', 'unit:id,name'])
             ->findOrFail($this->contract->id);
 
-        $this->isEnded = $contract->status === Contract::STATUS_ENDED;
+        $this->isEnded = in_array($contract->status, [
+            Contract::STATUS_ENDED,
+            Contract::STATUS_CANCELLED,
+        ], true);
 
         return view('livewire.contracts.settlement-wizard', [
             'contract' => $contract,

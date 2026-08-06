@@ -1,6 +1,7 @@
 <x-ui.card id="deposit-hold">
     <div
         x-data="{ open: {{ $remainingDeposit > 0 ? 'true' : 'false' }} }"
+        @open-deposit-hold-panel.window="open = true"
         class="space-y-0"
     >
         <button

@@ -45,6 +45,10 @@ class ProcessContractSettlementAction
                 throw new RuntimeException('El contrato ya fue finiquitado.');
             }
 
+            if ($lockedContract->status === Contract::STATUS_CANCELLED) {
+                throw new RuntimeException('El contrato está anulado y no admite finiquito.');
+            }
+
             if (data_get($lockedContract->meta, 'settlement_batch_id')) {
                 throw new RuntimeException('Ya existe un finiquito registrado para este contrato.');
             }

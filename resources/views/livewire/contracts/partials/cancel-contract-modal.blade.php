@@ -14,8 +14,20 @@
                 @foreach ($cancelBlockers as $blocker)
                     <li class="break-words">
                         <span>{{ $blocker['message'] }}</span>
-                        @if (! empty($blocker['action_url']) && ! empty($blocker['action_label']))
-                            <a href="{{ $blocker['action_url'] }}" class="ml-1 font-medium text-indigo-600 hover:underline">
+                        @if (! empty($blocker['action_label']) && in_array($blocker['code'], ['has_deposit_hold', 'has_payments', 'has_allocations'], true))
+                            <button
+                                type="button"
+                                wire:click="followCancelShortcut({{ \Illuminate\Support\Js::from($blocker['code']) }})"
+                                class="ml-1 font-medium text-indigo-600 hover:underline"
+                            >
+                                {{ $blocker['action_label'] }}
+                            </button>
+                        @elseif (! empty($blocker['action_url']) && ! empty($blocker['action_label']))
+                            <a
+                                href="{{ $blocker['action_url'] }}"
+                                wire:click="cancelCancelConfirm"
+                                class="ml-1 font-medium text-indigo-600 hover:underline"
+                            >
                                 {{ $blocker['action_label'] }}
                             </a>
                         @endif

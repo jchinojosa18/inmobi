@@ -59,6 +59,11 @@ class DepositHoldForm extends Component
             abort(403);
         }
 
+        $this->contract->refresh();
+        if (! $this->contract->allowsLedgerMutations()) {
+            abort(403);
+        }
+
         $validated = $this->validate([
             'deposit_received_at' => ['required', 'date'],
             'deposit_amount' => ['required', 'numeric', 'min:0.01'],
@@ -111,6 +116,11 @@ class DepositHoldForm extends Component
             abort(403);
         }
 
+        $this->contract->refresh();
+        if (! $this->contract->allowsLedgerMutations()) {
+            abort(403);
+        }
+
         $this->voidingChargeId = $chargeId;
         $this->showVoidConfirm = true;
     }
@@ -124,6 +134,11 @@ class DepositHoldForm extends Component
     public function executeVoidDeposit(VoidDepositHoldAction $action): void
     {
         if (! (auth()->user()?->can('charges.manage') ?? false)) {
+            abort(403);
+        }
+
+        $this->contract->refresh();
+        if (! $this->contract->allowsLedgerMutations()) {
             abort(403);
         }
 

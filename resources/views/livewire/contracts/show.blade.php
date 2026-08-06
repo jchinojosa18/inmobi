@@ -30,7 +30,7 @@
                     {{ __('contracts.renew_contract') }}
                 </x-ui.button>
             @endif
-            @if ($canManageContracts)
+            @if ($canManageContracts && $contract->status === 'active')
                 <x-ui.button
                     type="button"
                     onclick="Livewire.dispatch('open-contract-edit', { contractId: {{ $contract->id }} })"
@@ -46,7 +46,11 @@
         </x-slot:actions>
     </x-ui.page-header>
 
-    @if ($contract->isExpired())
+    @if ($contract->status === 'cancelled')
+        <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700" role="status">
+            {{ __('contracts.cancelled_banner') }}
+        </div>
+    @elseif ($contract->isExpired())
         <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800" role="alert">
             {{ __('contracts.expired_banner', ['date' => \App\Support\DateDisplay::formatDate($contract->ends_at)]) }}
         </div>
@@ -228,7 +232,7 @@
         </div>
     </x-ui.card>
 
-    <x-ui.card :padding="false">
+    <x-ui.card id="recent-payments" :padding="false">
         <div class="border-b border-slate-100 px-5 py-4">
             <h2 class="text-lg font-semibold text-slate-900">{{ __('contracts.recent_payments') }}</h2>
         </div>

@@ -99,6 +99,8 @@ class Panel extends Component
             abort(403);
         }
 
+        $this->assertDocumentableAllowsMutations();
+
         $this->validate();
 
         if ($this->isContractVariant() && $this->categoryIsTaken()) {
@@ -160,6 +162,8 @@ class Panel extends Component
             abort(403);
         }
 
+        $this->assertDocumentableAllowsMutations();
+
         if ($this->isContractVariant() && $this->availableContractCategories() === []) {
             return;
         }
@@ -187,6 +191,8 @@ class Panel extends Component
             abort(403);
         }
 
+        $this->assertDocumentableAllowsMutations();
+
         $this->pendingDeleteDocumentId = $documentId;
         $this->showDeleteConfirm = true;
     }
@@ -212,6 +218,8 @@ class Panel extends Component
         if (! (auth()->user()?->can('documents.upload') ?? false)) {
             abort(403);
         }
+
+        $this->assertDocumentableAllowsMutations();
 
         $document = Document::query()
             ->where('documentable_type', $this->documentableType)
@@ -376,7 +384,7 @@ class Panel extends Component
                 ))
                 ->values()
                 ->all(),
-            'canUploadDocuments' => auth()->user()?->can('documents.upload') ?? false,
+            'canUploadDocuments' => $this->canMutateDocuments(),
             'canSendReceipts' => auth()->user()?->can('receipts.send') ?? false,
             'variant' => $this->variant,
             'availableCategories' => $this->isContractVariant()
@@ -386,9 +394,18 @@ class Panel extends Component
         ]);
     }
 
-    private function canOpenUpload(): bool
+    private function canMutateDocuments(): bool
     {
         if (! (auth()->user()?->can('documents.upload') ?? false)) {
+            return false;
+        }
+
+        return $this->documentableAllowsMutations();
+    }
+
+    private function canOpenUpload(): bool
+    {
+        if (! $this->canMutateDocuments()) {
             return false;
         }
 
@@ -397,6 +414,24 @@ class Panel extends Component
         }
 
         return true;
+    }
+
+    private function documentableAllowsMutations(): bool
+    {
+        $documentable = $this->resolveDocumentable();
+
+        if ($documentable instanceof Contract) {
+            return $documentable->allowsLedgerMutations();
+        }
+
+        return true;
+    }
+
+    private function assertDocumentableAllowsMutations(): void
+    {
+        if (! $this->documentableAllowsMutations()) {
+            abort(403);
+        }
     }
 
     private function isContractVariant(): bool

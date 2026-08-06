@@ -146,6 +146,11 @@ class Contract extends OrganizationScopedModel
         return $this->morphMany(Document::class, 'documentable');
     }
 
+    public function allowsLedgerMutations(): bool
+    {
+        return $this->status === self::STATUS_ACTIVE;
+    }
+
     public function isExpired(?CarbonImmutable $today = null): bool
     {
         $today ??= CarbonImmutable::now('America/Tijuana')->startOfDay();

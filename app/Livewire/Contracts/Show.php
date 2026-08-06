@@ -78,6 +78,11 @@ class Show extends Component
             abort(403);
         }
 
+        $this->contract->refresh();
+        if (! $this->contract->allowsLedgerMutations()) {
+            abort(403);
+        }
+
         $validated = $this->validate([
             'adjustment_amount' => ['required', 'numeric', 'not_in:0'],
             'adjustment_charge_date' => ['required', 'date'],
@@ -153,6 +158,31 @@ class Show extends Component
         $this->cancellation_reason = '';
         $this->cancelBlockers = [];
         $this->resetErrorBag();
+    }
+
+    public function followCancelShortcut(string $code): void
+    {
+        $this->cancelCancelConfirm();
+
+        $anchor = match ($code) {
+            'has_deposit_hold' => 'deposit-hold',
+            'has_payments', 'has_allocations' => 'recent-payments',
+            default => null,
+        };
+
+        if ($anchor === null) {
+            return;
+        }
+
+        $openDeposit = $code === 'has_deposit_hold'
+            ? "window.dispatchEvent(new CustomEvent('open-deposit-hold-panel'));"
+            : '';
+
+        $this->js(sprintf(
+            'queueMicrotask(() => { %s document.getElementById(%s)?.scrollIntoView({behavior: \'smooth\', block: \'start\'}); })',
+            $openDeposit,
+            json_encode($anchor, JSON_THROW_ON_ERROR)
+        ));
     }
 
     public function executeCancelContract(CancelContractAction $action): void
@@ -272,10 +302,13 @@ class Show extends Component
             'ledgerGroups' => $groupedLedger,
             'payments' => $payments,
             'canManageContracts' => auth()->user()?->can('contracts.manage') ?? false,
-            'canCreatePayments' => auth()->user()?->can('payments.create') ?? false,
-            'canManageCharges' => auth()->user()?->can('charges.manage') ?? false,
+            'canCreatePayments' => $contract->allowsLedgerMutations()
+                && (auth()->user()?->can('payments.create') ?? false),
+            'canManageCharges' => $contract->allowsLedgerMutations()
+                && (auth()->user()?->can('charges.manage') ?? false),
             'canViewPayments' => auth()->user()?->can('payments.view') ?? false,
-            'canSettleContracts' => auth()->user()?->can('contracts.settle') ?? false,
+            'canSettleContracts' => $contract->allowsLedgerMutations()
+                && (auth()->user()?->can('contracts.settle') ?? false),
             'canRenew' => $canRenew,
             'contractDepositAmount' => $contractDepositAmount,
             'registeredDeposit' => $registeredDeposit,

@@ -89,6 +89,44 @@ class CancelContractShowTest extends TestCase
         $this->assertSame(Contract::STATUS_ACTIVE, $contract->fresh()->status);
     }
 
+    public function test_follow_cancel_shortcut_closes_modal(): void
+    {
+        [$user, $contract] = $this->makeShowGraph();
+        Payment::factory()->create([
+            'organization_id' => $contract->organization_id,
+            'contract_id' => $contract->id,
+            'amount' => 50,
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(Show::class, ['contract' => $contract])
+            ->call('confirmCancelContract')
+            ->assertSet('showCancelConfirm', true)
+            ->call('followCancelShortcut', 'has_payments')
+            ->assertSet('showCancelConfirm', false)
+            ->assertSet('cancelBlockers', []);
+    }
+
+    public function test_cancelled_contract_hides_ledger_mutation_actions(): void
+    {
+        [$user, $contract] = $this->makeShowGraph();
+        $contract->forceFill(['status' => Contract::STATUS_CANCELLED])->save();
+
+        Livewire::actingAs($user)
+            ->test(Show::class, ['contract' => $contract->fresh()])
+            ->assertSee(__('contracts.cancelled_banner'))
+            ->assertDontSee(__('common.register_payment'))
+            ->assertDontSee(__('contracts.cancel_contract'))
+            ->assertDontSee(__('contracts.edit_contract'))
+            ->assertDontSee(__('contracts.create_adjustment'))
+            ->assertDontSee(__('contracts.settlement_title'))
+            ->assertViewHas('canCreatePayments', false)
+            ->assertViewHas('canManageCharges', false)
+            ->assertViewHas('canSettleContracts', false)
+            ->call('createAdjustment')
+            ->assertForbidden();
+    }
+
     /**
      * @return array{0: User, 1: Contract}
      */

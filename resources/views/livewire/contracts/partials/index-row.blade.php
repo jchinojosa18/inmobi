@@ -111,7 +111,7 @@
             <x-ui.button href="{{ route('contracts.show', $contract) }}" variant="secondary" size="sm">
                 {{ __('contracts.view') }}
             </x-ui.button>
-            @if ($canCreatePayments)
+            @if ($canCreatePayments && $contract->status === 'active')
                 <x-ui.button
                     type="button"
                     variant="accent"

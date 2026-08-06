@@ -50,6 +50,12 @@ class RegisterDepositHoldAction
                 ->lockForUpdate()
                 ->findOrFail($contract->id);
 
+            if (! $lockedContract->allowsLedgerMutations()) {
+                throw ValidationException::withMessages([
+                    'deposit_amount' => __('contracts.validation.deposit_contract_closed'),
+                ]);
+            }
+
             $remaining = $this->depositBalanceService->remainingDepositHoldAmount($lockedContract);
 
             if ($remaining <= 0) {
