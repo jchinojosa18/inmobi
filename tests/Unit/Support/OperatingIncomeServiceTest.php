@@ -196,4 +196,80 @@ class OperatingIncomeServiceTest extends TestCase
             fn (array $row): bool => $row['payment_method'] !== Payment::METHOD_CREDIT
         ));
     }
+
+    public function test_it_excludes_deposit_method_allocations_from_operating_income(): void
+    {
+        $organization = Organization::factory()->create();
+        $property = Property::factory()->create(['organization_id' => $organization->id]);
+        $unit = Unit::factory()->create([
+            'organization_id' => $organization->id,
+            'property_id' => $property->id,
+        ]);
+        $tenant = Tenant::factory()->create(['organization_id' => $organization->id]);
+        $contract = Contract::factory()->create([
+            'organization_id' => $organization->id,
+            'unit_id' => $unit->id,
+            'tenant_id' => $tenant->id,
+            'rent_amount' => 0,
+        ]);
+
+        $rent = Charge::query()->create([
+            'organization_id' => $organization->id,
+            'contract_id' => $contract->id,
+            'unit_id' => $unit->id,
+            'type' => Charge::TYPE_RENT,
+            'period' => '2026-07',
+            'charge_date' => '2026-07-01',
+            'amount' => 500,
+            'meta' => [],
+        ]);
+
+        $cashPayment = Payment::query()->create([
+            'organization_id' => $organization->id,
+            'contract_id' => $contract->id,
+            'paid_at' => '2026-07-10 10:00:00',
+            'amount' => 200,
+            'method' => Payment::METHOD_CASH,
+            'reference' => null,
+            'receipt_folio' => 'REC-CASH-DEP-001',
+            'meta' => [],
+        ]);
+        PaymentAllocation::query()->create([
+            'organization_id' => $organization->id,
+            'payment_id' => $cashPayment->id,
+            'charge_id' => $rent->id,
+            'amount' => 200,
+            'meta' => [],
+        ]);
+
+        $depositPayment = Payment::query()->create([
+            'organization_id' => $organization->id,
+            'contract_id' => $contract->id,
+            'paid_at' => '2026-07-20 10:00:00',
+            'amount' => 300,
+            'method' => Payment::METHOD_DEPOSIT,
+            'reference' => null,
+            'receipt_folio' => null,
+            'meta' => ['source' => 'deposit_settlement'],
+        ]);
+        PaymentAllocation::query()->create([
+            'organization_id' => $organization->id,
+            'payment_id' => $depositPayment->id,
+            'charge_id' => $rent->id,
+            'amount' => 300,
+            'meta' => ['source' => 'apply_deposit_to_outstanding_action'],
+        ]);
+
+        $from = CarbonImmutable::parse('2026-07-01', 'America/Tijuana')->startOfDay();
+        $to = CarbonImmutable::parse('2026-07-31', 'America/Tijuana')->endOfDay();
+        $service = app(OperatingIncomeService::class);
+
+        $details = $service->allocationsForRange((int) $organization->id, $from, $to);
+
+        $this->assertSame(200.0, round((float) $details->sum('allocated_amount'), 2));
+        $this->assertSame(200.0, $service->sumForRange((int) $organization->id, $from, $to));
+        $this->assertTrue($details->every(
+            fn (array $row): bool => $row['payment_method'] !== Payment::METHOD_DEPOSIT
+        ));
+    }
 }

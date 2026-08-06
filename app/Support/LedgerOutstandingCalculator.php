@@ -158,7 +158,7 @@ class LedgerOutstandingCalculator
             ->withoutOrganizationScope()
             ->where('organization_id', $organizationId)
             ->where('contract_id', $contractId)
-            ->where('method', '!=', Payment::METHOD_CREDIT)
+            ->whereNotIn('method', [Payment::METHOD_CREDIT, Payment::METHOD_DEPOSIT])
             ->where('paid_at', '<=', $paymentPaidAtTo)
             ->get(['meta'])
             ->reduce(function (float $carry, Payment $payment): float {

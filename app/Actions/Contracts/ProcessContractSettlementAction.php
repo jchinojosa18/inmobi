@@ -4,6 +4,7 @@ namespace App\Actions\Contracts;
 
 use App\Actions\Expenses\SeedDefaultExpenseCategoriesAction;
 use App\Actions\Payments\ApplyCreditBalanceAction;
+use App\Actions\Payments\ApplyDepositToOutstandingAction;
 use App\Models\Charge;
 use App\Models\Contract;
 use App\Models\CreditBalance;
@@ -24,6 +25,7 @@ class ProcessContractSettlementAction
         private readonly DepositBalanceService $depositBalanceService,
         private readonly AuditLogger $auditLogger,
         private readonly ApplyCreditBalanceAction $applyCreditBalanceAction,
+        private readonly ApplyDepositToOutstandingAction $applyDepositToOutstandingAction,
     ) {}
 
     /**
@@ -123,6 +125,13 @@ class ProcessContractSettlementAction
                     ]);
 
                 $depositApplyChargeId = $depositApply->id;
+
+                $this->applyDepositToOutstandingAction->execute(
+                    contract: $lockedContract,
+                    amount: $depositApplied,
+                    settlementBatchId: $batchId,
+                    paidAt: $exitDate,
+                );
             }
 
             $depositRefund = round(max($depositAvailable - $depositApplied, 0), 2);

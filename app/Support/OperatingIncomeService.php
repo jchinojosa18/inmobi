@@ -176,7 +176,7 @@ class OperatingIncomeService
 
     /**
      * Cash-oriented operating income: allocations on operating charge types,
-     * excluding internal CREDIT applications (saldo a favor / discounts).
+     * excluding internal CREDIT / DEPOSIT applications (saldo a favor / finiquito).
      *
      * @param  Builder<\App\Models\PaymentAllocation>  $query
      * @return Builder<\App\Models\PaymentAllocation>
@@ -185,6 +185,9 @@ class OperatingIncomeService
     {
         return $query
             ->whereIn('charges.type', $this->operatingChargeTypes())
-            ->where('payments.method', '!=', Payment::METHOD_CREDIT);
+            ->whereNotIn('payments.method', [
+                Payment::METHOD_CREDIT,
+                Payment::METHOD_DEPOSIT,
+            ]);
     }
 }

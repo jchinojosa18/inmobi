@@ -76,6 +76,27 @@ class ProcessContractSettlementActionTest extends TestCase
             'amount' => -500,
         ]);
 
+        $this->assertDatabaseHas('payments', [
+            'contract_id' => $contract->id,
+            'method' => Payment::METHOD_DEPOSIT,
+            'amount' => '500.00',
+            'receipt_folio' => null,
+        ]);
+
+        $moveout = Charge::query()
+            ->withoutOrganizationScope()
+            ->where('contract_id', $contract->id)
+            ->where('type', Charge::TYPE_MOVEOUT)
+            ->firstOrFail();
+
+        $this->assertSame(
+            200.0,
+            round((float) PaymentAllocation::query()
+                ->withoutOrganizationScope()
+                ->where('charge_id', $moveout->id)
+                ->sum('amount'), 2)
+        );
+
         $refundCategoryId = ExpenseCategory::query()
             ->withoutOrganizationScope()
             ->where('organization_id', $contract->organization_id)
@@ -94,6 +115,90 @@ class ProcessContractSettlementActionTest extends TestCase
             'status' => Contract::STATUS_ENDED,
             'ends_at' => '2026-03-20 00:00:00',
         ]);
+    }
+
+    public function test_deposit_payment_clears_moveout_balance_when_rent_already_paid(): void
+    {
+        [$contract, $depositHold] = $this->createContractWithDepositHold(1000);
+        TenantContext::setOrganizationId((int) $contract->organization_id);
+
+        $depositPayment = Payment::factory()->create([
+            'organization_id' => $contract->organization_id,
+            'contract_id' => $contract->id,
+            'paid_at' => '2026-03-01 10:00:00',
+            'amount' => 1000,
+        ]);
+
+        PaymentAllocation::factory()->create([
+            'organization_id' => $contract->organization_id,
+            'payment_id' => $depositPayment->id,
+            'charge_id' => $depositHold->id,
+            'amount' => 1000,
+        ]);
+
+        $rent = Charge::factory()->create([
+            'organization_id' => $contract->organization_id,
+            'contract_id' => $contract->id,
+            'unit_id' => $contract->unit_id,
+            'type' => Charge::TYPE_RENT,
+            'period' => '2026-03',
+            'charge_date' => '2026-03-01',
+            'amount' => 1000,
+        ]);
+
+        $rentPayment = Payment::factory()->create([
+            'organization_id' => $contract->organization_id,
+            'contract_id' => $contract->id,
+            'paid_at' => '2026-03-05 10:00:00',
+            'amount' => 1000,
+            'method' => Payment::METHOD_CASH,
+        ]);
+
+        PaymentAllocation::factory()->create([
+            'organization_id' => $contract->organization_id,
+            'payment_id' => $rentPayment->id,
+            'charge_id' => $rent->id,
+            'amount' => 1000,
+        ]);
+
+        $result = app(ProcessContractSettlementAction::class)->execute(
+            contract: $contract->fresh(),
+            moveOutDate: '2026-03-20',
+            concepts: [
+                ['description' => 'Fin', 'amount' => 1000],
+            ],
+            userId: null,
+        );
+
+        $this->assertSame(1000.0, $result->depositApplied);
+        $this->assertSame(0.0, $result->depositRefund);
+        $this->assertSame(0.0, $result->balanceToCollect);
+
+        $moveout = Charge::query()
+            ->withoutOrganizationScope()
+            ->where('contract_id', $contract->id)
+            ->where('type', Charge::TYPE_MOVEOUT)
+            ->firstOrFail();
+
+        $allocatedToMoveout = round((float) PaymentAllocation::query()
+            ->withoutOrganizationScope()
+            ->where('charge_id', $moveout->id)
+            ->sum('amount'), 2);
+
+        $this->assertSame(1000.0, $allocatedToMoveout);
+        $this->assertSame(0.0, round((float) $moveout->amount - $allocatedToMoveout, 2));
+
+        $depositLedgerPayment = Payment::query()
+            ->withoutOrganizationScope()
+            ->where('contract_id', $contract->id)
+            ->where('method', Payment::METHOD_DEPOSIT)
+            ->firstOrFail();
+
+        $this->assertSame('1000.00', (string) $depositLedgerPayment->amount);
+        $this->assertSame(
+            (string) data_get($contract->fresh()->meta, 'settlement_batch_id'),
+            (string) data_get($depositLedgerPayment->meta, 'settlement_batch_id')
+        );
     }
 
     public function test_deposit_partial_leaves_balance_to_collect(): void

@@ -22,6 +22,9 @@ class Payment extends OrganizationScopedModel
 
     public const METHOD_CREDIT = 'CREDIT';
 
+    /** Internal: deposit applied to outstanding charges at settlement (no receipt folio). */
+    public const METHOD_DEPOSIT = 'DEPOSIT';
+
     /**
      * @var list<string>
      */
