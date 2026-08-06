@@ -62,6 +62,36 @@ class ContractsIndexTest extends TestCase
         $response->assertDontSeeText('TENANT ACTIVE VISIBLE');
     }
 
+    public function test_status_filter_shows_only_cancelled_contracts(): void
+    {
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create([
+            'organization_id' => $organization->id,
+        ]);
+
+        $this->createContractForOrganization(
+            $organization,
+            tenantName: 'Tenant Active Keep',
+            status: Contract::STATUS_ACTIVE
+        );
+
+        $cancelled = $this->createContractForOrganization(
+            $organization,
+            tenantName: 'Tenant Cancelled Only',
+            status: Contract::STATUS_ACTIVE
+        );
+        $cancelled->forceFill(['status' => Contract::STATUS_CANCELLED])->save();
+
+        $response = $this->actingAs($user)->get(route('contracts.index', [
+            'status' => Contract::STATUS_CANCELLED,
+        ]));
+
+        $response->assertOk();
+        $response->assertSeeText('TENANT CANCELLED ONLY');
+        $response->assertDontSeeText('TENANT ACTIVE KEEP');
+        $response->assertSee(__('contracts.status_cancelled'));
+    }
+
     public function test_search_by_tenant_name_returns_matching_contract(): void
     {
         $organization = Organization::factory()->create();

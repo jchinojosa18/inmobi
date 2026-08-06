@@ -24,8 +24,20 @@
                 {{ __('contracts.status_expiring_label') }}
             </x-ui.badge>
         @else
-            <x-ui.badge :variant="$contract->status === 'active' ? 'success' : 'neutral'" class="mt-1">
-                {{ $contract->status === 'active' ? __('common.active') : __('common.finished') }}
+            @php
+                $statusLabel = match ($contract->status) {
+                    'active' => __('common.active'),
+                    'cancelled' => __('contracts.status_cancelled_label'),
+                    default => __('common.finished'),
+                };
+                $statusVariant = match ($contract->status) {
+                    'active' => 'success',
+                    'cancelled' => 'danger',
+                    default => 'neutral',
+                };
+            @endphp
+            <x-ui.badge :variant="$statusVariant" class="mt-1">
+                {{ $statusLabel }}
             </x-ui.badge>
         @endif
     </td>

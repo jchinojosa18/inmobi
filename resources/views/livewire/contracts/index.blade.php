@@ -30,6 +30,7 @@
                 <option value="expired">{{ __('contracts.status_expired') }}</option>
                 <option value="attention">{{ __('contracts.status_attention') }}</option>
                 <option value="ended">{{ __('contracts.status_ended') }}</option>
+                <option value="cancelled">{{ __('contracts.status_cancelled') }}</option>
                 <option value="all">{{ __('contracts.all_masculine') }}</option>
             </x-ui.select>
 
